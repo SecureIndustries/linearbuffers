@@ -35,14 +35,15 @@ static struct schema_table_field *schema_table_field;
 
 Schema:
 	/* empty */
-	| Namespace Enums Tables                         {
-	                                                     schema = schema_create();
-	                                                 }
+	| Namespace Enums Tables                         
 	;
 
 Namespace:
 	/* empty */
 	| NAMESPACE STRING                               {
+                                                         if (schema == NULL) {
+                                                             schema = schema_create();
+                                                         }
 	                                                     schema_set_namespace(schema, $2);
 	                                                 }
 	;
@@ -54,6 +55,9 @@ Enums:
 
 Enum:
 	ENUM STRING BLOCK                                {
+                                                         if (schema == NULL) {
+                                                             schema = schema_create();
+                                                         }
 	                                                     schema_enum = schema_enum_create();
 	                                                     schema_enum_set_name(schema_enum, $2);
 	                                                 }
@@ -106,6 +110,9 @@ Tables:
 
 Table:
 	TABLE STRING BLOCK                               {
+                                                         if (schema == NULL) {
+                                                             schema = schema_create();
+                                                         }
 	                                                     schema_table = schema_table_create();
 	                                                     schema_table_set_name(schema_table, $2);
 	                                                 }

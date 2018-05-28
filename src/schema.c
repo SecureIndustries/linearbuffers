@@ -205,6 +205,29 @@ int schema_enum_set_name (struct schema_enum *anum, const char *name)
 bail:	return -1;
 }
 
+int schema_enum_add_field (struct schema_enum *anum, struct schema_enum_field *field)
+{
+	if (anum == NULL) {
+		fprintf(stderr, "anum is invalid\n");
+		goto bail;
+	}
+	if (field == NULL) {
+		fprintf(stderr, "field is invalid\n");
+		goto bail;
+	}
+	if (field->name == NULL) {
+		fprintf(stderr, "field name is invalid\n");
+		goto bail;
+	}
+	if (field->value == NULL) {
+		fprintf(stderr, "field value is invalid\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&anum->fields, field, list);
+	return 0;
+bail:	return -1;
+}
+
 void schema_enum_destroy (struct schema_enum *anum)
 {
 	struct schema_enum_field *field;
@@ -349,6 +372,29 @@ int schema_table_set_name (struct schema_table *table, const char *name)
 bail:	return -1;
 }
 
+int schema_table_add_field (struct schema_table *table, struct schema_table_field *field)
+{
+	if (table == NULL) {
+		fprintf(stderr, "table is invalid\n");
+		goto bail;
+	}
+	if (field == NULL) {
+		fprintf(stderr, "field is invalid\n");
+		goto bail;
+	}
+	if (field->name == NULL) {
+		fprintf(stderr, "field name is invalid\n");
+		goto bail;
+	}
+	if (field->type == NULL) {
+		fprintf(stderr, "field type is invalid\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&table->fields, field, list);
+	return 0;
+bail:	return -1;
+}
+
 void schema_table_destroy (struct schema_table *table)
 {
 	struct schema_table_field *field;
@@ -407,6 +453,48 @@ int schema_set_namespace (struct schema *schema, const char *name)
 			goto bail;
 		}
 	}
+	return 0;
+bail:	return -1;
+}
+
+int schema_add_table (struct schema *schema, struct schema_table *table)
+{
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (table == NULL) {
+		fprintf(stderr, "table is invalid\n");
+		goto bail;
+	}
+	if (table->name == NULL) {
+		fprintf(stderr, "table name is invalid\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&schema->tables, table, list);
+	return 0;
+bail:	return -1;
+}
+
+int schema_add_enum (struct schema *schema, struct schema_enum *anum)
+{
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (anum == NULL) {
+		fprintf(stderr, "anum is invalid\n");
+		goto bail;
+	}
+	if (anum->name == NULL) {
+		fprintf(stderr, "anum name is invalid\n");
+		goto bail;
+	}
+	if (anum->type == NULL) {
+		fprintf(stderr, "anum type is invalid\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&schema->enums, anum, list);
 	return 0;
 bail:	return -1;
 }
