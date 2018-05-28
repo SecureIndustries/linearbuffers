@@ -27,11 +27,11 @@ include ../Makefile.lib
 
 schema.lex.c: schema.l
 	${Q}echo "  FLEX       ${CURDIR}/$@"
-	${Q}flex -o $@ $<
+	${Q}flex -o schema.lex.c --header-file=schema.lex.h $<
 
 schema.lex.h: schema.l
 	${Q}echo "  FLEX       ${CURDIR}/$@"
-	${Q}flex --header-file=$@ $<
+	${Q}flex -o schema.lex.c --header-file=schema.lex.h $<
 
 schema.tab.c: schema.y
 	${Q}echo "  BISON      ${CURDIR}/$@"
