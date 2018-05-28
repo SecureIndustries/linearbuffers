@@ -43,7 +43,7 @@ Schema:
 Namespace:
 	/* empty */
 	| NAMESPACE STRING                               {
-	                                                     schema_set_namespace($2);
+	                                                     schema_set_namespace(schema, $2);
 	                                                 }
 	;
 

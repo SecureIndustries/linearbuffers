@@ -3,18 +3,18 @@ target-y = \
 	linearbuffers-compiler
 
 linearbuffers-compiler_files-y = \
-	schema.lex.c \
-	schema.lex.h \
-	schema.tab.c \
-	schema.tab.h \
+	parser.lex.c \
+	parser.lex.h \
+	parser.tab.c \
+	parser.tab.h \
 	schema.c \
 	main.c
 
-linearbuffers-compiler_schema.lex.c_cflags-y = \
+linearbuffers-compiler_parser.lex.c_cflags-y = \
 	-Wno-sign-compare \
 	-Wno-unused-function
 	
-linearbuffers-compiler_schema.tab.c_cflags-y = \
+linearbuffers-compiler_parser.tab.c_cflags-y = \
 	-Wno-implicit-function-declaration
 
 linearbuffers-compiler_ldflags-y = \
@@ -26,24 +26,24 @@ dist.bin-y = \
 
 include ../Makefile.lib
 
-schema.lex.c: schema.l
+parser.lex.c: parser.l
 	${Q}echo "  FLEX       ${CURDIR}/$@"
-	${Q}flex -o schema.lex.c --header-file=schema.lex.h $<
+	${Q}flex -o parser.lex.c --header-file=parser.lex.h $<
 
-schema.lex.h: schema.l
+parser.lex.h: parser.l
 	${Q}echo "  FLEX       ${CURDIR}/$@"
-	${Q}flex -o schema.lex.c --header-file=schema.lex.h $<
+	${Q}flex -o parser.lex.c --header-file=parser.lex.h $<
 
-schema.tab.c: schema.y
+parser.tab.c: parser.y
 	${Q}echo "  BISON      ${CURDIR}/$@"
 	${Q}bison -Wno-conflicts-rr -d $<
 
-schema.tab.h: schema.y
+parser.tab.h: parser.y
 	${Q}echo "  BISON      ${CURDIR}/$@"
 	${Q}bison -Wno-conflicts-rr -d $<
 
 clean:
-	${Q}${RM} schema.lex.c
-	${Q}${RM} schema.lex.h
-	${Q}${RM} schema.tab.c
-	${Q}${RM} schema.tab.h
+	${Q}${RM} parser.lex.c
+	${Q}${RM} parser.lex.h
+	${Q}${RM} parser.tab.c
+	${Q}${RM} parser.tab.h

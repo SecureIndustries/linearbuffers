@@ -7,7 +7,7 @@
 #include "queue.h"
 #include "schema.h"
 
-#include "schema.lex.h"
+#include "parser.lex.h"
 
 #define OPTION_HELP		'h'
 #define OPTION_SCHEMA		's'

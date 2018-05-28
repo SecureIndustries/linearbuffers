@@ -28,11 +28,10 @@ int schema_table_field_set_type (struct schema_table_field *field, const char *t
 void schema_table_destroy (struct schema_table *table);
 struct schema_table * schema_table_create (void);
 int schema_table_set_name (struct schema_table *table, const char *name);
-int schema_table_set_type (struct schema_table *table, const char *type);
 int schema_table_add_field (struct schema_table *table, struct schema_table_field *field);
 
 void schema_destroy (struct schema *schema);
 struct schema * schema_create (void);
-int schema_set_namespace (const char *name);
+int schema_set_namespace (struct schema *schema, const char *name);
 int schema_add_enum (struct schema *schema, struct schema_enum *anum);
 int schema_add_table (struct schema *schema, struct schema_table *table);

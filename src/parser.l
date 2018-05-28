@@ -1,5 +1,5 @@
 %{
-#include "schema.tab.h"
+#include "parser.tab.h"
 %}
 
 blanks          [ \t\n]+
