@@ -20,50 +20,6 @@
 
 int yyparse (void);
 
-TAILQ_HEAD(schema_attributes, schema_attribute);
-struct schema_attribute {
-	TAILQ_ENTRY(schema_attribute) list;
-	char *key;
-	char *value;
-};
-
-TAILQ_HEAD(schema_enum_fields, schema_enum_field);
-struct schema_enum_field {
-	TAILQ_ENTRY(schema_enum_field) list;
-	char *name;
-	char *value;
-	struct schema_attributes attributes;
-};
-
-TAILQ_HEAD(schema_enums, schema_enum);
-struct schema_enum {
-	TAILQ_ENTRY(schema_enum) list;
-	char *name;
-	char *type;
-	struct schema_attributes attributes;
-};
-
-TAILQ_HEAD(schema_table_fields, schema_table_field);
-struct schema_table_field {
-	TAILQ_ENTRY(schema_table_field) list;
-	char *name;
-	char *type;
-	int array;
-	struct schema_attributes attributes;
-};
-
-TAILQ_HEAD(schema_tables, schema_table);
-struct schema_table {
-	TAILQ_ENTRY(schema_table) list;
-	char *name;
-	struct schema_table_fields fields;
-	struct schema_attributes attributes;
-};
-
-struct schema {
-	struct schema_tables tables;
-};
-
 static struct option options[] = {
 	{ "help"	, no_argument	   , 0, OPTION_HELP	},
 	{ "schema"	, required_argument, 0, OPTION_SCHEMA	},
@@ -132,66 +88,6 @@ bail:	if (fp) {
 		free(buf);
 	}
 	*size_out = size;
-	return 0;
-}
-
-int schema_begin (void)
-{
-	return 0;
-}
-
-int schema_end (void)
-{
-	return 0;
-}
-
-int schema_set_namespace (const char *name)
-{
-	fprintf(stderr, "namespace %s\n", name);
-	return 0;
-}
-
-int schema_enum_begin (const char *name, const char *type)
-{
-	if (type == NULL) {
-		fprintf(stderr, "enum %s {\n", name);
-	} else {
-		fprintf(stderr, "enum %s: %s {\n", name, type);
-	}
-	return 0;
-}
-
-int schema_enum_end (void)
-{
-	fprintf(stderr, "}\n");
-	return 0;
-}
-
-int schema_enum_entry_add (const char *name, const char *value)
-{
-	if (value == NULL) {
-		fprintf(stderr, "    %s,\n", name);
-	} else {
-		fprintf(stderr, "    %s = %s,\n", name, value);
-	}
-	return 0;
-}
-
-int schema_table_begin (const char *name)
-{
-	fprintf(stderr, "table %s {\n", name);
-	return 0;
-}
-
-int schema_table_end (void)
-{
-	fprintf(stderr, "}\n");
-	return 0;
-}
-
-int schema_table_field_add (const char *name, const char *type)
-{
-	fprintf(stderr, "    %s: %s,\n", name, type);
 	return 0;
 }
 

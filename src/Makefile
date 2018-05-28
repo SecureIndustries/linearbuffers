@@ -7,6 +7,7 @@ linearbuffers-compiler_files-y = \
 	schema.lex.h \
 	schema.tab.c \
 	schema.tab.h \
+	schema.c \
 	main.c
 
 linearbuffers-compiler_schema.lex.c_cflags-y = \

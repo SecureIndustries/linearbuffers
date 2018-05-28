@@ -1,6 +1,14 @@
 %{
 #include <stdio.h>
+
 #include "schema.h"
+
+static struct schema *schema;
+static struct schema_enum *schema_enum;
+static struct schema_enum_field *schema_enum_field;
+static struct schema_table *schema_table;
+static struct schema_table_field *schema_table_field;
+
 %}
 
 // Symbols.
@@ -27,12 +35,16 @@
 
 Schema:
 	/* empty */
-	| Namespace Enums Tables                         { schema_begin(); }
+	| Namespace Enums Tables                         {
+	                                                     schema = schema_create();
+	                                                 }
 	;
 
 Namespace:
 	/* empty */
-	| NAMESPACE STRING                               { schema_set_namespace($2); }
+	| NAMESPACE STRING                               {
+	                                                     schema_set_namespace($2);
+	                                                 }
 	;
 
 Enums:
@@ -41,15 +53,26 @@ Enums:
 	;
 
 Enum:
-	ENUM STRING BLOCK                                { schema_enum_begin($2, NULL); }
+	ENUM STRING BLOCK                                {
+	                                                     schema_enum = schema_enum_create();
+	                                                     schema_enum_set_name(schema_enum, $2);
+	                                                 }
 		EnumEntries
-	ENDBLOCK                                         { schema_enum_end(); }
+	ENDBLOCK                                         {
+	                                                     schema_add_enum(schema, schema_enum);
+	                                                 }
 	
 	|
 	
-	ENUM STRING COLON STRING BLOCK                   { schema_enum_begin($2, $4); }
+	ENUM STRING COLON STRING BLOCK                   {
+	                                                     schema_enum = schema_enum_create();
+	                                                     schema_enum_set_name(schema_enum, $2);
+	                                                     schema_enum_set_type(schema_enum, $4);
+	                                                 }
 		EnumEntries
-	ENDBLOCK                                         { schema_enum_end(); }
+	ENDBLOCK                                         {
+	                                                     schema_add_enum(schema, schema_enum);
+	                                                 }
 	
 	;
 
@@ -60,8 +83,20 @@ EnumEntries:
 	;
 
 EnumEntry:
-	  STRING                                         { schema_enum_entry_add($1, NULL); }
-	| STRING EQUAL STRING                            { schema_enum_entry_add($1, $3); }
+	  STRING                                         {
+	                                                     schema_enum_field = schema_enum_field_create();
+	                                                     schema_enum_field_set_name(schema_enum_field, $1);
+	                                                     schema_enum_add_field(schema_enum, schema_enum_field);
+	                                                 }
+	
+	|
+	
+	STRING EQUAL STRING                              {
+	                                                     schema_enum_field = schema_enum_field_create();
+	                                                     schema_enum_field_set_name(schema_enum_field, $1);
+	                                                     schema_enum_field_set_value(schema_enum_field, $3);
+	                                                     schema_enum_add_field(schema_enum, schema_enum_field);
+	                                                 }
 	;
 
 Tables:
@@ -70,9 +105,14 @@ Tables:
 	;
 
 Table:
-	TABLE STRING BLOCK                               { schema_table_begin($2); }
+	TABLE STRING BLOCK                               {
+	                                                     schema_table = schema_table_create();
+	                                                     schema_table_set_name(schema_table, $2);
+	                                                 }
 		TableFields
-	ENDBLOCK                                         { schema_table_end(); }
+	ENDBLOCK                                         {
+	                                                     schema_add_table(schema, schema_table);
+	                                                 }
 	;
 
 TableFields:
@@ -81,8 +121,20 @@ TableFields:
 	;
 
 TableField:
-	  STRING COLON STRING SEMICOLON                  { schema_table_field_add($1, $3); }
-	| STRING COLON VECTOR STRING ENDVECTOR SEMICOLON { schema_table_field_add($1, $4); }
+	  STRING COLON STRING SEMICOLON                  {
+	                                                     schema_table_field = schema_table_field_create();
+	                                                     schema_table_field_set_name(schema_table_field, $1);
+	                                                     schema_table_field_set_type(schema_table_field, $3);
+	                                                     schema_table_add_field(schema_table, schema_table_field);
+	                                                 }
+	|
+	
+	STRING COLON VECTOR STRING ENDVECTOR SEMICOLON   {
+	                                                     schema_table_field = schema_table_field_create();
+	                                                     schema_table_field_set_name(schema_table_field, $1);
+	                                                     schema_table_field_set_type(schema_table_field, $4);
+	                                                     schema_table_add_field(schema_table, schema_table_field);
+	                                                 }
 	;
 %%
 
