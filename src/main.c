@@ -5,6 +5,8 @@
 #include <getopt.h>
 
 #include "queue.h"
+#include "schema.h"
+
 #include "schema.lex.h"
 
 #define OPTION_HELP		'h'
@@ -56,6 +58,10 @@ struct schema_table {
 	char *name;
 	struct schema_table_fields fields;
 	struct schema_attributes attributes;
+};
+
+struct schema {
+	struct schema_tables tables;
 };
 
 static struct option options[] = {
@@ -129,6 +135,66 @@ bail:	if (fp) {
 	return 0;
 }
 
+int schema_begin (void)
+{
+	return 0;
+}
+
+int schema_end (void)
+{
+	return 0;
+}
+
+int schema_set_namespace (const char *name)
+{
+	fprintf(stderr, "namespace %s\n", name);
+	return 0;
+}
+
+int schema_enum_begin (const char *name, const char *type)
+{
+	if (type == NULL) {
+		fprintf(stderr, "enum %s {\n", name);
+	} else {
+		fprintf(stderr, "enum %s: %s {\n", name, type);
+	}
+	return 0;
+}
+
+int schema_enum_end (void)
+{
+	fprintf(stderr, "}\n");
+	return 0;
+}
+
+int schema_enum_entry_add (const char *name, const char *value)
+{
+	if (value == NULL) {
+		fprintf(stderr, "    %s,\n", name);
+	} else {
+		fprintf(stderr, "    %s = %s,\n", name, value);
+	}
+	return 0;
+}
+
+int schema_table_begin (const char *name)
+{
+	fprintf(stderr, "table %s {\n", name);
+	return 0;
+}
+
+int schema_table_end (void)
+{
+	fprintf(stderr, "}\n");
+	return 0;
+}
+
+int schema_table_field_add (const char *name, const char *type)
+{
+	fprintf(stderr, "    %s: %s,\n", name, type);
+	return 0;
+}
+
 static int schema_parse_file (const char *filename)
 {
 	char *buffer;
@@ -199,13 +265,6 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "nothing to generate\n");
 		goto bail;
 	}
-
-	fprintf(stdout, "/*");
-	fprintf(stdout, " * linearbuffers-compiler:\n");
-	fprintf(stdout, " *   schema : %s\n", option_schema);
-	fprintf(stdout, " *   encoder: %s\n", option_encoder);
-	fprintf(stdout, " *   decoder: %s\n", option_decoder);
-	fprintf(stdout, " */\n");
 
 	rc = schema_parse_file(option_schema);
 	if (rc != 0) {

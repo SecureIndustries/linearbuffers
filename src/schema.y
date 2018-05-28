@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include "schema.h"
 %}
 
 // Symbols.
@@ -8,6 +9,7 @@
 	char	*sval;
 };
 %token <sval> STRING
+%token NAMESPACE
 %token ENUM
 %token TABLE
 %token BLOCK
@@ -25,7 +27,12 @@
 
 Schema:
 	/* empty */
-	| Enums Tables
+	| Namespace Enums Tables                         { schema_begin(); }
+	;
+
+Namespace:
+	/* empty */
+	| NAMESPACE STRING                               { schema_set_namespace($2); }
 	;
 
 Enums:
@@ -34,15 +41,15 @@ Enums:
 	;
 
 Enum:
-	ENUM STRING BLOCK                                { printf("enum %s {\n", $2); }
+	ENUM STRING BLOCK                                { schema_enum_begin($2, NULL); }
 		EnumEntries
-	ENDBLOCK                                         { printf("}\n"); }
+	ENDBLOCK                                         { schema_enum_end(); }
 	
 	|
 	
-	ENUM STRING COLON STRING BLOCK                   { printf("enum %s: %s {\n", $2, $4); }
+	ENUM STRING COLON STRING BLOCK                   { schema_enum_begin($2, $4); }
 		EnumEntries
-	ENDBLOCK                                         { printf("}\n"); }
+	ENDBLOCK                                         { schema_enum_end(); }
 	
 	;
 
@@ -53,8 +60,8 @@ EnumEntries:
 	;
 
 EnumEntry:
-	  STRING                                         { printf("\t%s,\n", $1); }
-	| STRING EQUAL STRING                            { printf("\t%s = %s,\n", $1, $3); }
+	  STRING                                         { schema_enum_entry_add($1, NULL); }
+	| STRING EQUAL STRING                            { schema_enum_entry_add($1, $3); }
 	;
 
 Tables:
@@ -63,9 +70,9 @@ Tables:
 	;
 
 Table:
-	TABLE STRING BLOCK                               { printf("table %s {\n", $2); }
+	TABLE STRING BLOCK                               { schema_table_begin($2); }
 		TableFields
-	ENDBLOCK                                         { printf("}\n"); }
+	ENDBLOCK                                         { schema_table_end(); }
 	;
 
 TableFields:
@@ -74,8 +81,8 @@ TableFields:
 	;
 
 TableField:
-	  STRING COLON STRING SEMICOLON                  { printf("\t%s: %s;\n", $1, $3); }
-	| STRING COLON VECTOR STRING ENDVECTOR SEMICOLON { printf("\t%s: [ %s ];\n", $1, $4); }
+	  STRING COLON STRING SEMICOLON                  { schema_table_field_add($1, $3); }
+	| STRING COLON VECTOR STRING ENDVECTOR SEMICOLON { schema_table_field_add($1, $4); }
 	;
 %%
 

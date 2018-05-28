@@ -3,13 +3,14 @@
 %}
 
 blanks          [ \t\n]+
-string			[_a-zA-Z0-9]+
+string			[_.a-zA-Z0-9]+
 type			[_a-zA-Z0-9]+
 
 %%
 
 {blanks}        { /* ignore */ }
 
+"namespace"		return(NAMESPACE);
 "enum"			return(ENUM);
 "table"			return(TABLE);
 "{"				return(BLOCK);
