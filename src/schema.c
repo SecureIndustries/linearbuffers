@@ -1121,6 +1121,7 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		} else {
 			fprintf(fp, "typedef %s_t %s%s_enum_t;\n", "uint32", schema->namespace_, anum->name);
 		}
+
 		TAILQ_FOREACH(anum_field, &anum->fields, list) {
 			if (anum_field->value != NULL) {
 				fprintf(fp, "#define %s%s_%s ((%s%s_enum_t) %s_C(%s))\n", schema->namespace_, anum->name, anum_field->name, schema->namespace_, anum->name, anum->TYPE, anum_field->value);
@@ -1128,6 +1129,30 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 				fprintf(fp, "#define %s%s_%s\n", schema->namespace_, anum->name, anum_field->name);
 			}
 		}
+
+		fprintf(fp, "\n");
+		fprintf(fp, "static inline const char * %s%s_string (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+		fprintf(fp, "{\n");
+		fprintf(fp, "    switch (value) {\n");
+		TAILQ_FOREACH(anum_field, &anum->fields, list) {
+			fprintf(fp, "        case %s%s_%s:\n", schema->namespace_, anum->name, anum_field->name);
+			fprintf(fp, "            return \"%s\";\n", anum_field->name);
+		}
+		fprintf(fp, "    }\n");
+		fprintf(fp, "    return \"%s\";\n", "");
+		fprintf(fp, "}\n");
+
+		fprintf(fp, "\n");
+		fprintf(fp, "static inline const char * %s%s_is_valid (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+		fprintf(fp, "{\n");
+		fprintf(fp, "    switch (value) {\n");
+		TAILQ_FOREACH(anum_field, &anum->fields, list) {
+			fprintf(fp, "        case %s%s_%s:\n", schema->namespace_, anum->name, anum_field->name);
+			fprintf(fp, "            return 1;\n");
+		}
+		fprintf(fp, "    }\n");
+		fprintf(fp, "    return 0;\n");
+		fprintf(fp, "}\n");
 	}
 
 	if (fp != stdout &&
