@@ -38,7 +38,7 @@ struct schema_table_field {
 	TAILQ_ENTRY(schema_table_field) list;
 	char *name;
 	char *type;
-	int array;
+	int vector;
 	struct schema_attributes attributes;
 };
 
@@ -51,7 +51,7 @@ struct schema_table {
 };
 
 struct schema {
-	char *name;
+	char *namespace;
 	struct schema_enums enums;
 	struct schema_tables tables;
 	struct schema_attributes attributes;
@@ -271,6 +271,17 @@ bail:	if (anum != NULL) {
 	return NULL;
 }
 
+int schema_table_field_set_vector (struct schema_table_field *field, int vector)
+{
+	if (field == NULL) {
+		fprintf(stderr, "field is invalid\n");
+		goto bail;
+	}
+	field->vector = !!vector;
+	return 0;
+bail:	return -1;
+}
+
 int schema_table_field_set_type (struct schema_table_field *field, const char *type)
 {
 	if (field == NULL) {
@@ -441,13 +452,13 @@ int schema_set_namespace (struct schema *schema, const char *name)
 		fprintf(stderr, "schema is invalid\n");
 		goto bail;
 	}
-	if (schema->name != NULL) {
-		free(schema->name);
-		schema->name = NULL;
+	if (schema->namespace != NULL) {
+		free(schema->namespace);
+		schema->namespace = NULL;
 	}
 	if (name != NULL) {
-		schema->name = strdup(name);
-		if (schema->name == NULL) {
+		schema->namespace = strdup(name);
+		if (schema->namespace == NULL) {
 			fprintf(stderr, "can not allocate memory\n");
 			goto bail;
 		}
@@ -505,8 +516,8 @@ void schema_destroy (struct schema *schema)
 	if (schema == NULL) {
 		return;
 	}
-	if (schema->name != NULL) {
-		free(schema->name);
+	if (schema->namespace != NULL) {
+		free(schema->namespace);
 	}
 	TAILQ_FOREACH_SAFE(anum, &schema->enums, list, nanum) {
 		TAILQ_REMOVE(&schema->enums, anum, list);
@@ -598,6 +609,7 @@ int yyparse (struct schema_parser *schema_parser);
 
 struct schema * schema_parse_file (const char *filename)
 {
+	int rc;
 	char *buffer;
 	size_t buffer_length;
 
@@ -622,9 +634,13 @@ struct schema * schema_parse_file (const char *filename)
 
 	YY_BUFFER_STATE bs = yy_scan_bytes(buffer, buffer_length);
 	yy_switch_to_buffer(bs);
-	yyparse(&schema_parser);
+	rc = yyparse(&schema_parser);
 	yy_delete_buffer(bs);
 
+	if (rc != 0) {
+		fprintf(stderr, "can not parse file: %s\n", filename);
+		goto bail;
+	}
 	schema = schema_parser.schema;
 
 	free(buffer);
@@ -636,4 +652,100 @@ bail:	if (buffer != NULL) {
 		schema_destroy(schema);
 	}
 	return NULL;
+}
+
+static int schema_dump_table_field (FILE *fp, struct schema_table_field *field)
+{
+	if (field->vector == 0)  {
+		fprintf(fp, "  %s: %s", field->name, field->type);
+	} else {
+		fprintf(fp, "  %s: [ %s ]", field->name, field->type);
+	}
+	return 0;
+}
+
+static int schema_dump_table (FILE *fp, struct schema_table *table)
+{
+	struct schema_table_field *field;
+	fprintf(fp, "\n");
+	fprintf(fp, "table %s {\n", table->name);
+	TAILQ_FOREACH(field, &table->fields, list) {
+		schema_dump_table_field(fp, field);
+		fprintf(fp, ";\n");
+	}
+	fprintf(fp, "}\n");
+	return 0;
+}
+
+static int schema_dump_enum_field (FILE *fp, struct schema_enum_field *field)
+{
+	if (field->value != NULL) {
+		fprintf(fp, "  %s = %s", field->name, field->value);
+	} else {
+		fprintf(fp, "  %s", field->name);
+	}
+	return 0;
+}
+
+static int schema_dump_enum (FILE *fp, struct schema_enum *anum)
+{
+	struct schema_enum_field *field;
+	fprintf(fp, "\n");
+	fprintf(fp, "enum %s {\n", anum->name);
+	TAILQ_FOREACH(field, &anum->fields, list) {
+		schema_dump_enum_field(fp, field);
+		if (field->list.tqe_next != NULL) {
+			fprintf(fp, ",\n");
+		} else {
+			fprintf(fp, "\n");
+		}
+	}
+	fprintf(fp, "}\n");
+	return 0;
+}
+
+int schema_dump (struct schema *schema, const char *filename)
+{
+	FILE *fp;
+	struct schema_enum *anum;
+	struct schema_table *table;
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (filename == NULL) {
+		fprintf(stderr, "filename is invalid\n");
+		goto bail;
+	}
+	if (strcmp(filename, "stdout") == 0) {
+		fp = stdout;
+	} else if (strcmp(filename, "stderr") == 0) {
+		fp = stderr;
+	} else {
+		fp = fopen(filename, "w");
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "can not dump to file: %s\n", filename);
+		goto bail;
+	}
+	if (schema->namespace != NULL) {
+		fprintf(fp, "\n");
+		fprintf(fp, "namescpace %s\n", schema->namespace);
+	}
+	TAILQ_FOREACH(anum, &schema->enums, list) {
+		schema_dump_enum(fp, anum);
+	}
+	TAILQ_FOREACH(table, &schema->tables, list) {
+		schema_dump_table(fp, table);
+	}
+	if (fp != stdout &&
+	    fp != stderr) {
+		fclose(fp);
+	}
+	return 0;
+bail:	if (fp != stdout &&
+	    fp != stderr) {
+		fclose(fp);
+	}
+	return -1;
 }

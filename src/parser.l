@@ -8,6 +8,7 @@
 
 blanks          [ \t\n]+
 string			[_.a-zA-Z0-9]+
+type			[_a-zA-Z0-9]+
 
 %%
 
@@ -26,6 +27,6 @@ string			[_.a-zA-Z0-9]+
 "]"				return(ENDVECTOR);
 
 {string}		{
-					yylval.sval = yytext;//strdup(yytext);
+					yylval.sval = strdup(yytext);
 					return(STRING);
 				}

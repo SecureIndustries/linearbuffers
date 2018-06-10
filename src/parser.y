@@ -88,8 +88,7 @@ Enum:
 	;
 
 EnumEntries:
-	/* empty */
-	|	EnumEntry
+		EnumEntry
 	|	EnumEntries COMMA EnumEntry
 	;
 
@@ -144,6 +143,7 @@ TableField:
 															schema_parser->schema_table_field = schema_table_field_create();
 															schema_table_field_set_name(schema_parser->schema_table_field, $1);
 															schema_table_field_set_type(schema_parser->schema_table_field, $4);
+															schema_table_field_set_vector(schema_parser->schema_table_field, 1);
 															schema_table_add_field(schema_parser->schema_table, schema_parser->schema_table_field);
 														}
 	;

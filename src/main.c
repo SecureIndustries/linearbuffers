@@ -48,6 +48,7 @@ int main (int argc, char *argv[])
 	const char *option_encoder;
 	const char *option_decoder;
 
+	int rc;
 	struct schema *schema;
 
 	option_schema  = DEFAULT_SCHEMA;
@@ -94,6 +95,14 @@ int main (int argc, char *argv[])
 	if (schema == NULL) {
 		fprintf(stderr, "can not read schema file: %s\n", option_schema);
 		goto bail;
+	}
+
+	if (option_pretty != NULL) {
+		rc = schema_dump(schema, option_pretty);
+		if (rc != 0) {
+			fprintf(stderr, "can not dump schema file: %s\n", option_schema);
+			goto bail;
+		}
 	}
 
 	schema_destroy(schema);
