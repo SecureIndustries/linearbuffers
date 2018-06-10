@@ -35,3 +35,5 @@ int schema_add_enum (struct schema *schema, struct schema_enum *anum);
 int schema_add_table (struct schema *schema, struct schema_table *table);
 void schema_destroy (struct schema *schema);
 struct schema * schema_create (void);
+
+struct schema * schema_parse_file (const char *filename);

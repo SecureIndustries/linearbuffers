@@ -6,7 +6,7 @@ enum output_type {
 	type_3  = 3,
 	type_4,
 	type_5,
-	type_10 = 10,
+	type_10 = 10
 }
 
 table output_timeval {

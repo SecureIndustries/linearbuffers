@@ -1,10 +1,13 @@
+
 %{
+
+#include "parser.h"
 #include "parser.tab.h"
+
 %}
 
 blanks          [ \t\n]+
 string			[_.a-zA-Z0-9]+
-type			[_a-zA-Z0-9]+
 
 %%
 
@@ -23,6 +26,6 @@ type			[_a-zA-Z0-9]+
 "]"				return(ENDVECTOR);
 
 {string}		{
-				yylval.sval = strdup(yytext);
-				return(STRING);
-}
+					yylval.sval = yytext;//strdup(yytext);
+					return(STRING);
+				}
