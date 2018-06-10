@@ -1,4 +1,6 @@
 
+#include "05-encoder.h"
+
 int main (int argc, char *argv[])
 {
 	(void) argc;

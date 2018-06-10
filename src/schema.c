@@ -1082,6 +1082,9 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 	struct schema_enum *anum;
 	struct schema_enum_field *anum_field;
 
+	struct schema_table *table;
+	struct schema_table_field *table_field;
+
 	fp = NULL;
 
 	if (schema == NULL) {
@@ -1135,24 +1138,27 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		fprintf(fp, "{\n");
 		fprintf(fp, "    switch (value) {\n");
 		TAILQ_FOREACH(anum_field, &anum->fields, list) {
-			fprintf(fp, "        case %s%s_%s:\n", schema->namespace_, anum->name, anum_field->name);
-			fprintf(fp, "            return \"%s\";\n", anum_field->name);
+			fprintf(fp, "        case %s%s_%s: return \"%s\";\n", schema->namespace_, anum->name, anum_field->name, anum_field->name);
 		}
 		fprintf(fp, "    }\n");
 		fprintf(fp, "    return \"%s\";\n", "");
 		fprintf(fp, "}\n");
 
 		fprintf(fp, "\n");
-		fprintf(fp, "static inline const char * %s%s_is_valid (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+		fprintf(fp, "static inline int %s%s_is_valid (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    switch (value) {\n");
 		TAILQ_FOREACH(anum_field, &anum->fields, list) {
-			fprintf(fp, "        case %s%s_%s:\n", schema->namespace_, anum->name, anum_field->name);
-			fprintf(fp, "            return 1;\n");
+			fprintf(fp, "        case %s%s_%s: return 1;\n", schema->namespace_, anum->name, anum_field->name);
 		}
 		fprintf(fp, "    }\n");
 		fprintf(fp, "    return 0;\n");
 		fprintf(fp, "}\n");
+	}
+
+	TAILQ_FOREACH(table, &schema->tables, list) {
+		TAILQ_FOREACH(table_field, &table->fields, list) {
+		}
 	}
 
 	if (fp != stdout &&
