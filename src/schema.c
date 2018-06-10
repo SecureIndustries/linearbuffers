@@ -657,9 +657,9 @@ bail:	if (buffer != NULL) {
 static int schema_dump_table_field (FILE *fp, struct schema_table_field *field)
 {
 	if (field->vector == 0)  {
-		fprintf(fp, "  %s: %s", field->name, field->type);
+		fprintf(fp, "\t%s: %s", field->name, field->type);
 	} else {
-		fprintf(fp, "  %s: [ %s ]", field->name, field->type);
+		fprintf(fp, "\t%s: [ %s ]", field->name, field->type);
 	}
 	return 0;
 }
@@ -680,9 +680,9 @@ static int schema_dump_table (FILE *fp, struct schema_table *table)
 static int schema_dump_enum_field (FILE *fp, struct schema_enum_field *field)
 {
 	if (field->value != NULL) {
-		fprintf(fp, "  %s = %s", field->name, field->value);
+		fprintf(fp, "\t%s = %s", field->name, field->value);
 	} else {
-		fprintf(fp, "  %s", field->name);
+		fprintf(fp, "\t%s", field->name);
 	}
 	return 0;
 }
