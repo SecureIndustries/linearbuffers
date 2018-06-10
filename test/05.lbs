@@ -2,7 +2,7 @@
 namespace a.b.c
 
 enum output_type {
-	unknown = 0,
+	unknown,
 	type_3  = 3,
 	type_4,
 	type_5,

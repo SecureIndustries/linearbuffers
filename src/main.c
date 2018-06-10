@@ -98,7 +98,14 @@ int main (int argc, char *argv[])
 	}
 
 	if (option_pretty != NULL) {
-		rc = schema_dump(schema, option_pretty);
+		rc = schema_generate_pretty(schema, option_pretty);
+		if (rc != 0) {
+			fprintf(stderr, "can not dump schema file: %s\n", option_schema);
+			goto bail;
+		}
+	}
+	if (option_encoder != NULL) {
+		rc = schema_generate_encoder(schema, option_encoder);
 		if (rc != 0) {
 			fprintf(stderr, "can not dump schema file: %s\n", option_schema);
 			goto bail;

@@ -38,4 +38,6 @@ void schema_destroy (struct schema *schema);
 struct schema * schema_create (void);
 
 struct schema * schema_parse_file (const char *filename);
-int schema_dump (struct schema *schema, const char *filename);
+int schema_generate_pretty (struct schema *schema, const char *filename);
+int schema_generate_encoder (struct schema *schema, const char *filename);
+int schema_generate_decoder (struct schema *schema, const char *filename);
