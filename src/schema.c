@@ -1450,10 +1450,10 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		if (table_field->vector) {
 			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline int %sset_%s (struct linearbuffers_encoder *encoder, %s_t *value_%s, uint64_t value_%s_length)\n", string_linearize(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
+				fprintf(fp, "static inline int %sset_%s (struct linearbuffers_encoder *encoder, %s_t *value_%s, uint64_t value_%s_count)\n", string_linearize(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), value_%s, value_%s_length);\n", table_field->type, table_field_i, table_field->name, table_field->name);
+				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), value_%s, value_%s_count);\n", table_field->type, table_field_i, table_field->name, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table_field->name);
@@ -1481,11 +1481,11 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set_%s (struct linearbuffers_encoder *encoder, %s%s_enum_t *value_%s, uint64_t length)\n", string_linearize(namespace), table->name, table_field->name, string_linearize(namespace), table_field->type, table_field->name);
+				fprintf(fp, "static inline int %s%s_set_%s (struct linearbuffers_encoder *encoder, %s%s_enum_t *value_%s, uint64_t count)\n", string_linearize(namespace), table->name, table_field->name, string_linearize(namespace), table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    (void) encoder;\n");
 				fprintf(fp, "    (void) value_%s;\n", table_field->name);
-				fprintf(fp, "    (void) length;\n");
+				fprintf(fp, "    (void) count;\n");
 				fprintf(fp, "    return 0;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s%s_%s_start (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table->name, table_field->name);
