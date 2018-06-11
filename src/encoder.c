@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "queue.h"
 #include "encoder.h"
@@ -40,18 +41,15 @@ enum entry_type {
 
 struct entry_scalar {
 	enum entry_scalar_type type;
-	uint64_t length;
 };
 
 struct entry_table {
 	uint64_t elements;
-	uint64_t length;
 };
 
 struct entry_vector {
 	enum entry_vector_type type;
 	uint64_t count;
-	uint64_t length;
 };
 
 TAILQ_HEAD(entries, entry);
@@ -64,6 +62,8 @@ struct entry {
 		struct entry_table table;
 		struct entry_vector vector;
 	} u;
+	uint64_t length;
+	uint64_t offset;
 	struct entries childs;
 	struct entry *parent;
 };
@@ -71,7 +71,22 @@ struct entry {
 struct linearbuffers_encoder {
 	struct entry *root;
 	struct entries stack;
+	struct {
+		int (*function) (void *context, uint64_t offset, void *buffer, uint64_t length);
+		void *context;
+		uint64_t offset;
+	} emitter;
 };
+
+static int encoder_default_emitter (void *context, uint64_t offset, void *buffer, uint64_t length)
+{
+	(void) context;
+	(void) offset;
+	(void) buffer;
+	(void) length;
+	fprintf(stderr, "emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "\n", offset, buffer, length);
+	return 0;
+}
 
 static const char * entry_type_string (enum entry_type type)
 {
@@ -131,13 +146,13 @@ static void entry_dump (struct entry *entry, int prefix)
 	pfx = malloc(prefix + 1 + 4);
 	memset(pfx, ' ', prefix);
 	pfx[prefix] = '\0';
-	fprintf(stderr, "%s%s", pfx, entry_type_string(entry->type));
+	fprintf(stderr, "%08lu %s%s", entry->offset, pfx, entry_type_string(entry->type));
 	if (entry->type == entry_type_scalar) {
-		fprintf(stderr, ", type: %s, length: %lu", entry_scalar_type_string(entry->u.scalar.type), entry->u.scalar.length);
+		fprintf(stderr, ", type: %s, length: %lu", entry_scalar_type_string(entry->u.scalar.type), entry->length);
 	} else if (entry->type == entry_type_table) {
-		fprintf(stderr, ", elements: %lu, length: %lu", entry->u.table.elements, entry->u.table.length);;
+		fprintf(stderr, ", elements: %lu, length: %lu", entry->u.table.elements, entry->length);;
 	} else if (entry->type == entry_type_vector) {
-		fprintf(stderr, ", type: %s, count: %lu, length: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.count, entry->u.vector.length);;
+		fprintf(stderr, ", type: %s, count: %lu, length: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.count, entry->length);;
 	}
 	fprintf(stderr, "\n");
 	TAILQ_FOREACH(child, &entry->childs, child) {
@@ -173,6 +188,7 @@ static struct entry * entry_table_create (struct entry *parent, uint64_t element
 	entry->type = entry_type_table;
 	entry->parent = parent;
 	entry->u.table.elements = elements;
+	entry->length += sizeof(uint64_t) * elements;
 	return entry;
 bail:	if (entry != NULL) {
 		entry_destroy(entry);
@@ -194,7 +210,7 @@ bail:	if (entry != NULL) {
 		entry->type = entry_type_scalar; \
 		entry->parent = parent; \
 		entry->u.scalar.type = entry_scalar_type_ ## __type__; \
-		entry->u.scalar.length = sizeof(__type__ ## _t); \
+		entry->length += sizeof(__type__ ## _t); \
 		(void) value; \
 		return entry; \
 	bail:	if (entry != NULL) { \
@@ -228,7 +244,8 @@ entry_scalar_type_create(uint64);
 		entry->parent = parent; \
 		entry->u.vector.type = entry_vector_type_ ## __type__; \
 		entry->u.vector.count = count; \
-		entry->u.vector.length = count * sizeof(__type__ ## _t); \
+		entry->length += sizeof(uint64_t); \
+		entry->length += count * sizeof(__type__ ## _t); \
 		(void) value; \
 		return entry; \
 	bail:	if (entry != NULL) { \
@@ -259,6 +276,8 @@ static struct entry * entry_vector_create (struct entry *parent)
 	TAILQ_INIT(&entry->childs);
 	entry->type = entry_type_vector;
 	entry->parent = parent;
+	entry->u.vector.type = entry_vector_type_table;
+	entry->length += sizeof(uint64_t);
 	return entry;
 bail:	if (entry != NULL) {
 		entry_destroy(entry);
@@ -278,6 +297,14 @@ struct linearbuffers_encoder * linearbuffers_encoder_create (struct linearbuffer
 	}
 	memset(encoder, 0, sizeof(struct linearbuffers_encoder));
 	TAILQ_INIT(&encoder->stack);
+	encoder->emitter.function = encoder_default_emitter;
+	encoder->emitter.context = encoder;
+	if (options != NULL) {
+		if (options->emitter.function != NULL) {
+			encoder->emitter.function = options->emitter.function;
+			encoder->emitter.context = options->emitter.context;
+		}
+	}
 	return encoder;
 bail:	if (encoder != NULL) {
 		linearbuffers_encoder_destroy(encoder);
@@ -359,6 +386,12 @@ int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, ui
 	} else {
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child);
 	}
+	entry->offset = encoder->emitter.offset;
+	if (parent != NULL) {
+		encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint64_t) * element), &entry->offset, sizeof(uint64_t)); \
+	}
+	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, entry->length); \
+	encoder->emitter.offset += entry->length;
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
 bail:	return -1;
@@ -395,7 +428,11 @@ bail:	return -1;
 			fprintf(stderr, "can not create entry scalar\n"); \
 			goto bail; \
 		} \
-		parent->u.table.length += entry->u.scalar.length; \
+		parent->length += entry->length; \
+		entry->offset = encoder->emitter.offset; \
+		encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint64_t) * element), &entry->offset, sizeof(uint64_t)); \
+		encoder->emitter.function(encoder->emitter.context, entry->offset, &value, entry->length); \
+		encoder->emitter.offset += entry->length; \
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child); \
 		return 0; \
 	bail:	return -1; \
@@ -442,7 +479,11 @@ linearbuffers_encoder_table_set_type(uint64);
 			fprintf(stderr, "can not create entry vector\n"); \
 			goto bail; \
 		} \
-		parent->u.table.length += entry->u.vector.length; \
+		parent->length += entry->length; \
+		entry->offset = encoder->emitter.offset; \
+		encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint64_t) * element), &entry->offset, sizeof(uint64_t)); \
+		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->length); \
+		encoder->emitter.offset += entry->length; \
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child); \
 		return 0; \
 	bail:	return -1; \
@@ -475,10 +516,8 @@ int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 		goto bail;
 	}
 	if (entry->parent != NULL) {
-		if (entry->parent->type == entry_type_table) {
-			entry->parent->u.table.length += entry->u.table.length;
-		} else if (entry->parent->type == entry_type_vector) {
-			entry->parent->u.vector.length += entry->u.table.length;
+		entry->parent->length += entry->length;
+		if (entry->parent->type == entry_type_vector) {
 			entry->parent->u.vector.count += 1;
 		}
 	}
@@ -521,6 +560,7 @@ int linearbuffers_encoder_vector_start (struct linearbuffers_encoder *encoder, u
 		fprintf(stderr, "can not create entry vector\n");
 		goto bail;
 	}
+	entry->offset = encoder->emitter.offset;
 	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
@@ -544,10 +584,8 @@ int linearbuffers_encoder_vector_end (struct linearbuffers_encoder *encoder)
 		goto bail;
 	}
 	if (entry->parent != NULL) {
-		if (entry->parent->type == entry_type_table) {
-			entry->parent->u.table.length += entry->u.vector.length;
-		} else if (entry->parent->type == entry_type_vector) {
-			entry->parent->u.vector.length += entry->u.vector.length;
+		entry->length += entry->length;
+		if (entry->parent->type == entry_type_vector) {
 			entry->parent->u.vector.count += 1;
 		}
 	}

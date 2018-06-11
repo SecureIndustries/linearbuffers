@@ -5,7 +5,10 @@
 struct linearbuffers_encoder;
 
 struct linearbuffers_encoder_create_options {
-	int _unused;
+	struct {
+		int (*function) (void *context, uint64_t offset, void *buffer, uint64_t length);
+		void *context;
+	} emitter;
 };
 
 struct linearbuffers_encoder * linearbuffers_encoder_create (struct linearbuffers_encoder_create_options *options);
