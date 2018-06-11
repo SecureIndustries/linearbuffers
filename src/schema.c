@@ -1725,6 +1725,89 @@ bail:	if (fp != NULL &&
 	return -1;
 }
 
+static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, struct string *namespace, uint64_t element, FILE *fp)
+{
+	uint64_t table_field_i;
+	struct schema_table_field *table_field;
+
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (table == NULL) {
+		fprintf(stderr, "table is invalid\n");
+		goto bail;
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "fp is invalid\n");
+		goto bail;
+	}
+
+	(void) element;
+
+	if (element == UINT64_MAX) {
+		fprintf(fp, "static inline int %sdecode (struct linearbuffers_encoder *encoder)\n", string_linearized(namespace));
+		fprintf(fp, "{\n");
+		fprintf(fp, "    (void) encoder;\n");
+		fprintf(fp, "    return 0;\n");
+		fprintf(fp, "}\n");
+	}
+	table_field_i = 0;
+	TAILQ_FOREACH(table_field, &table->fields, list) {
+		if (table_field->vector) {
+			if (type_is_scalar(table_field->type)) {
+			} else if (type_is_enum(schema, table_field->type)) {
+			} else if (type_is_table(schema, table_field->type)) {
+				string_push(namespace, table_field->name);
+				string_push(namespace, "_");
+				string_push(namespace, table_field->type);
+				string_push(namespace, "_");
+				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, UINT64_MAX, fp);
+				string_pop(namespace);
+				string_pop(namespace);
+				string_pop(namespace);
+				string_pop(namespace);
+			} else {
+				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				goto bail;
+			}
+		} else {
+			if (type_is_scalar(table_field->type)) {
+				fprintf(fp, "static inline %s_t %sget_%s (struct linearbuffers_decoder *decoder)\n", table_field->type, string_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    %s_t value;\n", table_field->type);
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&value, decoder->buffer + offset, sizeof(value));\n");
+				fprintf(fp, "    return value;\n");
+				fprintf(fp, "}\n");
+			} else if (type_is_enum(schema, table_field->type)) {
+				fprintf(fp, "static inline %s%s_enum_t %sget_%s (struct linearbuffers_decoder *decoder)\n", schema->namespace_, table_field->type, string_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    %s%s_enum_t value;\n", schema->namespace_, table_field->type);
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&value, decoder->buffer + offset, sizeof(value));\n");
+				fprintf(fp, "    return value;\n");
+				fprintf(fp, "}\n");
+			} else if (type_is_table(schema, table_field->type)) {
+				string_push(namespace, table_field->name);
+				string_push(namespace, "_");
+				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, table_field_i, fp);
+				string_pop(namespace);
+				string_pop(namespace);
+			} else {
+				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				goto bail;
+			}
+		}
+		table_field_i += 1;
+	}
+
+	return 0;
+bail:	return -1;
+}
+
 int schema_generate_decoder (struct schema *schema, const char *filename)
 {
 	int rc;
@@ -1767,6 +1850,7 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 	fprintf(fp, "\n");
 	fprintf(fp, "#include <stddef.h>\n");
 	fprintf(fp, "#include <stdint.h>\n");
+	fprintf(fp, "#include <string.h>\n");
 	fprintf(fp, "#include <linearbuffers/decoder.h>\n");
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
@@ -1807,6 +1891,7 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 		string_push(namespace, schema->namespace_);
 		string_push(namespace, table->name);
 		string_push(namespace, "_");
+		schema_generate_decoder_table(schema, table, namespace, UINT64_MAX, fp);
 		string_destroy(namespace);
 
 		fprintf(fp, "\n");

@@ -11,6 +11,8 @@ int main (int argc, char *argv[])
 	uint64_t linearized_length;
 	struct linearbuffers_encoder *encoder;
 
+	struct linearbuffers_decoder decoder;
+
 	(void) argc;
 	(void) argv;
 
@@ -36,6 +38,20 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 	fprintf(stderr, "linearized: %p, length: %ld\n", linearized, linearized_length);
+
+	linearbuffers_decoder_init(&decoder, linearized, linearized_length);
+	if (linearbuffers_output_get_type(&decoder) != linearbuffers_type_type_3) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_get_length(&decoder) != 1) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_timeval_get_seconds(&decoder) != 2) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
 
 	linearbuffers_encoder_destroy(encoder);
 

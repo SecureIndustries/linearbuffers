@@ -3,13 +3,16 @@ target-y = \
 	linearbuffers-compiler
 
 target.o-y = \
-	liblinearbuffers-encoder.o
+	liblinearbuffers-encoder.o \
+	liblinearbuffers-decoder.o
 
 target.a-y = \
-	liblinearbuffers-encoder.a
+	liblinearbuffers-encoder.a \
+	liblinearbuffers-decoder.a
 
 target.so-y = \
-	liblinearbuffers-encoder.so
+	liblinearbuffers-encoder.so \
+	liblinearbuffers-decoder.so
 
 linearbuffers-compiler_files-y = \
 	parser.lex.c \
@@ -30,15 +33,21 @@ linearbuffers-compiler_ldflags-y = \
 	-lfl
 
 liblinearbuffers-encoder.o_files-y = \
-	encoder.c \
-	decoder.c
+	encoder.c
 
 liblinearbuffers-encoder.a_files-y = \
-	encoder.c \
-	decoder.c
+	encoder.c
 
 liblinearbuffers-encoder.so_files-y = \
-	encoder.c \
+	encoder.c
+
+liblinearbuffers-decoder.o_files-y = \
+	decoder.c
+
+liblinearbuffers-decoder.a_files-y = \
+	decoder.c
+
+liblinearbuffers-decoder.so_files-y = \
 	decoder.c
 
 dist.dir = ../dist
@@ -52,7 +61,10 @@ dist.include-y = \
 dist.lib-y = \
 	liblinearbuffers-encoder.o \
 	liblinearbuffers-encoder.a \
-	liblinearbuffers-encoder.so
+	liblinearbuffers-encoder.so \
+	liblinearbuffers-decoder.o \
+	liblinearbuffers-decoder.a \
+	liblinearbuffers-decoder.so
 
 include ../Makefile.lib
 

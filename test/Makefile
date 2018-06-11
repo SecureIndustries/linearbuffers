@@ -18,6 +18,7 @@ define test-defaults
     $1_ldflags-y = \
     	-Wl,-Bstatic \
         -llinearbuffers-encoder \
+        -llinearbuffers-decoder \
 		-Wl,-Bdynamic
 	$1_depends-y = \
 		../dist/lib/liblinearbuffers-encoder.a
@@ -35,3 +36,5 @@ include ../Makefile.lib
 
 clean:
 	${Q}${RM} ??-encoder.h
+	${Q}${RM} ??-decoder.h
+	${Q}${RM} ??.pretty
