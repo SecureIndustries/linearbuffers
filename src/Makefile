@@ -30,13 +30,16 @@ linearbuffers-compiler_ldflags-y = \
 	-lfl
 
 liblinearbuffers-encoder.o_files-y = \
-	encoder.c
+	encoder.c \
+	decoder.c
 
 liblinearbuffers-encoder.a_files-y = \
-	encoder.c
+	encoder.c \
+	decoder.c
 
 liblinearbuffers-encoder.so_files-y = \
-	encoder.c
+	encoder.c \
+	decoder.c
 
 dist.dir = ../dist
 dist.base = linearbuffers
@@ -44,7 +47,8 @@ dist.base = linearbuffers
 dist.bin-y = \
 	linearbuffers-compiler
 dist.include-y = \
-	encoder.h
+	encoder.h \
+	decoder.h
 dist.lib-y = \
 	liblinearbuffers-encoder.o \
 	liblinearbuffers-encoder.a \

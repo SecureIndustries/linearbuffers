@@ -1259,6 +1259,57 @@ static int schema_generate_encoder_enum (struct schema *schema, struct schema_en
 bail:	return -1;
 }
 
+static int schema_generate_decoder_enum (struct schema *schema, struct schema_enum *anum, FILE *fp)
+{
+	struct schema_enum_field *anum_field;
+
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (anum == NULL) {
+		fprintf(stderr, "enum is invalid\n");
+		goto bail;
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "fp is invalid\n");
+		goto bail;
+	}
+
+	fprintf(fp, "typedef %s %s%s_enum_t;\n", anum->type_t, schema->namespace_, anum->name);
+
+	TAILQ_FOREACH(anum_field, &anum->fields, list) {
+		if (anum_field->value != NULL) {
+			fprintf(fp, "#define %s%s_%s ((%s%s_enum_t) %s(%s))\n", schema->namespace_, anum->name, anum_field->name, schema->namespace_, anum->name, anum->TYPE_C, anum_field->value);
+		} else {
+			fprintf(fp, "#define %s%s_%s\n", schema->namespace_, anum->name, anum_field->name);
+		}
+	}
+
+	fprintf(fp, "\n");
+	fprintf(fp, "static inline const char * %s%s_string (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+	fprintf(fp, "{\n");
+	fprintf(fp, "    switch (value) {\n");
+	TAILQ_FOREACH(anum_field, &anum->fields, list) {
+		fprintf(fp, "        case %s%s_%s: return \"%s\";\n", schema->namespace_, anum->name, anum_field->name, anum_field->name);
+	}
+	fprintf(fp, "    }\n");
+	fprintf(fp, "    return \"%s\";\n", "");
+	fprintf(fp, "}\n");
+	fprintf(fp, "static inline int %s%s_is_valid (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+	fprintf(fp, "{\n");
+	fprintf(fp, "    switch (value) {\n");
+	TAILQ_FOREACH(anum_field, &anum->fields, list) {
+		fprintf(fp, "        case %s%s_%s: return 1;\n", schema->namespace_, anum->name, anum_field->name);
+	}
+	fprintf(fp, "    }\n");
+	fprintf(fp, "    return 0;\n");
+	fprintf(fp, "}\n");
+
+	return 0;
+bail:	return -1;
+}
+
 TAILQ_HEAD(string_elements, string_element);
 struct string_element {
 	TAILQ_ENTRY(string_element) list;
@@ -1615,13 +1666,24 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_ENUM_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_ENUM_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
 		TAILQ_FOREACH(anum, &schema->enums, list) {
 			schema_generate_encoder_enum(schema, anum, fp);
 		}
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
 	}
 
 	if (!TAILQ_EMPTY(&schema->tables)) {
 		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_ENCODER_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_ENCODER_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
 		TAILQ_FOREACH(table, &schema->tables, list) {
 			if (strcmp(schema->root, table->name) == 0) {
 				break;
@@ -1641,8 +1703,10 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		string_push(namespace, table->name);
 		string_push(namespace, "_");
 		schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, fp);
-
 		string_destroy(namespace);
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
 	}
 	if (fp != stdout &&
 	    fp != stderr) {
@@ -1662,6 +1726,16 @@ bail:	if (fp != NULL &&
 
 int schema_generate_decoder (struct schema *schema, const char *filename)
 {
+	int rc;
+	FILE *fp;
+
+	struct string *namespace;
+	struct schema_enum *anum;
+	struct schema_table *table;
+
+	fp = NULL;
+	namespace = NULL;
+
 	if (schema == NULL) {
 		fprintf(stderr, "schema is invalid\n");
 		goto bail;
@@ -1670,6 +1744,85 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 		fprintf(stderr, "filename is invalid\n");
 		goto bail;
 	}
+
+	rc = schema_build(schema);
+	if (rc != 0) {
+		fprintf(stderr, "can not build schema\n");
+		goto bail;
+	}
+
+	if (strcmp(filename, "stdout") == 0) {
+		fp = stdout;
+	} else if (strcmp(filename, "stderr") == 0) {
+		fp = stderr;
+	} else {
+		fp = fopen(filename, "w");
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "can not dump to file: %s\n", filename);
+		goto bail;
+	}
+
+	fprintf(fp, "\n");
+	fprintf(fp, "#include <stddef.h>\n");
+	fprintf(fp, "#include <stdint.h>\n");
+	fprintf(fp, "#include <linearbuffers/decoder.h>\n");
+
+	if (!TAILQ_EMPTY(&schema->enums)) {
+		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_ENUM_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_ENUM_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
+		TAILQ_FOREACH(anum, &schema->enums, list) {
+			schema_generate_decoder_enum(schema, anum, fp);
+		}
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
+	}
+
+	if (!TAILQ_EMPTY(&schema->tables)) {
+		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_DECODER_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_DECODER_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
+		TAILQ_FOREACH(table, &schema->tables, list) {
+			if (strcmp(schema->root, table->name) == 0) {
+				break;
+			}
+		}
+		if (table == NULL) {
+			fprintf(stderr, "schema root is invalid\n");
+			goto bail;
+		}
+
+		namespace = string_create();
+		if (namespace == NULL) {
+			fprintf(stderr, "can not create namespace\n");
+			goto bail;
+		}
+		string_push(namespace, schema->namespace_);
+		string_push(namespace, table->name);
+		string_push(namespace, "_");
+		string_destroy(namespace);
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
+	}
+	if (fp != stdout &&
+	    fp != stderr) {
+		fclose(fp);
+	}
 	return 0;
-bail:	return -1;
+bail:	if (fp != NULL &&
+	    fp != stdout &&
+	    fp != stderr) {
+		fclose(fp);
+	}
+	if (namespace != NULL) {
+		string_destroy(namespace);
+	}
+	return -1;
 }

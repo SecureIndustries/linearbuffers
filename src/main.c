@@ -111,6 +111,13 @@ int main (int argc, char *argv[])
 			goto bail;
 		}
 	}
+	if (option_decoder != NULL) {
+		rc = schema_generate_decoder(schema, option_decoder);
+		if (rc != 0) {
+			fprintf(stderr, "can not dump schema file: %s\n", option_schema);
+			goto bail;
+		}
+	}
 
 	schema_destroy(schema);
 

@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "05-encoder.h"
+#include "05-decoder.h"
 
 int main (int argc, char *argv[])
 {
