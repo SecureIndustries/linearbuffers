@@ -358,9 +358,6 @@ int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, ui
 		encoder->root = entry;
 	} else {
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-		if (parent->type == entry_type_vector) {
-			parent->u.vector.count += 1;
-		}
 	}
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
@@ -398,7 +395,7 @@ bail:	return -1;
 			fprintf(stderr, "can not create entry scalar\n"); \
 			goto bail; \
 		} \
-		parent->u.table.length += sizeof(__type__ ## _t); \
+		parent->u.table.length += entry->u.scalar.length; \
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child); \
 		return 0; \
 	bail:	return -1; \
@@ -482,6 +479,7 @@ int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 			entry->parent->u.table.length += entry->u.table.length;
 		} else if (entry->parent->type == entry_type_vector) {
 			entry->parent->u.vector.length += entry->u.table.length;
+			entry->parent->u.vector.count += 1;
 		}
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
@@ -544,6 +542,14 @@ int linearbuffers_encoder_vector_end (struct linearbuffers_encoder *encoder)
 	if (entry == NULL) {
 		fprintf(stderr, "logic error: entry is invalid\n");
 		goto bail;
+	}
+	if (entry->parent != NULL) {
+		if (entry->parent->type == entry_type_table) {
+			entry->parent->u.table.length += entry->u.vector.length;
+		} else if (entry->parent->type == entry_type_vector) {
+			entry->parent->u.vector.length += entry->u.vector.length;
+			entry->parent->u.vector.count += 1;
+		}
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	return 0;
