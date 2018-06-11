@@ -18,6 +18,18 @@ enum entry_scalar_type {
 	entry_scalar_type_uint64,
 };
 
+enum entry_vector_type {
+	entry_vector_type_table,
+	entry_vector_type_int8,
+	entry_vector_type_int16,
+	entry_vector_type_int32,
+	entry_vector_type_int64,
+	entry_vector_type_uint8,
+	entry_vector_type_uint16,
+	entry_vector_type_uint32,
+	entry_vector_type_uint64,
+};
+
 enum entry_type {
 	entry_type_unknown,
 	entry_type_scalar,
@@ -49,6 +61,44 @@ struct entry_enum {
 };
 
 struct entry_vector {
+	enum entry_vector_type type;
+	union {
+		struct {
+			int8_t *value;
+			uint64_t length;
+		} int8;
+		struct {
+			int16_t *value;
+			uint64_t length;
+		} int16;
+		struct {
+			int32_t *value;
+			uint64_t length;
+		} int32;
+		struct {
+			int64_t *value;
+			uint64_t length;
+		} int64;
+		struct {
+			uint8_t *value;
+			uint64_t length;
+		} uint8;
+		struct {
+			uint16_t *value;
+			uint64_t length;
+		} uint16;
+		struct {
+			uint32_t *value;
+			uint64_t length;
+		} uint32;
+		struct {
+			uint64_t *value;
+			uint64_t length;
+		} uint64;
+		struct {
+			uint64_t length;
+		} table;
+	} u;
 };
 
 TAILQ_HEAD(entries, entry);
@@ -101,6 +151,24 @@ static const char * entry_scalar_type_string (enum entry_scalar_type type)
 	return "unknown";
 }
 
+static const char * entry_vector_type_string (enum entry_vector_type type)
+{
+	switch (type) {
+		case entry_vector_type_int8: return "int8";
+		case entry_vector_type_int16: return "int16";
+		case entry_vector_type_int32: return "int32";
+		case entry_vector_type_int64: return "int64";
+		case entry_vector_type_uint8: return "uint8";
+		case entry_vector_type_uint16: return "uint16";
+		case entry_vector_type_uint32: return "uint32";
+		case entry_vector_type_uint64: return "uint64";
+		case entry_vector_type_table: return "table";
+		default:
+			break;
+	}
+	return "unknown";
+}
+
 static void entry_dump (struct entry *entry, int prefix)
 {
 	char *pfx;
@@ -130,6 +198,26 @@ static void entry_dump (struct entry *entry, int prefix)
 		} else if (entry->u.scalar.type == entry_scalar_type_int64) {
 			fprintf(stderr, ", %s: %ld", entry_scalar_type_string(entry->u.scalar.type), entry->u.scalar.u.int64);
 		}
+	} if (entry->type == entry_type_vector) {
+		if (entry->u.vector.type == entry_vector_type_uint8) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.uint8.length);
+		} else if (entry->u.vector.type == entry_vector_type_uint16) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.uint16.length);
+		} else if (entry->u.vector.type == entry_vector_type_uint32) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.uint32.length);
+		} else if (entry->u.vector.type == entry_vector_type_uint64) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.uint64.length);
+		} else if (entry->u.vector.type == entry_vector_type_int8) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.int8.length);
+		} else if (entry->u.vector.type == entry_vector_type_int16) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.int16.length);
+		} else if (entry->u.vector.type == entry_vector_type_int32) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.int32.length);
+		} else if (entry->u.vector.type == entry_vector_type_int64) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.int64.length);
+		} else if (entry->u.vector.type == entry_vector_type_table) {
+			fprintf(stderr, ", %s: %lu", entry_vector_type_string(entry->u.vector.type), entry->u.vector.u.table.length);
+		}
 	}
 	fprintf(stderr, "\n");
 	TAILQ_FOREACH(child, &entry->childs, child) {
@@ -148,6 +236,41 @@ static void entry_destroy (struct entry *entry)
 	if (entry->type == entry_type_table) {
 		if (entry->u.table.offsets != NULL) {
 			free(entry->u.table.offsets);
+		}
+	}
+	if (entry->type == entry_type_vector) {
+		if (entry->u.vector.type == entry_vector_type_uint8) {
+			if (entry->u.vector.u.uint8.value != NULL) {
+				free(entry->u.vector.u.uint8.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_uint16) {
+			if (entry->u.vector.u.uint16.value != NULL) {
+				free(entry->u.vector.u.uint16.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_uint32) {
+			if (entry->u.vector.u.uint32.value != NULL) {
+				free(entry->u.vector.u.uint32.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_uint64) {
+			if (entry->u.vector.u.uint64.value != NULL) {
+				free(entry->u.vector.u.uint64.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_int8) {
+			if (entry->u.vector.u.int8.value != NULL) {
+				free(entry->u.vector.u.int8.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_int16) {
+			if (entry->u.vector.u.int16.value != NULL) {
+				free(entry->u.vector.u.int16.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_int32) {
+			if (entry->u.vector.u.int32.value != NULL) {
+				free(entry->u.vector.u.int32.value);
+			}
+		} else if (entry->u.vector.type == entry_vector_type_int64) {
+			if (entry->u.vector.u.int64.value != NULL) {
+				free(entry->u.vector.u.int64.value);
+			}
 		}
 	}
 	TAILQ_FOREACH_SAFE(child, &entry->childs, child, nchild) {
@@ -183,91 +306,75 @@ bail:	if (entry != NULL) {
 	return NULL;
 }
 
-static struct entry * entry_scalar_int8_create (struct entry *parent, int8_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
+#define entry_scalar_type_create(__type__) \
+	static struct entry * entry_scalar_ ## __type__ ## _create (struct entry *parent, __type__ ## _t value) \
+	{ \
+		struct entry *entry; \
+		entry = malloc(sizeof(struct entry)); \
+		if (entry == NULL) { \
+			fprintf(stderr, "can not allocate memory\n"); \
+			goto bail; \
+		} \
+		memset(entry, 0, sizeof(struct entry)); \
+		TAILQ_INIT(&entry->childs); \
+		entry->type = entry_type_scalar; \
+		entry->parent = parent; \
+		entry->u.scalar.type = entry_scalar_type_ ## __type__; \
+		entry->u.scalar.u.__type__ = value; \
+		return entry; \
+	bail:	if (entry != NULL) { \
+			entry_destroy(entry); \
+		} \
+		return NULL; \
 	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_int8;
-	entry->u.scalar.u.int8 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
 
-static struct entry * entry_scalar_int16_create (struct entry *parent, int16_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
-	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_int16;
-	entry->u.scalar.u.int16 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
+entry_scalar_type_create(int8);
+entry_scalar_type_create(int16);
+entry_scalar_type_create(int32);
+entry_scalar_type_create(int64);
+entry_scalar_type_create(uint8);
+entry_scalar_type_create(uint16);
+entry_scalar_type_create(uint32);
+entry_scalar_type_create(uint64);
 
-static struct entry * entry_scalar_int32_create (struct entry *parent, int32_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
+#define entry_vector_type_create(__type__) \
+	static struct entry * entry_vector_ ## __type__ ## _create (struct entry *parent, __type__ ## _t *value, uint64_t length) \
+	{ \
+		struct entry *entry; \
+		entry = malloc(sizeof(struct entry)); \
+		if (entry == NULL) { \
+			fprintf(stderr, "can not allocate memory\n"); \
+			goto bail; \
+		} \
+		memset(entry, 0, sizeof(struct entry)); \
+		TAILQ_INIT(&entry->childs); \
+		entry->type = entry_type_vector; \
+		entry->parent = parent; \
+		entry->u.vector.type = entry_vector_type_ ## __type__; \
+		entry->u.vector.u.__type__.value = malloc(sizeof(__type__ ## _t) * length); \
+		if (entry->u.vector.u.__type__.value == NULL) { \
+			fprintf(stderr, "can not allocate memory\n"); \
+			goto bail; \
+		} \
+		memcpy(entry->u.vector.u.__type__.value, value, sizeof(__type__ ## _t) * length); \
+		entry->u.vector.u.__type__.length = length; \
+		return entry; \
+	bail:	if (entry != NULL) { \
+			entry_destroy(entry); \
+		} \
+		return NULL; \
 	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_int32;
-	entry->u.scalar.u.int32 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
 
-static struct entry * entry_scalar_int64_create (struct entry *parent, int64_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
-	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_int64;
-	entry->u.scalar.u.int64 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
+entry_vector_type_create(int8);
+entry_vector_type_create(int16);
+entry_vector_type_create(int32);
+entry_vector_type_create(int64);
+entry_vector_type_create(uint8);
+entry_vector_type_create(uint16);
+entry_vector_type_create(uint32);
+entry_vector_type_create(uint64);
 
-static struct entry * entry_scalar_uint8_create (struct entry *parent, uint8_t value)
+static struct entry * entry_vector_create (struct entry *parent)
 {
 	struct entry *entry;
 	entry = malloc(sizeof(struct entry));
@@ -277,73 +384,8 @@ static struct entry * entry_scalar_uint8_create (struct entry *parent, uint8_t v
 	}
 	memset(entry, 0, sizeof(struct entry));
 	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
+	entry->type = entry_type_vector;
 	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_uint8;
-	entry->u.scalar.u.uint8 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
-
-static struct entry * entry_scalar_uint16_create (struct entry *parent, uint16_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
-	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_uint16;
-	entry->u.scalar.u.uint16 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
-
-static struct entry * entry_scalar_uint32_create (struct entry *parent, uint32_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
-	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_uint32;
-	entry->u.scalar.u.uint32 = value;
-	return entry;
-bail:	if (entry != NULL) {
-		entry_destroy(entry);
-	}
-	return NULL;
-}
-
-static struct entry * entry_scalar_uint64_create (struct entry *parent, uint64_t value)
-{
-	struct entry *entry;
-	entry = malloc(sizeof(struct entry));
-	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
-		goto bail;
-	}
-	memset(entry, 0, sizeof(struct entry));
-	TAILQ_INIT(&entry->childs);
-	entry->type = entry_type_scalar;
-	entry->parent = parent;
-	entry->u.scalar.type = entry_scalar_type_uint64;
-	entry->u.scalar.u.uint64 = value;
 	return entry;
 bail:	if (entry != NULL) {
 		entry_destroy(entry);
@@ -419,6 +461,20 @@ int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, ui
 			fprintf(stderr, "logic error: parent is invalid\n");
 			goto bail;
 		}
+		if (parent->type == entry_type_table) {
+			if (element >= parent->u.table.nelements) {
+				fprintf(stderr, "logic error: element is invalid\n");
+				goto bail;
+			}
+		} else if (parent->type == entry_type_vector) {
+			if (element != UINT64_MAX) {
+				fprintf(stderr, "logic error: element is invalid\n");
+				goto bail;
+			}
+		} else {
+			fprintf(stderr, "logic error: parent type: %s is invalid\n", entry_type_string(parent->type));
+			goto bail;
+		}
 	}
 	entry = entry_table_create(parent, nelements);
 	if (entry == NULL) {
@@ -429,293 +485,106 @@ int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, ui
 		encoder->root = entry;
 	} else {
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child);
+		if (parent->type == entry_type_vector) {
+			parent->u.vector.u.table.length += 1;
+		}
 	}
-	if (entry->type == entry_type_table) {
-		TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
-	}
+	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
 bail:	return -1;
 }
 
-int linearbuffer_encoder_table_set_uint8 (struct linearbuffers_encoder *encoder, uint64_t element, uint8_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
+#define linearbuffers_encoder_table_set_type(__type__) \
+	int linearbuffers_encoder_table_set_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, __type__ ## _t value) \
+	{ \
+		struct entry *entry; \
+		struct entry *parent; \
+		if (encoder == NULL) { \
+			fprintf(stderr, "encoder is invalid\n"); \
+			goto bail; \
+		} \
+		if (TAILQ_EMPTY(&encoder->stack)) { \
+			fprintf(stderr, "logic error: stack is empty\n"); \
+			goto bail; \
+		} \
+		parent = TAILQ_LAST(&encoder->stack, entries); \
+		if (parent == NULL) { \
+			fprintf(stderr, "logic error: parent is invalid\n"); \
+			goto bail; \
+		} \
+		if (parent->type != entry_type_table) { \
+			fprintf(stderr, "logic error: parent is invalid\n"); \
+			goto bail; \
+		} \
+		if (element >= parent->u.table.nelements) { \
+			fprintf(stderr, "logic error: element is invalid\n"); \
+			goto bail; \
+		} \
+		entry = entry_scalar_ ## __type__ ## _create(parent, value); \
+		if (entry == NULL) { \
+			fprintf(stderr, "can not create entry scalar\n"); \
+			goto bail; \
+		} \
+		TAILQ_INSERT_TAIL(&parent->childs, entry, child); \
+		return 0; \
+	bail:	return -1; \
 	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_uint8_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
 
-int linearbuffer_encoder_table_set_uint16 (struct linearbuffers_encoder *encoder, uint64_t element, uint16_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
-	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_uint16_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
+linearbuffers_encoder_table_set_type(int8);
+linearbuffers_encoder_table_set_type(int16);
+linearbuffers_encoder_table_set_type(int32);
+linearbuffers_encoder_table_set_type(int64);
 
-int linearbuffer_encoder_table_set_uint32 (struct linearbuffers_encoder *encoder, uint64_t element, uint32_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
-	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_uint32_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
+linearbuffers_encoder_table_set_type(uint8);
+linearbuffers_encoder_table_set_type(uint16);
+linearbuffers_encoder_table_set_type(uint32);
+linearbuffers_encoder_table_set_type(uint64);
 
-int linearbuffer_encoder_table_set_uint64 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
+#define linearbuffers_encoder_table_set_vector_type(__type__) \
+	int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, __type__ ## _t *value, uint64_t length) \
+	{ \
+		struct entry *entry; \
+		struct entry *parent; \
+		if (encoder == NULL) { \
+			fprintf(stderr, "encoder is invalid\n"); \
+			goto bail; \
+		} \
+		if (TAILQ_EMPTY(&encoder->stack)) { \
+			fprintf(stderr, "logic error: stack is empty\n"); \
+			goto bail; \
+		} \
+		parent = TAILQ_LAST(&encoder->stack, entries); \
+		if (parent == NULL) { \
+			fprintf(stderr, "logic error: parent is invalid\n"); \
+			goto bail; \
+		} \
+		if (parent->type != entry_type_table) { \
+			fprintf(stderr, "logic error: parent is invalid\n"); \
+			goto bail; \
+		} \
+		if (element >= parent->u.table.nelements) { \
+			fprintf(stderr, "logic error: element is invalid\n"); \
+			goto bail; \
+		} \
+		entry = entry_vector_ ## __type__ ## _create(parent, value, length); \
+		if (entry == NULL) { \
+			fprintf(stderr, "can not create entry vector\n"); \
+			goto bail; \
+		} \
+		TAILQ_INSERT_TAIL(&parent->childs, entry, child); \
+		return 0; \
+	bail:	return -1; \
 	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_uint64_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
 
-int linearbuffer_encoder_table_set_int8 (struct linearbuffers_encoder *encoder, uint64_t element, int8_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
-	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_int8_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
+linearbuffers_encoder_table_set_vector_type(int8);
+linearbuffers_encoder_table_set_vector_type(int16);
+linearbuffers_encoder_table_set_vector_type(int32);
+linearbuffers_encoder_table_set_vector_type(int64);
 
-int linearbuffer_encoder_table_set_int16 (struct linearbuffers_encoder *encoder, uint64_t element, int16_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
-	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_int16_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
-
-int linearbuffer_encoder_table_set_int32 (struct linearbuffers_encoder *encoder, uint64_t element, int32_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
-	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_int32_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
-
-int linearbuffer_encoder_table_set_int64 (struct linearbuffers_encoder *encoder, uint64_t element, int64_t value)
-{
-	struct entry *entry;
-	struct entry *parent;
-	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
-		goto bail;
-	}
-	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
-		goto bail;
-	}
-	parent = TAILQ_LAST(&encoder->stack, entries);
-	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
-		goto bail;
-	}
-	if (element >= parent->u.table.nelements) {
-		fprintf(stderr, "logic error: element is invalid\n");
-		goto bail;
-	}
-	entry = entry_scalar_int64_create(parent, value);
-	if (entry == NULL) {
-		fprintf(stderr, "can not create entry scalar\n");
-		goto bail;
-	}
-	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
-	return 0;
-bail:	return -1;
-}
+linearbuffers_encoder_table_set_vector_type(uint8);
+linearbuffers_encoder_table_set_vector_type(uint16);
+linearbuffers_encoder_table_set_vector_type(uint32);
+linearbuffers_encoder_table_set_vector_type(uint64);
 
 int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 {
@@ -738,6 +607,63 @@ int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 		fprintf(stderr, "linearbuffers dump:\n");
 		entry_dump(encoder->root, 2);
 	}
+	return 0;
+bail:	return -1;
+}
+
+int linearbuffers_encoder_vector_start (struct linearbuffers_encoder *encoder, uint64_t element)
+{
+	struct entry *entry;
+	struct entry *parent;
+	if (encoder == NULL) {
+		fprintf(stderr, "encoder is invalid\n");
+		goto bail;
+	}
+	if (TAILQ_EMPTY(&encoder->stack)) {
+		fprintf(stderr, "logic error: stack is empty\n");
+		goto bail;
+	}
+	parent = TAILQ_LAST(&encoder->stack, entries);
+	if (parent == NULL) {
+		fprintf(stderr, "logic error: parent is invalid\n");
+		goto bail;
+	}
+	if (parent->type != entry_type_table) {
+		fprintf(stderr, "logic error: parent is invalid\n");
+		goto bail;
+	}
+	if (element >= parent->u.table.nelements) {
+		fprintf(stderr, "logic error: element is invalid\n");
+		goto bail;
+	}
+	entry = entry_vector_create(parent);
+	if (entry == NULL) {
+		fprintf(stderr, "can not create entry vector\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&parent->childs, entry, child);
+	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
+	return 0;
+bail:	return -1;
+}
+
+int linearbuffers_encoder_vector_end (struct linearbuffers_encoder *encoder)
+{
+	struct entry *entry;
+	if (encoder == NULL) {
+		fprintf(stderr, "encoder is invalid\n");
+		goto bail;
+	}
+	if (TAILQ_EMPTY(&encoder->stack)) {
+		fprintf(stderr, "logic error: stack is empty\n");
+		goto bail;
+	}
+	entry = TAILQ_LAST(&encoder->stack, entries);
+	if (entry == NULL) {
+		fprintf(stderr, "logic error: entry is invalid\n");
+		goto bail;
+	}
+	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	return 0;
 bail:	return -1;
 }

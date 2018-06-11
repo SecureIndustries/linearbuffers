@@ -5,6 +5,7 @@
 
 int main (int argc, char *argv[])
 {
+	uint8_t data[10];
 	struct linearbuffers_encoder *encoder;
 
 	(void) argc;
@@ -29,7 +30,7 @@ int main (int argc, char *argv[])
 	linearbuffers_output_timevals_timeval_set_useconds(encoder, 5);
 	linearbuffers_output_timevals_timeval_end(encoder);
 	linearbuffers_output_timevals_end(encoder);
-	linearbuffers_output_set_data(encoder, NULL, 0);
+	linearbuffers_output_set_data(encoder, data, sizeof(data) / sizeof(data[0]));
 	linearbuffers_output_end(encoder);
 
 	linearbuffers_encoder_destroy(encoder);
