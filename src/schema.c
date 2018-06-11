@@ -1708,6 +1708,7 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		fprintf(fp, "\n");
 		fprintf(fp, "#endif\n");
 	}
+
 	if (fp != stdout &&
 	    fp != stderr) {
 		fclose(fp);
@@ -1811,6 +1812,7 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 		fprintf(fp, "\n");
 		fprintf(fp, "#endif\n");
 	}
+
 	if (fp != stdout &&
 	    fp != stderr) {
 		fclose(fp);
