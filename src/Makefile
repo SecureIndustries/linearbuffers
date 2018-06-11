@@ -2,6 +2,15 @@
 target-y = \
 	linearbuffers-compiler
 
+target.o-y = \
+	liblinearbuffers-encoder.o
+
+target.a-y = \
+	liblinearbuffers-encoder.a
+
+target.so-y = \
+	liblinearbuffers-encoder.so
+
 linearbuffers-compiler_files-y = \
 	parser.lex.c \
 	parser.lex.h \
@@ -19,10 +28,27 @@ linearbuffers-compiler_parser.tab.c_cflags-y = \
 
 linearbuffers-compiler_ldflags-y = \
 	-lfl
-	
+
+liblinearbuffers-encoder.o_files-y = \
+	encoder.c
+
+liblinearbuffers-encoder.a_files-y = \
+	encoder.c
+
+liblinearbuffers-encoder.so_files-y = \
+	encoder.c
+
 dist.dir = ../dist
+dist.base = linearbuffers
+
 dist.bin-y = \
 	linearbuffers-compiler
+dist.include-y = \
+	encoder.h
+dist.lib-y = \
+	liblinearbuffers-encoder.o \
+	liblinearbuffers-encoder.a \
+	liblinearbuffers-encoder.so
 
 include ../Makefile.lib
 

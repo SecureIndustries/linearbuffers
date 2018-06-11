@@ -1,13 +1,15 @@
 
-namespace a.b.c
+table a {
+	foo: int8;
+}
 
-table output_timeval {
-	seconds: uint64;
-	useconds: uint64;
+table b {
+	s: int8;
+	t: a;
 }
 
 table output {
-	length : uint64;
-	timeval: output_timeval;
-	data   : [ uint8 ];
+	1: b;
 }
+
+root output;

@@ -13,10 +13,10 @@ table timeval {
 }
 
 table output {
-	type   : type;
-	length : uint64;
-	timeval: timeval;
-	data   : [ uint8 ];
+	type    : type;
+	length  : uint64;
+	timevals: [timeval];
+	data    : [ uint8 ];
 }
 
 root output;

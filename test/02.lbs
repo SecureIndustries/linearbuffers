@@ -1,11 +1,15 @@
 
-table output_timeval {
-	seconds: uint64;
-	useconds: uint64;
+table a {
+	foo: int8;
+}
+
+table b {
+	bar: int8;
 }
 
 table output {
-	length : uint64;
-	timeval: output_timeval;
-	data   : [ uint8 ];
+	1: a;
+	2: b;
 }
+
+root output;

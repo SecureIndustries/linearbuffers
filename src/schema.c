@@ -40,7 +40,9 @@ struct schema_enum {
 	TAILQ_ENTRY(schema_enum) list;
 	char *name;
 	char *type;
+	char *type_t;
 	char *TYPE;
+	char *TYPE_C;
 	struct schema_enum_fields fields;
 	struct schema_attributes attributes;
 };
@@ -58,6 +60,7 @@ TAILQ_HEAD(schema_tables, schema_table);
 struct schema_table {
 	TAILQ_ENTRY(schema_table) list;
 	char *name;
+	uint64_t nfields;
 	struct schema_table_fields fields;
 	struct schema_attributes attributes;
 };
@@ -67,6 +70,7 @@ struct schema {
 	char *namespace_;
 	char *NAMESPACE;
 	char *NAMESPACE_;
+	char *root;
 	struct schema_enums enums;
 	struct schema_tables tables;
 	struct schema_attributes attributes;
@@ -104,13 +108,78 @@ static int type_is_scalar (const char *type)
 	return 0;
 }
 
+static int type_is_enum (struct schema *schema, const char *type)
+{
+	struct schema_enum *anum;
+	if (schema == NULL) {
+		return 0;
+	}
+	if (type == NULL) {
+		return 0;
+	}
+	TAILQ_FOREACH(anum, &schema->enums, list) {
+		if (strcmp(anum->name, type) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static struct schema_enum * type_get_enum (struct schema *schema, const char *type)
+{
+	struct schema_enum *anum;
+	if (schema == NULL) {
+		return NULL;
+	}
+	if (type == NULL) {
+		return NULL;
+	}
+	TAILQ_FOREACH(anum, &schema->enums, list) {
+		if (strcmp(anum->name, type) == 0) {
+			return anum;
+		}
+	}
+	return NULL;
+}
+
+static struct schema_table * type_get_table (struct schema *schema, const char *type)
+{
+	struct schema_table *table;
+	if (schema == NULL) {
+		return NULL;
+	}
+	if (type == NULL) {
+		return NULL;
+	}
+	TAILQ_FOREACH(table, &schema->tables, list) {
+		if (strcmp(table->name, type) == 0) {
+			return table;
+		}
+	}
+	return NULL;
+}
+
+static int type_is_table (struct schema *schema, const char *type)
+{
+	struct schema_table *table;
+	if (schema == NULL) {
+		return 0;
+	}
+	if (type == NULL) {
+		return 0;
+	}
+	TAILQ_FOREACH(table, &schema->tables, list) {
+		if (strcmp(table->name, type) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static int type_is_valid (struct schema *schema, const char *type)
 {
 	int rc;
-	struct schema_enum *anum;
-	struct schema_table *table;
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
 		return 0;
 	}
 	if (type == NULL) {
@@ -120,15 +189,13 @@ static int type_is_valid (struct schema *schema, const char *type)
 	if (rc == 1) {
 		return 1;
 	}
-	TAILQ_FOREACH(anum, &schema->enums, list) {
-		if (strcmp(anum->name, type) == 0) {
-			return 1;
-		}
+	rc = type_is_enum(schema, type);
+	if (rc == 1) {
+		return 1;
 	}
-	TAILQ_FOREACH(table, &schema->tables, list) {
-		if (strcmp(table->name, type) == 0) {
-			return 1;
-		}
+	rc = type_is_table(schema, type);
+	if (rc == 1) {
+		return 1;
 	}
 	return 0;
 }
@@ -336,8 +403,14 @@ void schema_enum_destroy (struct schema_enum *anum)
 	if (anum->type != NULL) {
 		free(anum->type);
 	}
+	if (anum->type_t != NULL) {
+		free(anum->type_t);
+	}
 	if (anum->TYPE != NULL) {
 		free(anum->TYPE);
+	}
+	if (anum->TYPE_C != NULL) {
+		free(anum->TYPE_C);
 	}
 	TAILQ_FOREACH_SAFE(field, &anum->fields, list, nfield) {
 		TAILQ_REMOVE(&anum->fields, field, list);
@@ -498,6 +571,7 @@ int schema_table_add_field (struct schema_table *table, struct schema_table_fiel
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&table->fields, field, list);
+	table->nfields += 1;
 	return 0;
 bail:	return -1;
 }
@@ -516,6 +590,7 @@ void schema_table_destroy (struct schema_table *table)
 	}
 	TAILQ_FOREACH_SAFE(field, &table->fields, list, nfield) {
 		TAILQ_REMOVE(&table->fields, field, list);
+		table->nfields -= 1;
 		schema_table_field_destroy(field);
 	}
 	TAILQ_FOREACH_SAFE(attribute, &table->attributes, list, nattribute) {
@@ -602,6 +677,27 @@ int schema_add_enum (struct schema *schema, struct schema_enum *anum)
 bail:	return -1;
 }
 
+int schema_set_root (struct schema *schema, const char *name)
+{
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (schema->root != NULL) {
+		free(schema->root);
+		schema->root = NULL;
+	}
+	if (name != NULL) {
+		schema->root = strdup(name);
+		if (schema->root == NULL) {
+			fprintf(stderr, "can not allocate memory\n");
+			goto bail;
+		}
+	}
+	return 0;
+bail:	return -1;
+}
+
 void schema_destroy (struct schema *schema)
 {
 	struct schema_enum *anum;
@@ -624,6 +720,9 @@ void schema_destroy (struct schema *schema)
 	}
 	if (schema->NAMESPACE_ != NULL) {
 		free(schema->NAMESPACE_);
+	}
+	if (schema->root != NULL) {
+		free(schema->root);
 	}
 	TAILQ_FOREACH_SAFE(anum, &schema->enums, list, nanum) {
 		TAILQ_REMOVE(&schema->enums, anum, list);
@@ -668,6 +767,7 @@ static int schema_check (struct schema *schema)
 	struct schema_table *table;
 	struct schema_table *ntable;
 	struct schema_table_field *table_field;
+	struct schema_table_field *ntable_field;
 
 	if (schema == NULL) {
 		fprintf(stderr, "schema is invalid\n");
@@ -716,6 +816,28 @@ static int schema_check (struct schema *schema)
 				goto bail;
 			}
 		}
+		TAILQ_FOREACH(table_field, &table->fields, list) {
+			for (ntable_field = table_field->list.tqe_next; ntable_field; ntable_field = ntable_field->list.tqe_next) {
+				if (strcmp(table_field->name, ntable_field->name) == 0) {
+					fprintf(stderr, "schema table field name: %s is invalid\n", table_field->name);
+					goto bail;
+				}
+			}
+		}
+	}
+
+	if (schema->root == NULL) {
+		fprintf(stderr, "schema root is invalid\n");
+		goto bail;
+	}
+	TAILQ_FOREACH(table, &schema->tables, list) {
+		if (strcmp(schema->root, table->name) == 0) {
+			break;
+		}
+	}
+	if (table == NULL) {
+		fprintf(stderr, "schema root is invalid\n");
+		goto bail;
 	}
 
 	return 0;
@@ -742,7 +864,7 @@ static int schema_build (struct schema *schema)
 	}
 
 	if (schema->namespace == NULL) {
-		schema->namespace = strdup("");
+		schema->namespace = strdup("linearbuffers");
 		if (schema->namespace == NULL) {
 			fprintf(stderr, "can not allocate memory");
 			goto bail;
@@ -838,6 +960,12 @@ static int schema_build (struct schema *schema)
 			fprintf(stderr, "schema anum type is invalid\n");
 			goto bail;
 		}
+		anum->type_t = malloc(strlen(anum->type) + 1 + 1 + 4);
+		if (anum->type_t == NULL) {
+			fprintf(stderr, "can not allocate memory\n");
+			goto bail;
+		}
+		sprintf(anum->type_t, "%s_t", anum->type);
 		anum->TYPE = strdup(anum->type);
 		if (anum->TYPE == NULL) {
 			fprintf(stderr, "schema anum type is invalid\n");
@@ -846,6 +974,12 @@ static int schema_build (struct schema *schema)
 		for (i = 0; i < strlen(anum->TYPE); i++) {
 			anum->TYPE[i] = toupper(anum->TYPE[i]);
 		}
+		anum->TYPE_C = malloc(strlen(anum->TYPE) + 1 + 1 + 4);
+		if (anum->TYPE_C == NULL) {
+			fprintf(stderr, "can not allocate memory\n");
+			goto bail;
+		}
+		sprintf(anum->TYPE_C, "%s_C", anum->TYPE);
 	}
 
 	TAILQ_FOREACH(anum, &schema->enums, list) {
@@ -854,7 +988,7 @@ static int schema_build (struct schema *schema)
 			pvalue = 0;
 			TAILQ_FOREACH(anum_field, &anum->fields, list) {
 				if (anum_field->value == NULL) {
-					rc = asprintf(&anum_field->value, "%" PRIi64 "", pvalue);
+					rc = asprintf(&anum_field->value, "INT64_C(%" PRIi64 ")", pvalue);
 					if (rc < 0) {
 						fprintf(stderr, "can not set schema enum field valud\n");
 						goto bail;
@@ -869,7 +1003,7 @@ static int schema_build (struct schema *schema)
 			pvalue = 0;
 			TAILQ_FOREACH(anum_field, &anum->fields, list) {
 				if (anum_field->value == NULL) {
-					rc = asprintf(&anum_field->value, "%" PRIu64 "", pvalue);
+					rc = asprintf(&anum_field->value, "UINT64_C(%" PRIu64 ")", pvalue);
 					if (rc < 0) {
 						fprintf(stderr, "can not set schema enum field valud\n");
 						goto bail;
@@ -1074,18 +1208,369 @@ bail:	if (fp != stdout &&
 	return -1;
 }
 
+static int schema_generate_encoder_enum (struct schema *schema, struct schema_enum *anum, FILE *fp)
+{
+	struct schema_enum_field *anum_field;
+
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (anum == NULL) {
+		fprintf(stderr, "enum is invalid\n");
+		goto bail;
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "fp is invalid\n");
+		goto bail;
+	}
+
+	fprintf(fp, "typedef %s %s%s_enum_t;\n", anum->type_t, schema->namespace_, anum->name);
+
+	TAILQ_FOREACH(anum_field, &anum->fields, list) {
+		if (anum_field->value != NULL) {
+			fprintf(fp, "#define %s%s_%s ((%s%s_enum_t) %s(%s))\n", schema->namespace_, anum->name, anum_field->name, schema->namespace_, anum->name, anum->TYPE_C, anum_field->value);
+		} else {
+			fprintf(fp, "#define %s%s_%s\n", schema->namespace_, anum->name, anum_field->name);
+		}
+	}
+
+	fprintf(fp, "\n");
+	fprintf(fp, "static inline const char * %s%s_string (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+	fprintf(fp, "{\n");
+	fprintf(fp, "    switch (value) {\n");
+	TAILQ_FOREACH(anum_field, &anum->fields, list) {
+		fprintf(fp, "        case %s%s_%s: return \"%s\";\n", schema->namespace_, anum->name, anum_field->name, anum_field->name);
+	}
+	fprintf(fp, "    }\n");
+	fprintf(fp, "    return \"%s\";\n", "");
+	fprintf(fp, "}\n");
+	fprintf(fp, "static inline int %s%s_is_valid (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
+	fprintf(fp, "{\n");
+	fprintf(fp, "    switch (value) {\n");
+	TAILQ_FOREACH(anum_field, &anum->fields, list) {
+		fprintf(fp, "        case %s%s_%s: return 1;\n", schema->namespace_, anum->name, anum_field->name);
+	}
+	fprintf(fp, "    }\n");
+	fprintf(fp, "    return 0;\n");
+	fprintf(fp, "}\n");
+
+	return 0;
+bail:	return -1;
+}
+
+TAILQ_HEAD(string_elements, string_element);
+struct string_element {
+	TAILQ_ENTRY(string_element) list;
+	char *string;
+	size_t length;
+};
+
+struct string {
+	struct string_elements elements;
+	int dirty;
+	char *linearized;
+	size_t slinearized;
+};
+
+static void string_element_destroy (struct string_element *element)
+{
+	if (element == NULL) {
+		return;
+	}
+	if (element->string != NULL) {
+		free(element->string);
+	}
+	free(element);
+}
+
+static struct string_element * string_element_create (const char *string)
+{
+	struct string_element *element;
+	element = malloc(sizeof(struct string_element));
+	if (element == NULL) {
+		fprintf(stderr, "can not allocate memory\n");
+		goto bail;
+	}
+	memset(element, 0, sizeof(struct string_element));
+	element->string = strdup(string);
+	if (element->string == NULL) {
+		fprintf(stderr, "can not allocate memory\n");
+		goto bail;
+	}
+	element->length = strlen(string);
+	return element;
+bail:	if (element != NULL) {
+		string_element_destroy(element);
+	}
+	return NULL;
+}
+
+static const char * string_linearize (struct string *string)
+{
+	size_t slinearized;
+	struct string_element *element;
+	if (string == NULL) {
+		return NULL;
+	}
+	if (string->dirty == 0) {
+		return string->linearized;
+	}
+	slinearized = 0;
+	TAILQ_FOREACH(element, &string->elements, list) {
+		slinearized += element->length;
+	}
+	if (slinearized > string->slinearized) {
+		if (string->linearized != NULL) {
+			free(string->linearized);
+			string->linearized = NULL;
+		}
+		string->linearized = malloc(slinearized + 1 + 4);
+		if (string->linearized == NULL) {
+			fprintf(stderr, "can not allocate memory\n");
+			string->slinearized = 0;
+			goto bail;
+		}
+		string->slinearized = slinearized;
+	}
+	slinearized = 0;
+	TAILQ_FOREACH(element, &string->elements, list) {
+		slinearized += sprintf(string->linearized + slinearized, "%s", element->string);
+	}
+	string->dirty = 0;
+	return string->linearized;
+bail:	return NULL;
+}
+
+static int string_push (struct string *string, const char *push)
+{
+	struct string_element *element;
+	element = NULL;
+	if (string == NULL) {
+		fprintf(stderr, "string is invalid\n");
+		goto bail;
+	}
+	if (push == NULL) {
+		fprintf(stderr, "push is invalid\n");
+		goto bail;
+	}
+	element = string_element_create(push);
+	if (element == NULL) {
+		fprintf(stderr, "can not create string element\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&string->elements, element, list);
+	string->dirty = 1;
+	return 0;
+bail:	if (element != NULL) {
+		string_element_destroy(element);
+	}
+	return -1;
+}
+
+static int string_pop (struct string *string)
+{
+	struct string_element *element;
+	element = NULL;
+	if (string == NULL) {
+		fprintf(stderr, "string is invalid\n");
+		goto bail;
+	}
+	if (TAILQ_EMPTY(&string->elements)) {
+		fprintf(stderr, "string is empty\n");
+		goto bail;
+	}
+	element = TAILQ_LAST(&string->elements, string_elements);
+	TAILQ_REMOVE(&string->elements, element, list);
+	string_element_destroy(element);
+	string->dirty = 1;
+	return 0;
+bail:	if (element != NULL) {
+		string_element_destroy(element);
+	}
+	return -1;
+}
+
+static void string_destroy (struct string *string)
+{
+	struct string_element *element;
+	struct string_element *nelement;
+	if (string == NULL) {
+		return;
+	}
+	TAILQ_FOREACH_SAFE(element, &string->elements, list, nelement) {
+		TAILQ_REMOVE(&string->elements, element, list);
+		string_element_destroy(element);
+	}
+	free(string);
+}
+
+static struct string * string_create (void)
+{
+	struct string *string;
+	string = malloc(sizeof(struct string));
+	if (string == NULL) {
+		fprintf(stderr, "can not allocate memory\n");
+		goto bail;
+	}
+	memset(string, 0, sizeof(struct string));
+	TAILQ_INIT(&string->elements);
+	return string;
+bail:	if (string != NULL) {
+		string_destroy(string);
+	}
+	return NULL;
+}
+
+static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, struct string *namespace, uint64_t element, FILE *fp)
+{
+	uint64_t table_field_i;
+	struct schema_table_field *table_field;
+
+	if (schema == NULL) {
+		fprintf(stderr, "schema is invalid\n");
+		goto bail;
+	}
+	if (table == NULL) {
+		fprintf(stderr, "table is invalid\n");
+		goto bail;
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "fp is invalid\n");
+		goto bail;
+	}
+
+	fprintf(fp, "static inline int %sstart (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace));
+	fprintf(fp, "{\n");
+	fprintf(fp, "    int rc;\n");
+	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", element, table->nfields);
+	fprintf(fp, "    return rc;\n");
+	fprintf(fp, "}\n");
+	table_field_i = 0;
+	TAILQ_FOREACH(table_field, &table->fields, list) {
+		if (table_field->vector) {
+			if (type_is_scalar(table_field->type)) {
+				fprintf(fp, "static inline int %sset_%s (struct linearbuffers_encoder *encoder, %s_t *value_%s, uint64_t value_%s_length)\n", string_linearize(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    (void) value_%s;\n", table_field->name);
+				fprintf(fp, "    (void) value_%s_length;\n", table_field->name);
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_push (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", string_linearize(namespace), table_field->name, table_field->type, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    (void) value_%s;\n", table_field->name);
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_end (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+			} else if (type_is_enum(schema, table_field->type)) {
+				fprintf(fp, "static inline int %s%s_set_%s (struct linearbuffers_encoder *encoder, %s%s_enum_t *value_%s, uint64_t length)\n", string_linearize(namespace), table->name, table_field->name, string_linearize(namespace), table_field->type, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    (void) value_%s;\n", table_field->name);
+				fprintf(fp, "    (void) length;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_%s_start (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table->name, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_%s_push (struct linearbuffers_encoder *encoder, %s%s_enum_t value_%s)\n", string_linearize(namespace), table->name, table_field->name, string_linearize(namespace), table_field->type, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    (void) value_%s;\n", table_field->name);
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_%s_end (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table->name, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+			} else if (type_is_table(schema, table_field->type)) {
+				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+				string_push(namespace, table_field->name);
+				string_push(namespace, "_");
+				string_push(namespace, table_field->type);
+				string_push(namespace, "_");
+				schema_generate_encoder_table(schema, type_get_table(schema, table_field->type), namespace, table_field_i, fp);
+				string_pop(namespace);
+				string_pop(namespace);
+				string_pop(namespace);
+				string_pop(namespace);
+				fprintf(fp, "static inline int %s%s_end (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    (void) encoder;\n");
+				fprintf(fp, "    return 0;\n");
+				fprintf(fp, "}\n");
+			} else {
+				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				goto bail;
+			}
+		} else {
+			if (type_is_scalar(table_field->type)) {
+				fprintf(fp, "static inline int %sset_%s (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", string_linearize(namespace), table_field->name, table_field->type, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffer_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field->name);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
+			} else if (type_is_enum(schema, table_field->type)) {
+				fprintf(fp, "static inline int %sset_%s (struct linearbuffers_encoder *encoder, %s%s_enum_t value_%s)\n", string_linearize(namespace), table_field->name, schema->namespace_, table_field->type, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffer_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), value_%s);\n", type_get_enum(schema, table_field->type)->type, table_field_i, table_field->name);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
+			} else if (type_is_table(schema, table_field->type)) {
+				string_push(namespace, table_field->name);
+				string_push(namespace, "_");
+				schema_generate_encoder_table(schema, type_get_table(schema, table_field->type), namespace, table_field_i, fp);
+				string_pop(namespace);
+				string_pop(namespace);
+			} else {
+				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				goto bail;
+			}
+		}
+		table_field_i += 1;
+	}
+	fprintf(fp, "static inline int %send (struct linearbuffers_encoder *encoder)\n", string_linearize(namespace));
+	fprintf(fp, "{\n");
+	fprintf(fp, "    int rc;\n");
+	fprintf(fp, "    rc = linearbuffers_encoder_table_end(encoder);\n");
+	fprintf(fp, "    return rc;\n");
+	fprintf(fp, "}\n");
+
+	return 0;
+bail:	return -1;
+}
+
 int schema_generate_encoder (struct schema *schema, const char *filename)
 {
 	int rc;
 	FILE *fp;
 
+	struct string *namespace;
 	struct schema_enum *anum;
-	struct schema_enum_field *anum_field;
-
 	struct schema_table *table;
-	struct schema_table_field *table_field;
 
 	fp = NULL;
+	namespace = NULL;
 
 	if (schema == NULL) {
 		fprintf(stderr, "schema is invalid\n");
@@ -1115,52 +1600,41 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 	}
 
 	fprintf(fp, "\n");
+	fprintf(fp, "#include <stddef.h>\n");
 	fprintf(fp, "#include <stdint.h>\n");
+	fprintf(fp, "#include <linearbuffers/encoder.h>\n");
 
-	TAILQ_FOREACH(anum, &schema->enums, list) {
+	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");
-		if (anum->type != NULL) {
-			fprintf(fp, "typedef %s_t %s%s_enum_t;\n", anum->type, schema->namespace_, anum->name);
-		} else {
-			fprintf(fp, "typedef %s_t %s%s_enum_t;\n", "uint32", schema->namespace_, anum->name);
+		TAILQ_FOREACH(anum, &schema->enums, list) {
+			schema_generate_encoder_enum(schema, anum, fp);
 		}
+	}
 
-		TAILQ_FOREACH(anum_field, &anum->fields, list) {
-			if (anum_field->value != NULL) {
-				fprintf(fp, "#define %s%s_%s ((%s%s_enum_t) %s_C(%s))\n", schema->namespace_, anum->name, anum_field->name, schema->namespace_, anum->name, anum->TYPE, anum_field->value);
-			} else {
-				fprintf(fp, "#define %s%s_%s\n", schema->namespace_, anum->name, anum_field->name);
+	if (!TAILQ_EMPTY(&schema->tables)) {
+		fprintf(fp, "\n");
+		TAILQ_FOREACH(table, &schema->tables, list) {
+			if (strcmp(schema->root, table->name) == 0) {
+				break;
 			}
 		}
-
-		fprintf(fp, "\n");
-		fprintf(fp, "static inline const char * %s%s_string (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
-		fprintf(fp, "{\n");
-		fprintf(fp, "    switch (value) {\n");
-		TAILQ_FOREACH(anum_field, &anum->fields, list) {
-			fprintf(fp, "        case %s%s_%s: return \"%s\";\n", schema->namespace_, anum->name, anum_field->name, anum_field->name);
+		if (table == NULL) {
+			fprintf(stderr, "schema root is invalid\n");
+			goto bail;
 		}
-		fprintf(fp, "    }\n");
-		fprintf(fp, "    return \"%s\";\n", "");
-		fprintf(fp, "}\n");
 
-		fprintf(fp, "\n");
-		fprintf(fp, "static inline int %s%s_is_valid (%s%s_enum_t value)\n", schema->namespace_, anum->name, schema->namespace_, anum->name);
-		fprintf(fp, "{\n");
-		fprintf(fp, "    switch (value) {\n");
-		TAILQ_FOREACH(anum_field, &anum->fields, list) {
-			fprintf(fp, "        case %s%s_%s: return 1;\n", schema->namespace_, anum->name, anum_field->name);
+		namespace = string_create();
+		if (namespace == NULL) {
+			fprintf(stderr, "can not create namespace\n");
+			goto bail;
 		}
-		fprintf(fp, "    }\n");
-		fprintf(fp, "    return 0;\n");
-		fprintf(fp, "}\n");
+		string_push(namespace, schema->namespace_);
+		string_push(namespace, table->name);
+		string_push(namespace, "_");
+		schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, fp);
+
+		string_destroy(namespace);
 	}
-
-	TAILQ_FOREACH(table, &schema->tables, list) {
-		TAILQ_FOREACH(table_field, &table->fields, list) {
-		}
-	}
-
 	if (fp != stdout &&
 	    fp != stderr) {
 		fclose(fp);
@@ -1170,6 +1644,9 @@ bail:	if (fp != NULL &&
 	    fp != stdout &&
 	    fp != stderr) {
 		fclose(fp);
+	}
+	if (namespace != NULL) {
+		string_destroy(namespace);
 	}
 	return -1;
 }

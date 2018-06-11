@@ -34,6 +34,7 @@ struct schema_table * schema_table_create (void);
 int schema_set_namespace (struct schema *schema, const char *name);
 int schema_add_enum (struct schema *schema, struct schema_enum *anum);
 int schema_add_table (struct schema *schema, struct schema_table *table);
+int schema_set_root (struct schema *schema, const char *name);
 void schema_destroy (struct schema *schema);
 struct schema * schema_create (void);
 

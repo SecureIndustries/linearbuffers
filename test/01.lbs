@@ -1,10 +1,13 @@
 
-table output_timeval {
-	seconds: uint64;
-	useconds: uint64;
+table output {
+	a: int8;
+	b: int16;
+	c: int32;
+	d: int64;
+	1: uint8;
+	2: uint16;
+	3: uint32;
+	4: uint64;
 }
 
-table output {
-	length: uint64;
-	timeval: output_timeval;
-}
+root output;

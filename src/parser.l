@@ -17,6 +17,7 @@ type			[_a-zA-Z0-9]+
 "namespace"		return(NAMESPACE);
 "enum"			return(ENUM);
 "table"			return(TABLE);
+"root"			return(ROOT);
 "{"				return(BLOCK);
 "}"				return(ENDBLOCK);
 ":"				return(COLON);

@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-#include "05-encoder.h"
+#include "06-encoder.h"
 
 int main (int argc, char *argv[])
 {
@@ -19,10 +19,16 @@ int main (int argc, char *argv[])
 	linearbuffers_output_start(encoder);
 	linearbuffers_output_set_type(encoder, linearbuffers_type_type_3);
 	linearbuffers_output_set_length(encoder, 1);
-	linearbuffers_output_timeval_start(encoder);
-	linearbuffers_output_timeval_set_seconds(encoder, 2);
-	linearbuffers_output_timeval_set_useconds(encoder, 3);
-	linearbuffers_output_timeval_end(encoder);
+	linearbuffers_output_timevals_start(encoder);
+	linearbuffers_output_timevals_timeval_start(encoder);
+	linearbuffers_output_timevals_timeval_set_seconds(encoder, 2);
+	linearbuffers_output_timevals_timeval_set_useconds(encoder, 3);
+	linearbuffers_output_timevals_timeval_end(encoder);
+	linearbuffers_output_timevals_timeval_start(encoder);
+	linearbuffers_output_timevals_timeval_set_seconds(encoder, 4);
+	linearbuffers_output_timevals_timeval_set_useconds(encoder, 5);
+	linearbuffers_output_timevals_timeval_end(encoder);
+	linearbuffers_output_timevals_end(encoder);
 	linearbuffers_output_set_data(encoder, NULL, 0);
 	linearbuffers_output_end(encoder);
 
