@@ -6,6 +6,8 @@
 int main (int argc, char *argv[])
 {
 	uint8_t data[10];
+	const char *linearized;
+	uint64_t linearized_length;
 	struct linearbuffers_encoder *encoder;
 
 	(void) argc;
@@ -26,6 +28,13 @@ int main (int argc, char *argv[])
 	linearbuffers_output_timeval_end(encoder);
 	linearbuffers_output_set_data(encoder, data, sizeof(data) / sizeof(data[0]));
 	linearbuffers_output_end(encoder);
+
+	linearized = linearbuffers_encoder_linearized(encoder, &linearized_length);
+	if (linearized == NULL) {
+		fprintf(stderr, "can not get linearized buffer\n");
+		goto bail;
+	}
+	fprintf(stderr, "linearized: %p, length: %ld\n", linearized, linearized_length);
 
 	linearbuffers_encoder_destroy(encoder);
 

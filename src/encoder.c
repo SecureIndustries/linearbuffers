@@ -76,16 +76,55 @@ struct linearbuffers_encoder {
 		void *context;
 		uint64_t offset;
 	} emitter;
+	struct {
+		void *buffer;
+		uint64_t length;
+		uint64_t size;
+	} output;
 };
 
 static int encoder_default_emitter (void *context, uint64_t offset, void *buffer, uint64_t length)
 {
-	(void) context;
+	struct linearbuffers_encoder *encoder = context;
 	(void) offset;
 	(void) buffer;
 	(void) length;
 	fprintf(stderr, "emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "\n", offset, buffer, length);
+	if (encoder->output.size < offset + length) {
+		encoder->output.buffer = realloc(encoder->output.buffer, offset + length);
+		if (encoder->output.buffer == NULL) {
+			void *tmp;
+			tmp = malloc(offset + length);
+			if (tmp == NULL) {
+				fprintf(stderr, "can not allocate memory\n");
+				goto bail;
+			}
+			memcpy(tmp, encoder->output.buffer, encoder->output.length);
+			encoder->output.buffer = tmp;
+			free(tmp);
+		}
+		encoder->output.size = offset + length;
+	}
+	if (buffer == NULL) {
+		memset(encoder->output.buffer + offset, 0, length);
+	} else {
+		memcpy(encoder->output.buffer + offset, buffer, length);
+	}
+	encoder->output.length = offset + length;
 	return 0;
+bail:	return -1;
+}
+
+const char * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length)
+{
+	if (encoder == NULL) {
+		fprintf(stderr, "encoder is invalid\n");
+		return NULL;
+	}
+	if (length != NULL) {
+		*length = encoder->output.length;
+	}
+	return encoder->output.buffer;
 }
 
 static const char * entry_type_string (enum entry_type type)
@@ -320,6 +359,9 @@ void linearbuffers_encoder_destroy (struct linearbuffers_encoder *encoder)
 	if (encoder->root != NULL) {
 		entry_destroy(encoder->root);
 	}
+	if (encoder->output.buffer != NULL) {
+		free(encoder->output.buffer);
+	}
 	free(encoder);
 }
 
@@ -482,8 +524,10 @@ linearbuffers_encoder_table_set_type(uint64);
 		parent->length += entry->length; \
 		entry->offset = encoder->emitter.offset; \
 		encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint64_t) * element), &entry->offset, sizeof(uint64_t)); \
-		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->length); \
-		encoder->emitter.offset += entry->length; \
+		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &count, sizeof(uint64_t)); \
+		encoder->emitter.offset += sizeof(uint64_t); \
+		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, count * sizeof(__type__ ## _t)); \
+		encoder->emitter.offset += count * sizeof(__type__ ## _t); \
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child); \
 		return 0; \
 	bail:	return -1; \
