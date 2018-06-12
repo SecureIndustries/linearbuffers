@@ -1310,49 +1310,158 @@ static int schema_generate_decoder_enum (struct schema *schema, struct schema_en
 bail:	return -1;
 }
 
-TAILQ_HEAD(namespace_elements, namespace_element);
-struct namespace_element {
-	TAILQ_ENTRY(namespace_element) list;
+TAILQ_HEAD(element_entries, element_entry);
+struct element_entry {
+	TAILQ_ENTRY(element_entry) list;
+	uint64_t id;
+};
+
+struct element {
+	struct element_entries entries;
+};
+
+static void element_entry_destroy (struct element_entry *entry)
+{
+	if (entry == NULL) {
+		return;
+	}
+	free(entry);
+}
+
+static struct element_entry * element_entry_create (uint64_t id)
+{
+	struct element_entry *entry;
+	entry = malloc(sizeof(struct element_entry));
+	if (entry == NULL) {
+		fprintf(stderr, "can not allocate memory\n");
+		goto bail;
+	}
+	memset(entry, 0, sizeof(struct element_entry));
+	entry->id = id;
+	return entry;
+bail:	if (entry != NULL) {
+		element_entry_destroy(entry);
+	}
+	return NULL;
+}
+
+static int element_push (struct element *element, uint64_t id)
+{
+	struct element_entry *entry;
+	entry = NULL;
+	if (element == NULL) {
+		fprintf(stderr, "element is invalid\n");
+		goto bail;
+	}
+	entry = element_entry_create(id);
+	if (entry == NULL) {
+		fprintf(stderr, "can not create element entry\n");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&element->entries, entry, list);
+	return 0;
+bail:	if (entry != NULL) {
+		element_entry_destroy(entry);
+	}
+	return -1;
+}
+
+static int element_pop (struct element *element)
+{
+	struct element_entry *entry;
+	entry = NULL;
+	if (element == NULL) {
+		fprintf(stderr, "element is invalid\n");
+		goto bail;
+	}
+	if (TAILQ_EMPTY(&element->entries)) {
+		fprintf(stderr, "element is empty\n");
+		goto bail;
+	}
+	entry = TAILQ_LAST(&element->entries, element_entries);
+	TAILQ_REMOVE(&element->entries, entry, list);
+	element_entry_destroy(entry);
+	return 0;
+bail:	if (entry != NULL) {
+		element_entry_destroy(entry);
+	}
+	return -1;
+}
+
+static void element_destroy (struct element *element)
+{
+	struct element_entry *entry;
+	struct element_entry *nentry;
+	if (element == NULL) {
+		return;
+	}
+	TAILQ_FOREACH_SAFE(entry, &element->entries, list, nentry) {
+		TAILQ_REMOVE(&element->entries, entry, list);
+		element_entry_destroy(entry);
+	}
+	free(element);
+}
+
+static struct element * element_create (void)
+{
+	struct element *element;
+	element = malloc(sizeof(struct element));
+	if (element == NULL) {
+		fprintf(stderr, "can not allocate memory\n");
+		goto bail;
+	}
+	memset(element, 0, sizeof(struct element));
+	TAILQ_INIT(&element->entries);
+	return element;
+bail:	if (element != NULL) {
+		element_destroy(element);
+	}
+	return NULL;
+}
+
+TAILQ_HEAD(namespace_entries, namespace_entry);
+struct namespace_entry {
+	TAILQ_ENTRY(namespace_entry) list;
 	char *string;
 	size_t length;
 };
 
 struct namespace {
-	struct namespace_elements elements;
+	struct namespace_entries entries;
 	int dirty;
 	char *linearized;
 	size_t slinearized;
 };
 
-static void namespace_element_destroy (struct namespace_element *element)
+static void namespace_entry_destroy (struct namespace_entry *entry)
 {
-	if (element == NULL) {
+	if (entry == NULL) {
 		return;
 	}
-	if (element->string != NULL) {
-		free(element->string);
+	if (entry->string != NULL) {
+		free(entry->string);
 	}
-	free(element);
+	free(entry);
 }
 
-static struct namespace_element * namespace_element_create (const char *string)
+static struct namespace_entry * namespace_entry_create (const char *string)
 {
-	struct namespace_element *element;
-	element = malloc(sizeof(struct namespace_element));
-	if (element == NULL) {
+	struct namespace_entry *entry;
+	entry = malloc(sizeof(struct namespace_entry));
+	if (entry == NULL) {
 		fprintf(stderr, "can not allocate memory\n");
 		goto bail;
 	}
-	memset(element, 0, sizeof(struct namespace_element));
-	element->string = strdup(string);
-	if (element->string == NULL) {
+	memset(entry, 0, sizeof(struct namespace_entry));
+	entry->string = strdup(string);
+	if (entry->string == NULL) {
 		fprintf(stderr, "can not allocate memory\n");
 		goto bail;
 	}
-	element->length = strlen(string);
-	return element;
-bail:	if (element != NULL) {
-		namespace_element_destroy(element);
+	entry->length = strlen(string);
+	return entry;
+bail:	if (entry != NULL) {
+		namespace_entry_destroy(entry);
 	}
 	return NULL;
 }
@@ -1360,7 +1469,7 @@ bail:	if (element != NULL) {
 static const char * namespace_linearized (struct namespace *namespace)
 {
 	size_t slinearized;
-	struct namespace_element *element;
+	struct namespace_entry *entry;
 	if (namespace == NULL) {
 		return NULL;
 	}
@@ -1368,8 +1477,8 @@ static const char * namespace_linearized (struct namespace *namespace)
 		return namespace->linearized;
 	}
 	slinearized = 0;
-	TAILQ_FOREACH(element, &namespace->elements, list) {
-		slinearized += element->length;
+	TAILQ_FOREACH(entry, &namespace->entries, list) {
+		slinearized += entry->length;
 	}
 	if (slinearized > namespace->slinearized) {
 		if (namespace->linearized != NULL) {
@@ -1385,8 +1494,8 @@ static const char * namespace_linearized (struct namespace *namespace)
 		namespace->slinearized = slinearized;
 	}
 	slinearized = 0;
-	TAILQ_FOREACH(element, &namespace->elements, list) {
-		slinearized += sprintf(namespace->linearized + slinearized, "%s", element->string);
+	TAILQ_FOREACH(entry, &namespace->entries, list) {
+		slinearized += sprintf(namespace->linearized + slinearized, "%s", entry->string);
 	}
 	namespace->dirty = 0;
 	return namespace->linearized;
@@ -1395,8 +1504,8 @@ bail:	return NULL;
 
 static int namespace_push (struct namespace *namespace, const char *push)
 {
-	struct namespace_element *element;
-	element = NULL;
+	struct namespace_entry *entry;
+	entry = NULL;
 	if (namespace == NULL) {
 		fprintf(stderr, "namespace is invalid\n");
 		goto bail;
@@ -1405,53 +1514,53 @@ static int namespace_push (struct namespace *namespace, const char *push)
 		fprintf(stderr, "push is invalid\n");
 		goto bail;
 	}
-	element = namespace_element_create(push);
-	if (element == NULL) {
-		fprintf(stderr, "can not create namespace element\n");
+	entry = namespace_entry_create(push);
+	if (entry == NULL) {
+		fprintf(stderr, "can not create namespace entry\n");
 		goto bail;
 	}
-	TAILQ_INSERT_TAIL(&namespace->elements, element, list);
+	TAILQ_INSERT_TAIL(&namespace->entries, entry, list);
 	namespace->dirty = 1;
 	return 0;
-bail:	if (element != NULL) {
-		namespace_element_destroy(element);
+bail:	if (entry != NULL) {
+		namespace_entry_destroy(entry);
 	}
 	return -1;
 }
 
 static int namespace_pop (struct namespace *namespace)
 {
-	struct namespace_element *element;
-	element = NULL;
+	struct namespace_entry *entry;
+	entry = NULL;
 	if (namespace == NULL) {
 		fprintf(stderr, "namespace is invalid\n");
 		goto bail;
 	}
-	if (TAILQ_EMPTY(&namespace->elements)) {
+	if (TAILQ_EMPTY(&namespace->entries)) {
 		fprintf(stderr, "namespace is empty\n");
 		goto bail;
 	}
-	element = TAILQ_LAST(&namespace->elements, namespace_elements);
-	TAILQ_REMOVE(&namespace->elements, element, list);
-	namespace_element_destroy(element);
+	entry = TAILQ_LAST(&namespace->entries, namespace_entries);
+	TAILQ_REMOVE(&namespace->entries, entry, list);
+	namespace_entry_destroy(entry);
 	namespace->dirty = 1;
 	return 0;
-bail:	if (element != NULL) {
-		namespace_element_destroy(element);
+bail:	if (entry != NULL) {
+		namespace_entry_destroy(entry);
 	}
 	return -1;
 }
 
 static void namespace_destroy (struct namespace *namespace)
 {
-	struct namespace_element *element;
-	struct namespace_element *nelement;
+	struct namespace_entry *entry;
+	struct namespace_entry *nentry;
 	if (namespace == NULL) {
 		return;
 	}
-	TAILQ_FOREACH_SAFE(element, &namespace->elements, list, nelement) {
-		TAILQ_REMOVE(&namespace->elements, element, list);
-		namespace_element_destroy(element);
+	TAILQ_FOREACH_SAFE(entry, &namespace->entries, list, nentry) {
+		TAILQ_REMOVE(&namespace->entries, entry, list);
+		namespace_entry_destroy(entry);
 	}
 	free(namespace);
 }
@@ -1465,7 +1574,7 @@ static struct namespace * namespace_create (void)
 		goto bail;
 	}
 	memset(namespace, 0, sizeof(struct namespace));
-	TAILQ_INIT(&namespace->elements);
+	TAILQ_INIT(&namespace->entries);
 	return namespace;
 bail:	if (namespace != NULL) {
 		namespace_destroy(namespace);
@@ -1725,10 +1834,12 @@ bail:	if (fp != NULL &&
 	return -1;
 }
 
-static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, uint64_t element, FILE *fp)
+static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, struct element *element, FILE *fp)
 {
 	uint64_t table_field_i;
 	struct schema_table_field *table_field;
+
+	struct element_entry *element_entry;
 
 	if (schema == NULL) {
 		fprintf(stderr, "schema is invalid\n");
@@ -1745,7 +1856,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 
 	(void) element;
 
-	if (element == UINT64_MAX) {
+	if (TAILQ_EMPTY(&element->entries)) {
 		fprintf(fp, "static inline int %sdecode (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
 		fprintf(fp, "{\n");
 		fprintf(fp, "    (void) encoder;\n");
@@ -1762,7 +1873,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				namespace_push(namespace, "_");
 				namespace_push(namespace, table_field->type);
 				namespace_push(namespace, "_");
-				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, UINT64_MAX, fp);
+				element_push(element, table_field_i);
+				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
+				element_pop(element);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
@@ -1776,8 +1889,12 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline %s_t %sget_%s (struct linearbuffers_decoder *decoder)\n", table_field->type, namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    offset = 0;\n");
 				fprintf(fp, "    %s_t value;\n", table_field->type);
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+				}
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
 				fprintf(fp, "    memcpy(&value, decoder->buffer + offset, sizeof(value));\n");
 				fprintf(fp, "    return value;\n");
 				fprintf(fp, "}\n");
@@ -1786,14 +1903,20 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    uint64_t offset;\n");
 				fprintf(fp, "    %s%s_enum_t value;\n", schema->namespace_, table_field->type);
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    offset = 0;\n");
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+				}
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
 				fprintf(fp, "    memcpy(&value, decoder->buffer + offset, sizeof(value));\n");
 				fprintf(fp, "    return value;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
-				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, table_field_i, fp);
+				element_push(element, table_field_i);
+				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
+				element_pop(element);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 			} else {
@@ -1813,11 +1936,14 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 	int rc;
 	FILE *fp;
 
+	struct element *element;
 	struct namespace *namespace;
+
 	struct schema_enum *anum;
 	struct schema_table *table;
 
 	fp = NULL;
+	element = NULL;
 	namespace = NULL;
 
 	if (schema == NULL) {
@@ -1884,15 +2010,16 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 		}
 
 		namespace = namespace_create();
-		if (namespace == NULL) {
-			fprintf(stderr, "can not create namespace\n");
-			goto bail;
-		}
 		namespace_push(namespace, schema->namespace_);
 		namespace_push(namespace, table->name);
 		namespace_push(namespace, "_");
-		schema_generate_decoder_table(schema, table, namespace, UINT64_MAX, fp);
+
+		element = element_create();
+
+		schema_generate_decoder_table(schema, table, namespace, element, fp);
+
 		namespace_destroy(namespace);
+		element_destroy(element);
 
 		fprintf(fp, "\n");
 		fprintf(fp, "#endif\n");
@@ -1910,6 +2037,9 @@ bail:	if (fp != NULL &&
 	}
 	if (namespace != NULL) {
 		namespace_destroy(namespace);
+	}
+	if (element != NULL) {
+		element_destroy(element);
 	}
 	return -1;
 }
