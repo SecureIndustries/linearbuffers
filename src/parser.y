@@ -86,7 +86,7 @@ Enums:
     ;
 
 Enum:
-		ENUM STRING BLOCK                               {
+        ENUM STRING BLOCK                               {
                                                             int rc;
                                                             schema_parser->schema_enum = schema_enum_create();
                                                             if (schema_parser->schema_enum == NULL) {
@@ -99,8 +99,8 @@ Enum:
                                                                 YYERROR;
                                                             }
                                                         }
-			EnumEntries
-		ENDBLOCK                                        {
+            EnumEntries
+        ENDBLOCK                                        {
                                                             int rc;
                                                             rc = schema_add_enum(schema_parser->schema, schema_parser->schema_enum);
                                                             if (rc != 0) {
@@ -108,7 +108,7 @@ Enum:
                                                                 YYERROR;
                                                             }
                                                         }
-	
+    
     |    ENUM STRING COLON STRING BLOCK                 {
                                                             int rc;
                                                             schema_parser->schema_enum = schema_enum_create();
@@ -127,8 +127,8 @@ Enum:
                                                                 YYERROR;
                                                             }
                                                         }
-			EnumEntries
-		ENDBLOCK                                        {
+            EnumEntries
+        ENDBLOCK                                        {
                                                             int rc;
                                                             rc = schema_add_enum(schema_parser->schema, schema_parser->schema_enum);
                                                             if (rc != 0) {
@@ -136,16 +136,16 @@ Enum:
                                                                 YYERROR;
                                                             }
                                                         }
-	
+    
     ;
 
 EnumEntries:
-		EnumEntry
+        EnumEntry
     |    EnumEntries COMMA EnumEntry
     ;
 
 EnumEntry:
-		STRING                                          {
+        STRING                                          {
                                                             int rc;
                                                             schema_parser->schema_enum_field = schema_enum_field_create();
                                                             if (schema_parser->schema_enum_field == NULL) {
@@ -163,7 +163,7 @@ EnumEntry:
                                                                 YYERROR;
                                                             }
                                                         }
-	
+    
     |    STRING EQUAL STRING                            {
                                                             int rc;
                                                             schema_parser->schema_enum_field = schema_enum_field_create();
@@ -195,7 +195,7 @@ Tables:
     ;
 
 Table:
-		TABLE STRING BLOCK                              {
+        TABLE STRING BLOCK                              {
                                                             int rc;
                                                             schema_parser->schema_table = schema_table_create();
                                                             if (schema_parser->schema_table == NULL) {
@@ -208,8 +208,8 @@ Table:
                                                                 YYERROR;
                                                             }
                                                         }
-			TableFields
-		ENDBLOCK                                        {
+            TableFields
+        ENDBLOCK                                        {
                                                             int rc;
                                                             rc = schema_add_table(schema_parser->schema, schema_parser->schema_table);
                                                             if (rc != 0) {
@@ -225,7 +225,7 @@ TableFields:
     ;
 
 TableField:
-		STRING COLON STRING SEMICOLON                   {
+        STRING COLON STRING SEMICOLON                   {
                                                             int rc;
                                                             schema_parser->schema_table_field = schema_table_field_create();
                                                             if (schema_parser->schema_table_field == NULL) {
