@@ -1881,7 +1881,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
 				fprintf(fp, "    return decoder->buffer + offset + sizeof(uint64_t);\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline uint64_t %s%s_get_length (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    uint64_t offset;\n");
 				fprintf(fp, "    uint64_t count;\n");
@@ -1892,6 +1892,18 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
 				fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
 				fprintf(fp, "    return count;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline uint64_t %s%s_get_length (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    uint64_t count;\n");
+				fprintf(fp, "    offset = 0;\n");
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+				}
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
+				fprintf(fp, "    return count * sizeof(%s_t);\n", table_field->type);
 				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 			} else if (type_is_table(schema, table_field->type)) {

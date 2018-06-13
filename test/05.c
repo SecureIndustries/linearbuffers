@@ -66,7 +66,11 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_data_get_length(&decoder) != sizeof(data) / sizeof(data[0])) {
+	if (linearbuffers_output_data_get_count(&decoder) != sizeof(data) / sizeof(data[0])) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_data_get_length(&decoder) != sizeof(data)) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
@@ -74,7 +78,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	for (i = 0; i < linearbuffers_output_data_get_length(&decoder); i++) {
+	for (i = 0; i < linearbuffers_output_data_get_count(&decoder); i++) {
 		if (data[i] != linearbuffers_output_data_get(&decoder)[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
