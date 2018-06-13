@@ -18,10 +18,10 @@ int main (int argc, char *argv[])
 
 	linearbuffers_output_start(encoder);
 	linearbuffers_output_1_start(encoder);
-	linearbuffers_output_1_set_foo(encoder, 1);
+	linearbuffers_output_1_foo_set(encoder, 1);
 	linearbuffers_output_1_end(encoder);
 	linearbuffers_output_2_start(encoder);
-	linearbuffers_output_2_set_bar(encoder, 2);
+	linearbuffers_output_2_bar_set(encoder, 2);
 	linearbuffers_output_2_end(encoder);
 	linearbuffers_output_end(encoder);
 

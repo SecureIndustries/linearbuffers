@@ -33,13 +33,13 @@ int main (int argc, char *argv[])
 	}
 
 	rc  = linearbuffers_output_start(encoder);
-	rc |= linearbuffers_output_set_type(encoder, linearbuffers_type_type_3);
-	rc |= linearbuffers_output_set_length(encoder, 1);
+	rc |= linearbuffers_output_type_set(encoder, linearbuffers_type_type_3);
+	rc |= linearbuffers_output_length_set(encoder, 1);
 	rc |= linearbuffers_output_timeval_start(encoder);
-	rc |= linearbuffers_output_timeval_set_seconds(encoder, 2);
-	rc |= linearbuffers_output_timeval_set_useconds(encoder, 3);
+	rc |= linearbuffers_output_timeval_seconds_set(encoder, 2);
+	rc |= linearbuffers_output_timeval_useconds_set(encoder, 3);
 	rc |= linearbuffers_output_timeval_end(encoder);
-	rc |= linearbuffers_output_set_data(encoder, data, sizeof(data) / sizeof(data[0]));
+	rc |= linearbuffers_output_data_set(encoder, data, sizeof(data) / sizeof(data[0]));
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
@@ -54,28 +54,28 @@ int main (int argc, char *argv[])
 	fprintf(stderr, "linearized: %p, length: %ld\n", linearized, linearized_length);
 
 	linearbuffers_output_decode(&decoder, linearized, linearized_length);
-	if (linearbuffers_output_get_type(&decoder) != linearbuffers_type_type_3) {
+	if (linearbuffers_output_type_get(&decoder) != linearbuffers_type_type_3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_get_length(&decoder) != 1) {
+	if (linearbuffers_output_length_get(&decoder) != 1) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_timeval_get_seconds(&decoder) != 2) {
+	if (linearbuffers_output_timeval_seconds_get(&decoder) != 2) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_get_data_length(&decoder) != sizeof(data) / sizeof(data[0])) {
+	if (linearbuffers_output_data_get_length(&decoder) != sizeof(data) / sizeof(data[0])) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_get_data(&decoder), data, sizeof(data))) {
+	if (memcmp(linearbuffers_output_data_get(&decoder), data, sizeof(data))) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	for (i = 0; i < linearbuffers_output_get_data_length(&decoder); i++) {
-		if (data[i] != linearbuffers_output_get_data(&decoder)[i]) {
+	for (i = 0; i < linearbuffers_output_data_get_length(&decoder); i++) {
+		if (data[i] != linearbuffers_output_data_get(&decoder)[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
