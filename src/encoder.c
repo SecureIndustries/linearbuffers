@@ -608,13 +608,18 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 		linearbuffers_debugf("logic error: entry is invalid");
 		goto bail;
 	}
+	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	if (entry->parent != NULL) {
-		entry->length += entry->length;
+		entry->parent->length += entry->length;
 		if (entry->parent->type == entry_type_vector) {
 			entry->parent->u.vector.count += 1;
 		}
+		TAILQ_REMOVE(&entry->parent->childs, entry, child);
+		entry_destroy(&encoder->pool.entry, entry);
+	} else {
+		entry_destroy(&encoder->pool.entry, entry);
+		encoder->root = NULL;
 	}
-	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	return 0;
 bail:	return -1;
 }
