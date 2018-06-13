@@ -10,7 +10,7 @@
 
 #include "debug.h"
 
-enum linearbuffers_debug_level linearbuffers_debug_level = linearbuffers_debug_level_debug;
+enum linearbuffers_debug_level linearbuffers_debug_level = linearbuffers_debug_level_error;
 static pthread_mutex_t linearbuffers_debug_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void linearbuffers_debug_lock (void)

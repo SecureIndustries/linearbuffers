@@ -62,6 +62,6 @@ int linearbuffers_encoder_vector_push_int16 (struct linearbuffers_encoder *encod
 int linearbuffers_encoder_vector_push_int32 (struct linearbuffers_encoder *encoder, int32_t value);
 int linearbuffers_encoder_vector_push_int64 (struct linearbuffers_encoder *encoder, int64_t value);
 
-const char * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length);
+const void * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length);
 
 #endif

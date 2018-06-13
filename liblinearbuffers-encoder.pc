@@ -10,6 +10,6 @@ Description: linearbuffers is a lightweight schema encoder/decoder library
 Version: 1.0.0
 Requires:
 Conflicts:
-Libs: -L${libdir} 
+Libs: -L${libdir} -llinearbuffers-encoder
 Libs.private:
 Cflags: -I${includedir}
