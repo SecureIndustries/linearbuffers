@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#define LINEARBUFFERS_DEBUG_NAME "encoder"
+
+#include "debug.h"
 #include "queue.h"
 #include "encoder.h"
 
@@ -89,14 +92,14 @@ static int encoder_default_emitter (void *context, uint64_t offset, void *buffer
 	(void) offset;
 	(void) buffer;
 	(void) length;
-	fprintf(stderr, "emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "\n", offset, buffer, length);
+	linearbuffers_debugf("emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "", offset, buffer, length);
 	if (encoder->output.size < offset + length) {
 		encoder->output.buffer = realloc(encoder->output.buffer, offset + length);
 		if (encoder->output.buffer == NULL) {
 			void *tmp;
 			tmp = malloc(offset + length);
 			if (tmp == NULL) {
-				fprintf(stderr, "can not allocate memory\n");
+				linearbuffers_debugf("can not allocate memory");
 				goto bail;
 			}
 			memcpy(tmp, encoder->output.buffer, encoder->output.length);
@@ -118,7 +121,7 @@ bail:	return -1;
 const char * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length)
 {
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
+		linearbuffers_debugf("encoder is invalid");
 		return NULL;
 	}
 	if (length != NULL) {
@@ -219,7 +222,7 @@ static struct entry * entry_table_create (struct entry *parent, uint64_t element
 	struct entry *entry;
 	entry = malloc(sizeof(struct entry));
 	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_debugf("can not allocate memory");
 		goto bail;
 	}
 	memset(entry, 0, sizeof(struct entry));
@@ -241,7 +244,7 @@ bail:	if (entry != NULL) {
 		struct entry *entry; \
 		entry = malloc(sizeof(struct entry)); \
 		if (entry == NULL) { \
-			fprintf(stderr, "can not allocate memory\n"); \
+			linearbuffers_debugf("can not allocate memory"); \
 			goto bail; \
 		} \
 		memset(entry, 0, sizeof(struct entry)); \
@@ -274,7 +277,7 @@ entry_scalar_type_create(uint64);
 		struct entry *entry; \
 		entry = malloc(sizeof(struct entry)); \
 		if (entry == NULL) { \
-			fprintf(stderr, "can not allocate memory\n"); \
+			linearbuffers_debugf("can not allocate memory"); \
 			goto bail; \
 		} \
 		memset(entry, 0, sizeof(struct entry)); \
@@ -308,7 +311,7 @@ static struct entry * entry_vector_create (struct entry *parent)
 	struct entry *entry;
 	entry = malloc(sizeof(struct entry));
 	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_debugf("can not allocate memory");
 		goto bail;
 	}
 	memset(entry, 0, sizeof(struct entry));
@@ -331,7 +334,7 @@ struct linearbuffers_encoder * linearbuffers_encoder_create (struct linearbuffer
 	(void) options;
 	encoder = malloc(sizeof(struct linearbuffers_encoder));
 	if (encoder == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_debugf("can not allocate memory");
 		goto bail;
 	}
 	memset(encoder, 0, sizeof(struct linearbuffers_encoder));
@@ -368,7 +371,7 @@ void linearbuffers_encoder_destroy (struct linearbuffers_encoder *encoder)
 int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder)
 {
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
+		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
 	return 0;
@@ -380,47 +383,47 @@ int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, ui
 	struct entry *entry;
 	struct entry *parent;
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
+		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
 	if (elements == 0) {
-		fprintf(stderr, "elements is invalid\n");
+		linearbuffers_debugf("elements is invalid");
 		goto bail;
 	}
 	if (encoder->root == NULL) {
 		if (element != UINT64_MAX) {
-			fprintf(stderr, "logic error: element is invalid\n");
+			linearbuffers_debugf("logic error: element is invalid");
 			goto bail;
 		}
 		parent = NULL;
 	} else {
 		if (TAILQ_EMPTY(&encoder->stack)) {
-			fprintf(stderr, "logic error: stack is empty\n");
+			linearbuffers_debugf("logic error: stack is empty");
 			goto bail;
 		}
 		parent = TAILQ_LAST(&encoder->stack, entries);
 		if (parent == NULL) {
-			fprintf(stderr, "logic error: parent is invalid\n");
+			linearbuffers_debugf("logic error: parent is invalid");
 			goto bail;
 		}
 		if (parent->type == entry_type_table) {
 			if (element >= parent->u.table.elements) {
-				fprintf(stderr, "logic error: element is invalid\n");
+				linearbuffers_debugf("logic error: element is invalid");
 				goto bail;
 			}
 		} else if (parent->type == entry_type_vector) {
 			if (element != UINT64_MAX) {
-				fprintf(stderr, "logic error: element is invalid\n");
+				linearbuffers_debugf("logic error: element is invalid");
 				goto bail;
 			}
 		} else {
-			fprintf(stderr, "logic error: parent type: %s is invalid\n", entry_type_string(parent->type));
+			linearbuffers_debugf("logic error: parent type: %s is invalid", entry_type_string(parent->type));
 			goto bail;
 		}
 	}
 	entry = entry_table_create(parent, elements);
 	if (entry == NULL) {
-		fprintf(stderr, "can not create entry table\n");
+		linearbuffers_debugf("can not create entry table");
 		goto bail;
 	}
 	if (parent == NULL) {
@@ -445,29 +448,29 @@ bail:	return -1;
 		struct entry *entry; \
 		struct entry *parent; \
 		if (encoder == NULL) { \
-			fprintf(stderr, "encoder is invalid\n"); \
+			linearbuffers_debugf("encoder is invalid"); \
 			goto bail; \
 		} \
 		if (TAILQ_EMPTY(&encoder->stack)) { \
-			fprintf(stderr, "logic error: stack is empty\n"); \
+			linearbuffers_debugf("logic error: stack is empty"); \
 			goto bail; \
 		} \
 		parent = TAILQ_LAST(&encoder->stack, entries); \
 		if (parent == NULL) { \
-			fprintf(stderr, "logic error: parent is invalid\n"); \
+			linearbuffers_debugf("logic error: parent is invalid"); \
 			goto bail; \
 		} \
 		if (parent->type != entry_type_table) { \
-			fprintf(stderr, "logic error: parent is invalid\n"); \
+			linearbuffers_debugf("logic error: parent is invalid"); \
 			goto bail; \
 		} \
 		if (element >= parent->u.table.elements) { \
-			fprintf(stderr, "logic error: element is invalid\n"); \
+			linearbuffers_debugf("logic error: element is invalid"); \
 			goto bail; \
 		} \
 		entry = entry_scalar_ ## __type__ ## _create(parent, value); \
 		if (entry == NULL) { \
-			fprintf(stderr, "can not create entry scalar\n"); \
+			linearbuffers_debugf("can not create entry scalar"); \
 			goto bail; \
 		} \
 		parent->length += entry->length; \
@@ -496,29 +499,29 @@ linearbuffers_encoder_table_set_type(uint64);
 		struct entry *entry; \
 		struct entry *parent; \
 		if (encoder == NULL) { \
-			fprintf(stderr, "encoder is invalid\n"); \
+			linearbuffers_debugf("encoder is invalid"); \
 			goto bail; \
 		} \
 		if (TAILQ_EMPTY(&encoder->stack)) { \
-			fprintf(stderr, "logic error: stack is empty\n"); \
+			linearbuffers_debugf("logic error: stack is empty"); \
 			goto bail; \
 		} \
 		parent = TAILQ_LAST(&encoder->stack, entries); \
 		if (parent == NULL) { \
-			fprintf(stderr, "logic error: parent is invalid\n"); \
+			linearbuffers_debugf("logic error: parent is invalid"); \
 			goto bail; \
 		} \
 		if (parent->type != entry_type_table) { \
-			fprintf(stderr, "logic error: parent is invalid\n"); \
+			linearbuffers_debugf("logic error: parent is invalid"); \
 			goto bail; \
 		} \
 		if (element >= parent->u.table.elements) { \
-			fprintf(stderr, "logic error: element is invalid\n"); \
+			linearbuffers_debugf("logic error: element is invalid"); \
 			goto bail; \
 		} \
 		entry = entry_vector_ ## __type__ ## _create(parent, value, count); \
 		if (entry == NULL) { \
-			fprintf(stderr, "can not create entry vector\n"); \
+			linearbuffers_debugf("can not create entry vector"); \
 			goto bail; \
 		} \
 		parent->length += entry->length; \
@@ -547,16 +550,16 @@ int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 {
 	struct entry *entry;
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
+		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
 	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
+		linearbuffers_debugf("logic error: stack is empty");
 		goto bail;
 	}
 	entry = TAILQ_LAST(&encoder->stack, entries);
 	if (entry == NULL) {
-		fprintf(stderr, "logic error: entry is invalid\n");
+		linearbuffers_debugf("logic error: entry is invalid");
 		goto bail;
 	}
 	if (entry->parent != NULL) {
@@ -579,29 +582,29 @@ int linearbuffers_encoder_vector_start (struct linearbuffers_encoder *encoder, u
 	struct entry *entry;
 	struct entry *parent;
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
+		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
 	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
+		linearbuffers_debugf("logic error: stack is empty");
 		goto bail;
 	}
 	parent = TAILQ_LAST(&encoder->stack, entries);
 	if (parent == NULL) {
-		fprintf(stderr, "logic error: parent is invalid\n");
+		linearbuffers_debugf("logic error: parent is invalid");
 		goto bail;
 	}
 	if (parent->type != entry_type_table) {
-		fprintf(stderr, "logic error: parent is invalid\n");
+		linearbuffers_debugf("logic error: parent is invalid");
 		goto bail;
 	}
 	if (element >= parent->u.table.elements) {
-		fprintf(stderr, "logic error: element is invalid\n");
+		linearbuffers_debugf("logic error: element is invalid");
 		goto bail;
 	}
 	entry = entry_vector_create(parent);
 	if (entry == NULL) {
-		fprintf(stderr, "can not create entry vector\n");
+		linearbuffers_debugf("can not create entry vector");
 		goto bail;
 	}
 	entry->offset = encoder->emitter.offset;
@@ -615,16 +618,16 @@ int linearbuffers_encoder_vector_end (struct linearbuffers_encoder *encoder)
 {
 	struct entry *entry;
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder is invalid\n");
+		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
 	if (TAILQ_EMPTY(&encoder->stack)) {
-		fprintf(stderr, "logic error: stack is empty\n");
+		linearbuffers_debugf("logic error: stack is empty");
 		goto bail;
 	}
 	entry = TAILQ_LAST(&encoder->stack, entries);
 	if (entry == NULL) {
-		fprintf(stderr, "logic error: entry is invalid\n");
+		linearbuffers_debugf("logic error: entry is invalid");
 		goto bail;
 	}
 	if (entry->parent != NULL) {

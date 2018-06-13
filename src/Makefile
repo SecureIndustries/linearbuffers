@@ -23,32 +23,58 @@ linearbuffers-compiler_files-y = \
 	main.c
 
 linearbuffers-compiler_parser.lex.c_cflags-y = \
+	-fvisibility=hidden \
 	-Wno-sign-compare \
 	-Wno-unused-function
 	
 linearbuffers-compiler_parser.tab.c_cflags-y = \
+	-fvisibility=hidden \
 	-Wno-implicit-function-declaration
 
 linearbuffers-compiler_ldflags-y = \
 	-lfl
 
 liblinearbuffers-encoder.o_files-y = \
+	debug.c \
 	encoder.c
+
+liblinearbuffers-encoder.o_cflags-y = \
+	-fvisibility=hidden
 
 liblinearbuffers-encoder.a_files-y = \
+	debug.c \
 	encoder.c
+
+liblinearbuffers-encoder.a_cflags-y = \
+	-fvisibility=hidden
 
 liblinearbuffers-encoder.so_files-y = \
+	debug.c \
 	encoder.c
 
+liblinearbuffers-encoder.so_cflags-y = \
+	-fvisibility=hidden
+
 liblinearbuffers-decoder.o_files-y = \
+	debug.c \
 	decoder.c
+
+liblinearbuffers-decoder.o_cflags-y = \
+	-fvisibility=hidden
 
 liblinearbuffers-decoder.a_files-y = \
+	debug.c \
 	decoder.c
 
+liblinearbuffers-decoder.a_cflags-y = \
+	-fvisibility=hidden
+
 liblinearbuffers-decoder.so_files-y = \
+	debug.c \
 	decoder.c
+
+liblinearbuffers-decoder.so_cflags-y = \
+	-fvisibility=hidden
 
 dist.dir = ../dist
 dist.base = linearbuffers
