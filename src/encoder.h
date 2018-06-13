@@ -11,10 +11,17 @@ struct linearbuffers_encoder_create_options {
 	} emitter;
 };
 
+struct linearbuffers_encoder_reset_options {
+	struct {
+		int (*function) (void *context, uint64_t offset, void *buffer, uint64_t length);
+		void *context;
+	} emitter;
+};
+
 struct linearbuffers_encoder * linearbuffers_encoder_create (struct linearbuffers_encoder_create_options *options);
 void linearbuffers_encoder_destroy (struct linearbuffers_encoder *encoder);
 
-int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder, struct linearbuffers_encoder_reset_options *options);
 
 int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t elements);
 int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder);

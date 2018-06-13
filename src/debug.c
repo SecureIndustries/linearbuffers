@@ -75,9 +75,6 @@ int linearbuffers_debug_printf (enum linearbuffers_debug_level level, const char
 
 	str = NULL;
 	va_start(ap, fmt);
-	if (linearbuffers_debug_level < level) {
-		goto out;
-	}
 
 	linearbuffers_debug_lock();
 
@@ -101,7 +98,7 @@ int linearbuffers_debug_printf (enum linearbuffers_debug_level level, const char
 
 	linearbuffers_debug_unlock();
 
-out:	va_end(ap);
+	va_end(ap);
 	if (str != NULL) {
 		free(str);
 	}

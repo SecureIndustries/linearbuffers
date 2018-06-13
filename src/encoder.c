@@ -212,9 +212,6 @@ struct linearbuffers_encoder {
 static int encoder_default_emitter (void *context, uint64_t offset, void *buffer, uint64_t length)
 {
 	struct linearbuffers_encoder *encoder = context;
-	(void) offset;
-	(void) buffer;
-	(void) length;
 	linearbuffers_debugf("emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "", offset, buffer, length);
 	if (encoder->output.size < offset + length) {
 		void *tmp;
@@ -495,7 +492,7 @@ __attribute__ ((__visibility__("default"))) void linearbuffers_encoder_destroy (
 	free(encoder);
 }
 
-__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder)
+__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder, struct linearbuffers_encoder_reset_options *options)
 {
 	if (encoder == NULL) {
 		linearbuffers_debugf("encoder is invalid");
@@ -506,6 +503,14 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (str
 	encoder->emitter.offset = 0;
 	TAILQ_INIT(&encoder->stack);
 	encoder->output.length = 0;
+	encoder->emitter.function = encoder_default_emitter;
+	encoder->emitter.context = encoder;
+	if (options != NULL) {
+		if (options->emitter.function != NULL) {
+			encoder->emitter.function = options->emitter.function;
+			encoder->emitter.context = options->emitter.context;
+		}
+	}
 	return 0;
 bail:	return -1;
 }
