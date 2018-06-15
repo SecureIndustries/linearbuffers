@@ -1616,7 +1616,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		if (table_field->vector) {
 			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s_t *value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
+				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const %s_t *value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), value_%s, value_%s_count);\n", table_field->type, table_field_i, table_field->name, table_field->name);
@@ -2287,6 +2287,7 @@ int schema_generate_jsonify (struct schema *schema, const char *filename)
 	struct element *element;
 	struct namespace *namespace;
 
+	struct schema_enum *anum;
 	struct schema_table *table;
 
 	fp = NULL;
@@ -2326,7 +2327,66 @@ int schema_generate_jsonify (struct schema *schema, const char *filename)
 	fprintf(fp, "#include <stdint.h>\n");
 	fprintf(fp, "#include <string.h>\n");
 	fprintf(fp, "#include <inttypes.h>\n");
+	fprintf(fp, "#include <linearbuffers/decoder.h>\n");
 	fprintf(fp, "#include <linearbuffers/jsonify.h>\n");
+
+	if (!TAILQ_EMPTY(&schema->enums)) {
+		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_ENUM_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_ENUM_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
+		TAILQ_FOREACH(anum, &schema->enums, list) {
+			schema_generate_decoder_enum(schema, anum, fp);
+		}
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
+	}
+
+	if (!TAILQ_EMPTY(&schema->tables)) {
+		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_DECODER_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_DECODER_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
+		TAILQ_FOREACH(table, &schema->tables, list) {
+			if (strcmp(schema->root, table->name) == 0) {
+				break;
+			}
+		}
+		if (table == NULL) {
+			linearbuffers_errorf("schema root is invalid");
+			goto bail;
+		}
+
+		namespace = namespace_create();
+		if (namespace == NULL) {
+			linearbuffers_errorf("can not create namespace");
+			goto bail;
+		}
+		rc  = namespace_push(namespace, schema->namespace_);
+		rc |= namespace_push(namespace, table->name);
+		rc |= namespace_push(namespace, "_");
+		if (rc != 0) {
+			linearbuffers_errorf("can not build namespace");
+			goto bail;
+		}
+
+		element = element_create();
+		if (element == NULL) {
+			linearbuffers_errorf("can not create element");
+			goto bail;
+		}
+
+		schema_generate_decoder_table(schema, table, namespace, element, fp);
+
+		namespace_destroy(namespace);
+		element_destroy(element);
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
+	}
 
 	if (!TAILQ_EMPTY(&schema->tables)) {
 		fprintf(fp, "\n");

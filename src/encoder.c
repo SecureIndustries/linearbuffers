@@ -180,7 +180,7 @@ struct linearbuffers_encoder {
 	struct entry *root;
 	struct entries stack;
 	struct {
-		int (*function) (void *context, uint64_t offset, void *buffer, uint64_t length);
+		int (*function) (void *context, uint64_t offset, const void *buffer, uint64_t length);
 		void *context;
 		uint64_t offset;
 	} emitter;
@@ -194,7 +194,7 @@ struct linearbuffers_encoder {
 	} pool;
 };
 
-static int encoder_default_emitter (void *context, uint64_t offset, void *buffer, uint64_t length)
+static int encoder_default_emitter (void *context, uint64_t offset, const void *buffer, uint64_t length)
 {
 	struct linearbuffers_encoder *encoder = context;
 	linearbuffers_debugf("emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "", offset, buffer, length);
@@ -479,7 +479,7 @@ linearbuffers_encoder_table_set_type(uint32);
 linearbuffers_encoder_table_set_type(uint64);
 
 #define linearbuffers_encoder_table_set_vector_type(__type__) \
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, __type__ ## _t *value, uint64_t count) \
+	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, const __type__ ## _t *value, uint64_t count) \
 	{ \
 		struct entry *parent; \
 		if (encoder == NULL) { \
