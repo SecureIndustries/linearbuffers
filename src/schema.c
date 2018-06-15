@@ -240,7 +240,7 @@ struct schema_attribute * schema_attribute_create (void)
 	struct schema_attribute *attribute;
 	attribute = malloc(sizeof(struct schema_attribute));
 	if (attribute == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(attribute, 0, sizeof(struct schema_attribute));
@@ -254,7 +254,7 @@ bail:	if (attribute != NULL) {
 int schema_enum_field_set_value (struct schema_enum_field *field, const char *value)
 {
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	if (field->value != NULL) {
@@ -264,7 +264,7 @@ int schema_enum_field_set_value (struct schema_enum_field *field, const char *va
 	if (value != NULL) {
 		field->value = strdup(value);
 		if (field->value == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -275,7 +275,7 @@ bail:	return -1;
 int schema_enum_field_set_name (struct schema_enum_field *field, const char *name)
 {
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	if (field->name != NULL) {
@@ -285,7 +285,7 @@ int schema_enum_field_set_name (struct schema_enum_field *field, const char *nam
 	if (name != NULL) {
 		field->name = strdup(name);
 		if (field->name == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -318,7 +318,7 @@ struct schema_enum_field * schema_enum_field_create (void)
 	struct schema_enum_field *field;
 	field = malloc(sizeof(struct schema_enum_field));
 	if (field == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(field, 0, sizeof(struct schema_enum_field));
@@ -333,7 +333,7 @@ bail:	if (field != NULL) {
 int schema_enum_set_type (struct schema_enum *anum, const char *type)
 {
 	if (anum == NULL) {
-		fprintf(stderr, "anum is invalid\n");
+		linearbuffers_errorf("anum is invalid");
 		goto bail;
 	}
 	if (anum->type != NULL) {
@@ -343,7 +343,7 @@ int schema_enum_set_type (struct schema_enum *anum, const char *type)
 	if (type != NULL) {
 		anum->type = strdup(type);
 		if (anum->type == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -354,7 +354,7 @@ bail:	return -1;
 int schema_enum_set_name (struct schema_enum *anum, const char *name)
 {
 	if (anum == NULL) {
-		fprintf(stderr, "anum is invalid\n");
+		linearbuffers_errorf("anum is invalid");
 		goto bail;
 	}
 	if (anum->name != NULL) {
@@ -364,7 +364,7 @@ int schema_enum_set_name (struct schema_enum *anum, const char *name)
 	if (name != NULL) {
 		anum->name = strdup(name);
 		if (anum->name == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -375,15 +375,15 @@ bail:	return -1;
 int schema_enum_add_field (struct schema_enum *anum, struct schema_enum_field *field)
 {
 	if (anum == NULL) {
-		fprintf(stderr, "anum is invalid\n");
+		linearbuffers_errorf("anum is invalid");
 		goto bail;
 	}
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	if (field->name == NULL) {
-		fprintf(stderr, "field name is invalid\n");
+		linearbuffers_errorf("field name is invalid");
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&anum->fields, field, list);
@@ -431,7 +431,7 @@ struct schema_enum * schema_enum_create (void)
 	struct schema_enum *anum;
 	anum = malloc(sizeof(struct schema_enum));
 	if (anum == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(anum, 0, sizeof(struct schema_enum));
@@ -447,7 +447,7 @@ bail:	if (anum != NULL) {
 int schema_table_field_set_vector (struct schema_table_field *field, int vector)
 {
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	field->vector = !!vector;
@@ -458,7 +458,7 @@ bail:	return -1;
 int schema_table_field_set_type (struct schema_table_field *field, const char *type)
 {
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	if (field->type != NULL) {
@@ -468,7 +468,7 @@ int schema_table_field_set_type (struct schema_table_field *field, const char *t
 	if (type != NULL) {
 		field->type = strdup(type);
 		if (field->type == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -479,7 +479,7 @@ bail:	return -1;
 int schema_table_field_set_name (struct schema_table_field *field, const char *name)
 {
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	if (field->name != NULL) {
@@ -489,7 +489,7 @@ int schema_table_field_set_name (struct schema_table_field *field, const char *n
 	if (name != NULL) {
 		field->name = strdup(name);
 		if (field->name == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -522,7 +522,7 @@ struct schema_table_field * schema_table_field_create (void)
 	struct schema_table_field *field;
 	field = malloc(sizeof(struct schema_table_field));
 	if (field == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(field, 0, sizeof(struct schema_table_field));
@@ -537,7 +537,7 @@ bail:	if (field != NULL) {
 int schema_table_set_name (struct schema_table *table, const char *name)
 {
 	if (table == NULL) {
-		fprintf(stderr, "table is invalid\n");
+		linearbuffers_errorf("table is invalid");
 		goto bail;
 	}
 	if (table->name != NULL) {
@@ -547,7 +547,7 @@ int schema_table_set_name (struct schema_table *table, const char *name)
 	if (name != NULL) {
 		table->name = strdup(name);
 		if (table->name == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -558,19 +558,19 @@ bail:	return -1;
 int schema_table_add_field (struct schema_table *table, struct schema_table_field *field)
 {
 	if (table == NULL) {
-		fprintf(stderr, "table is invalid\n");
+		linearbuffers_errorf("table is invalid");
 		goto bail;
 	}
 	if (field == NULL) {
-		fprintf(stderr, "field is invalid\n");
+		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
 	if (field->name == NULL) {
-		fprintf(stderr, "field name is invalid\n");
+		linearbuffers_errorf("field name is invalid");
 		goto bail;
 	}
 	if (field->type == NULL) {
-		fprintf(stderr, "field type is invalid\n");
+		linearbuffers_errorf("field type is invalid");
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&table->fields, field, list);
@@ -608,7 +608,7 @@ struct schema_table * schema_table_create (void)
 	struct schema_table *table;
 	table = malloc(sizeof(struct schema_table));
 	if (table == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(table, 0, sizeof(struct schema_table));
@@ -624,7 +624,7 @@ bail:	if (table != NULL) {
 int schema_set_namespace (struct schema *schema, const char *name)
 {
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (schema->namespace != NULL) {
@@ -634,7 +634,7 @@ int schema_set_namespace (struct schema *schema, const char *name)
 	if (name != NULL) {
 		schema->namespace = strdup(name);
 		if (schema->namespace == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -645,15 +645,15 @@ bail:	return -1;
 int schema_add_table (struct schema *schema, struct schema_table *table)
 {
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (table == NULL) {
-		fprintf(stderr, "table is invalid\n");
+		linearbuffers_errorf("table is invalid");
 		goto bail;
 	}
 	if (table->name == NULL) {
-		fprintf(stderr, "table name is invalid\n");
+		linearbuffers_errorf("table name is invalid");
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&schema->tables, table, list);
@@ -664,15 +664,15 @@ bail:	return -1;
 int schema_add_enum (struct schema *schema, struct schema_enum *anum)
 {
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (anum == NULL) {
-		fprintf(stderr, "anum is invalid\n");
+		linearbuffers_errorf("anum is invalid");
 		goto bail;
 	}
 	if (anum->name == NULL) {
-		fprintf(stderr, "anum name is invalid\n");
+		linearbuffers_errorf("anum name is invalid");
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&schema->enums, anum, list);
@@ -683,7 +683,7 @@ bail:	return -1;
 int schema_set_root (struct schema *schema, const char *name)
 {
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (schema->root != NULL) {
@@ -693,7 +693,7 @@ int schema_set_root (struct schema *schema, const char *name)
 	if (name != NULL) {
 		schema->root = strdup(name);
 		if (schema->root == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -747,7 +747,7 @@ struct schema * schema_create (void)
 	struct schema *schema;
 	schema = malloc(sizeof(struct schema));
 	if (schema == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(schema, 0, sizeof(struct schema));
@@ -773,14 +773,14 @@ static int schema_check (struct schema *schema)
 	struct schema_table_field *ntable_field;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 
 	TAILQ_FOREACH(anum, &schema->enums, list) {
 		for (nanum = anum->list.tqe_next; nanum; nanum = nanum->list.tqe_next) {
 			if (strcmp(anum->name, nanum->name) == 0) {
-				fprintf(stderr, "schema enum name: %s is invalid\n", anum->name);
+				linearbuffers_errorf("schema enum name: %s is invalid", anum->name);
 				goto bail;
 			}
 		}
@@ -789,14 +789,14 @@ static int schema_check (struct schema *schema)
 	TAILQ_FOREACH(anum, &schema->enums, list) {
 		if (anum->type != NULL) {
 			if (!type_is_scalar(anum->type)) {
-				fprintf(stderr, "schema enum type: %s is invalid\n", anum->type);
+				linearbuffers_errorf("schema enum type: %s is invalid", anum->type);
 				goto bail;
 			}
 		}
 		TAILQ_FOREACH(anum_field, &anum->fields, list) {
 			if (anum_field->value != NULL) {
 				if (!value_is_scalar(anum_field->value)) {
-					fprintf(stderr, "schema enum field value: %s is invalid\n", anum_field->value);
+					linearbuffers_errorf("schema enum field value: %s is invalid", anum_field->value);
 					goto bail;
 				}
 			}
@@ -806,7 +806,7 @@ static int schema_check (struct schema *schema)
 	TAILQ_FOREACH(table, &schema->tables, list) {
 		for (ntable = table->list.tqe_next; ntable; ntable = ntable->list.tqe_next) {
 			if (strcmp(table->name, ntable->name) == 0) {
-				fprintf(stderr, "schema table name: %s is invalid\n", table->name);
+				linearbuffers_errorf("schema table name: %s is invalid", table->name);
 				goto bail;
 			}
 		}
@@ -815,14 +815,14 @@ static int schema_check (struct schema *schema)
 	TAILQ_FOREACH(table, &schema->tables, list) {
 		TAILQ_FOREACH(table_field, &table->fields, list) {
 			if (!type_is_valid(schema, table_field->type)) {
-				fprintf(stderr, "schema table field type: %s is invalid\n", table_field->type);
+				linearbuffers_errorf("schema table field type: %s is invalid", table_field->type);
 				goto bail;
 			}
 		}
 		TAILQ_FOREACH(table_field, &table->fields, list) {
 			for (ntable_field = table_field->list.tqe_next; ntable_field; ntable_field = ntable_field->list.tqe_next) {
 				if (strcmp(table_field->name, ntable_field->name) == 0) {
-					fprintf(stderr, "schema table field name: %s is invalid\n", table_field->name);
+					linearbuffers_errorf("schema table field name: %s is invalid", table_field->name);
 					goto bail;
 				}
 			}
@@ -830,7 +830,7 @@ static int schema_check (struct schema *schema)
 	}
 
 	if (schema->root == NULL) {
-		fprintf(stderr, "schema root is invalid\n");
+		linearbuffers_errorf("schema root is invalid");
 		goto bail;
 	}
 	TAILQ_FOREACH(table, &schema->tables, list) {
@@ -839,7 +839,7 @@ static int schema_check (struct schema *schema)
 		}
 	}
 	if (table == NULL) {
-		fprintf(stderr, "schema root is invalid\n");
+		linearbuffers_errorf("schema root is invalid");
 		goto bail;
 	}
 
@@ -856,20 +856,20 @@ static int schema_build (struct schema *schema)
 	struct schema_enum_field *anum_field;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 
 	rc = schema_check(schema);
 	if (rc != 0) {
-		fprintf(stderr, "schema scheck failed\n");
+		linearbuffers_errorf("schema scheck failed");
 		goto bail;
 	}
 
 	if (schema->namespace == NULL) {
 		schema->namespace = strdup("linearbuffers");
 		if (schema->namespace == NULL) {
-			fprintf(stderr, "can not allocate memory");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 	}
@@ -881,14 +881,14 @@ static int schema_build (struct schema *schema)
 	}
 	schema->namespace_ = malloc(strlen(schema->namespace) + 1 + 1);
 	if (schema->namespace_ == NULL) {
-		fprintf(stderr, "can not allocate memory");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	sprintf(schema->namespace_, "%s_", schema->namespace);
 
 	schema->NAMESPACE = strdup(schema->namespace);
 	if (schema->NAMESPACE == NULL) {
-		fprintf(stderr, "can not allocate memory");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	for (i = 0; i < strlen(schema->NAMESPACE); i++) {
@@ -897,7 +897,7 @@ static int schema_build (struct schema *schema)
 
 	schema->NAMESPACE_ = strdup(schema->namespace_);
 	if (schema->NAMESPACE_ == NULL) {
-		fprintf(stderr, "can not allocate memory");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	for (i = 0; i < strlen(schema->NAMESPACE_); i++) {
@@ -960,18 +960,18 @@ static int schema_build (struct schema *schema)
 			}
 		}
 		if (anum->type == NULL) {
-			fprintf(stderr, "schema anum type is invalid\n");
+			linearbuffers_errorf("schema anum type is invalid");
 			goto bail;
 		}
 		anum->type_t = malloc(strlen(anum->type) + 1 + 1 + 4);
 		if (anum->type_t == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 		sprintf(anum->type_t, "%s_t", anum->type);
 		anum->TYPE = strdup(anum->type);
 		if (anum->TYPE == NULL) {
-			fprintf(stderr, "schema anum type is invalid\n");
+			linearbuffers_errorf("schema anum type is invalid");
 			goto bail;
 		}
 		for (i = 0; i < strlen(anum->TYPE); i++) {
@@ -979,7 +979,7 @@ static int schema_build (struct schema *schema)
 		}
 		anum->TYPE_C = malloc(strlen(anum->TYPE) + 1 + 1 + 4);
 		if (anum->TYPE_C == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			goto bail;
 		}
 		sprintf(anum->TYPE_C, "%s_C", anum->TYPE);
@@ -993,7 +993,7 @@ static int schema_build (struct schema *schema)
 				if (anum_field->value == NULL) {
 					rc = asprintf(&anum_field->value, "INT64_C(%" PRIi64 ")", pvalue);
 					if (rc < 0) {
-						fprintf(stderr, "can not set schema enum field valud\n");
+						linearbuffers_errorf("can not set schema enum field value");
 						goto bail;
 					}
 				} else {
@@ -1008,7 +1008,7 @@ static int schema_build (struct schema *schema)
 				if (anum_field->value == NULL) {
 					rc = asprintf(&anum_field->value, "UINT64_C(%" PRIu64 ")", pvalue);
 					if (rc < 0) {
-						fprintf(stderr, "can not set schema enum field valud\n");
+						linearbuffers_errorf("can not set schema enum field value");
 						goto bail;
 					}
 				} else {
@@ -1035,7 +1035,7 @@ static char * read_file (const char *filename, size_t max_size, size_t *size_out
 
 	fp = fopen(filename, "rb");
 	if (fp == NULL) {
-		fprintf(stderr, "can not open file: %s\n", filename);
+		linearbuffers_errorf("can not open file: %s", filename);
 		goto bail;
 	}
 
@@ -1043,14 +1043,14 @@ static char * read_file (const char *filename, size_t max_size, size_t *size_out
 	size = ftell(fp);
 	*size_out = size;
 	if (max_size > 0 && size > max_size) {
-		fprintf(stderr, "size is too big\n");
+		linearbuffers_errorf("size is too big");
 		goto bail;
 	}
 	rewind(fp);
 
 	buf = malloc(size ? size : 1);
 	if (buf == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 
@@ -1090,13 +1090,13 @@ struct schema * schema_parse_file (const char *filename)
 	memset(&schema_parser, 0, sizeof(struct schema_parser));
 
 	if (filename == NULL) {
-		fprintf(stderr, "filename is invalid\n");
+		linearbuffers_errorf("filename is invalid");
 		goto bail;
 	}
 
 	buffer = read_file(filename, -1, &buffer_length);
 	if (buffer == NULL) {
-		fprintf(stderr, "can not read file: %s\n", filename);
+		linearbuffers_errorf("can not read file: %s", filename);
 		goto bail;
 	}
 
@@ -1106,13 +1106,13 @@ struct schema * schema_parse_file (const char *filename)
 	yy_delete_buffer(bs);
 
 	if (rc != 0) {
-		fprintf(stderr, "can not parse file: %s\n", filename);
+		linearbuffers_errorf("can not parse file: %s", filename);
 		goto bail;
 	}
 
 	rc = schema_check(schema_parser.schema);
 	if (rc != 0) {
-		fprintf(stderr, "schema check for file: %s failed\n", filename);
+		linearbuffers_errorf("schema check for file: %s failed", filename);
 		goto bail;
 	}
 
@@ -1138,11 +1138,11 @@ int schema_generate_pretty (struct schema *schema, const char *filename)
 	struct schema_table_field *table_field;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (filename == NULL) {
-		fprintf(stderr, "filename is invalid\n");
+		linearbuffers_errorf("filename is invalid");
 		goto bail;
 	}
 
@@ -1154,7 +1154,7 @@ int schema_generate_pretty (struct schema *schema, const char *filename)
 		fp = fopen(filename, "w");
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "can not dump to file: %s\n", filename);
+		linearbuffers_errorf("can not dump to file: %s", filename);
 		goto bail;
 	}
 
@@ -1216,15 +1216,15 @@ static int schema_generate_encoder_enum (struct schema *schema, struct schema_en
 	struct schema_enum_field *anum_field;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (anum == NULL) {
-		fprintf(stderr, "enum is invalid\n");
+		linearbuffers_errorf("enum is invalid");
 		goto bail;
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "fp is invalid\n");
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -1267,15 +1267,15 @@ static int schema_generate_decoder_enum (struct schema *schema, struct schema_en
 	struct schema_enum_field *anum_field;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (anum == NULL) {
-		fprintf(stderr, "enum is invalid\n");
+		linearbuffers_errorf("enum is invalid");
 		goto bail;
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "fp is invalid\n");
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -1336,7 +1336,7 @@ static struct element_entry * element_entry_create (uint64_t id)
 	struct element_entry *entry;
 	entry = malloc(sizeof(struct element_entry));
 	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(entry, 0, sizeof(struct element_entry));
@@ -1353,12 +1353,12 @@ static int element_push (struct element *element, uint64_t id)
 	struct element_entry *entry;
 	entry = NULL;
 	if (element == NULL) {
-		fprintf(stderr, "element is invalid\n");
+		linearbuffers_errorf("element is invalid");
 		goto bail;
 	}
 	entry = element_entry_create(id);
 	if (entry == NULL) {
-		fprintf(stderr, "can not create element entry\n");
+		linearbuffers_errorf("can not create element entry");
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&element->entries, entry, list);
@@ -1374,11 +1374,11 @@ static int element_pop (struct element *element)
 	struct element_entry *entry;
 	entry = NULL;
 	if (element == NULL) {
-		fprintf(stderr, "element is invalid\n");
+		linearbuffers_errorf("element is invalid");
 		goto bail;
 	}
 	if (TAILQ_EMPTY(&element->entries)) {
-		fprintf(stderr, "element is empty\n");
+		linearbuffers_errorf("element is empty");
 		goto bail;
 	}
 	entry = TAILQ_LAST(&element->entries, element_entries);
@@ -1410,7 +1410,7 @@ static struct element * element_create (void)
 	struct element *element;
 	element = malloc(sizeof(struct element));
 	if (element == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(element, 0, sizeof(struct element));
@@ -1452,13 +1452,13 @@ static struct namespace_entry * namespace_entry_create (const char *string)
 	struct namespace_entry *entry;
 	entry = malloc(sizeof(struct namespace_entry));
 	if (entry == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(entry, 0, sizeof(struct namespace_entry));
 	entry->string = strdup(string);
 	if (entry->string == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	entry->length = strlen(string);
@@ -1490,7 +1490,7 @@ static const char * namespace_linearized (struct namespace *namespace)
 		}
 		namespace->linearized = malloc(slinearized + 1 + 4);
 		if (namespace->linearized == NULL) {
-			fprintf(stderr, "can not allocate memory\n");
+			linearbuffers_errorf("can not allocate memory");
 			namespace->slinearized = 0;
 			goto bail;
 		}
@@ -1510,16 +1510,16 @@ static int namespace_push (struct namespace *namespace, const char *push)
 	struct namespace_entry *entry;
 	entry = NULL;
 	if (namespace == NULL) {
-		fprintf(stderr, "namespace is invalid\n");
+		linearbuffers_errorf("namespace is invalid");
 		goto bail;
 	}
 	if (push == NULL) {
-		fprintf(stderr, "push is invalid\n");
+		linearbuffers_errorf("push is invalid");
 		goto bail;
 	}
 	entry = namespace_entry_create(push);
 	if (entry == NULL) {
-		fprintf(stderr, "can not create namespace entry\n");
+		linearbuffers_errorf("can not create namespace entry");
 		goto bail;
 	}
 	TAILQ_INSERT_TAIL(&namespace->entries, entry, list);
@@ -1536,11 +1536,11 @@ static int namespace_pop (struct namespace *namespace)
 	struct namespace_entry *entry;
 	entry = NULL;
 	if (namespace == NULL) {
-		fprintf(stderr, "namespace is invalid\n");
+		linearbuffers_errorf("namespace is invalid");
 		goto bail;
 	}
 	if (TAILQ_EMPTY(&namespace->entries)) {
-		fprintf(stderr, "namespace is empty\n");
+		linearbuffers_errorf("namespace is empty");
 		goto bail;
 	}
 	entry = TAILQ_LAST(&namespace->entries, namespace_entries);
@@ -1573,7 +1573,7 @@ static struct namespace * namespace_create (void)
 	struct namespace *namespace;
 	namespace = malloc(sizeof(struct namespace));
 	if (namespace == NULL) {
-		fprintf(stderr, "can not allocate memory\n");
+		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(namespace, 0, sizeof(struct namespace));
@@ -1591,15 +1591,15 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 	struct schema_table_field *table_field;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (table == NULL) {
-		fprintf(stderr, "table is invalid\n");
+		linearbuffers_errorf("table is invalid");
 		goto bail;
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "fp is invalid\n");
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -1690,7 +1690,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else {
-				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
 			}
 		} else {
@@ -1715,7 +1715,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 			} else {
-				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
 			}
 		}
@@ -1745,17 +1745,17 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 	namespace = NULL;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (filename == NULL) {
-		fprintf(stderr, "filename is invalid\n");
+		linearbuffers_errorf("filename is invalid");
 		goto bail;
 	}
 
 	rc = schema_build(schema);
 	if (rc != 0) {
-		fprintf(stderr, "can not build schema\n");
+		linearbuffers_errorf("can not build schema");
 		goto bail;
 	}
 
@@ -1767,7 +1767,7 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		fp = fopen(filename, "w");
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "can not dump to file: %s\n", filename);
+		linearbuffers_errorf("can not dump to file: %s", filename);
 		goto bail;
 	}
 
@@ -1802,13 +1802,13 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 			}
 		}
 		if (table == NULL) {
-			fprintf(stderr, "schema root is invalid\n");
+			linearbuffers_errorf("schema root is invalid");
 			goto bail;
 		}
 
 		namespace = namespace_create();
 		if (namespace == NULL) {
-			fprintf(stderr, "can not create namespace\n");
+			linearbuffers_errorf("can not create namespace");
 			goto bail;
 		}
 		namespace_push(namespace, schema->namespace_);
@@ -1845,15 +1845,15 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 	struct element_entry *element_entry;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (table == NULL) {
-		fprintf(stderr, "table is invalid\n");
+		linearbuffers_errorf("table is invalid");
 		goto bail;
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "fp is invalid\n");
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -1919,7 +1919,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 			} else {
-				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
 			}
 		} else {
@@ -1958,7 +1958,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 			} else {
-				fprintf(stderr, "type is invalid: %s\n", table_field->type);
+				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
 			}
 		}
@@ -1985,17 +1985,17 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 	namespace = NULL;
 
 	if (schema == NULL) {
-		fprintf(stderr, "schema is invalid\n");
+		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
 	if (filename == NULL) {
-		fprintf(stderr, "filename is invalid\n");
+		linearbuffers_errorf("filename is invalid");
 		goto bail;
 	}
 
 	rc = schema_build(schema);
 	if (rc != 0) {
-		fprintf(stderr, "can not build schema\n");
+		linearbuffers_errorf("can not build schema");
 		goto bail;
 	}
 
@@ -2007,7 +2007,7 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 		fp = fopen(filename, "w");
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "can not dump to file: %s\n", filename);
+		linearbuffers_errorf("can not dump to file: %s", filename);
 		goto bail;
 	}
 
@@ -2043,11 +2043,14 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 			}
 		}
 		if (table == NULL) {
-			fprintf(stderr, "schema root is invalid\n");
+			linearbuffers_errorf("schema root is invalid");
 			goto bail;
 		}
 
 		namespace = namespace_create();
+		if (namespace == NULL) {
+
+		}
 		namespace_push(namespace, schema->namespace_);
 		namespace_push(namespace, table->name);
 		namespace_push(namespace, "_");
@@ -2055,6 +2058,114 @@ int schema_generate_decoder (struct schema *schema, const char *filename)
 		element = element_create();
 
 		schema_generate_decoder_table(schema, table, namespace, element, fp);
+
+		namespace_destroy(namespace);
+		element_destroy(element);
+
+		fprintf(fp, "\n");
+		fprintf(fp, "#endif\n");
+	}
+
+	if (fp != stdout &&
+	    fp != stderr) {
+		fclose(fp);
+	}
+	return 0;
+bail:	if (fp != NULL &&
+	    fp != stdout &&
+	    fp != stderr) {
+		fclose(fp);
+	}
+	if (namespace != NULL) {
+		namespace_destroy(namespace);
+	}
+	if (element != NULL) {
+		element_destroy(element);
+	}
+	return -1;
+}
+
+int schema_generate_jsonify (struct schema *schema, const char *filename)
+{
+	int rc;
+	FILE *fp;
+
+	struct element *element;
+	struct namespace *namespace;
+
+	struct schema_table *table;
+
+	fp = NULL;
+	element = NULL;
+	namespace = NULL;
+
+	if (schema == NULL) {
+		linearbuffers_errorf("schema is invalid");
+		goto bail;
+	}
+	if (filename == NULL) {
+		linearbuffers_errorf("filename is invalid");
+		goto bail;
+	}
+
+	rc = schema_build(schema);
+	if (rc != 0) {
+		linearbuffers_errorf("can not build schema");
+		goto bail;
+	}
+
+	if (strcmp(filename, "stdout") == 0) {
+		fp = stdout;
+	} else if (strcmp(filename, "stderr") == 0) {
+		fp = stderr;
+	} else {
+		fp = fopen(filename, "w");
+	}
+	if (fp == NULL) {
+		linearbuffers_errorf("can not dump to file: %s", filename);
+		goto bail;
+	}
+
+	fprintf(fp, "\n");
+	fprintf(fp, "#include <stddef.h>\n");
+	fprintf(fp, "#include <stdint.h>\n");
+	fprintf(fp, "#include <string.h>\n");
+	fprintf(fp, "#include <linearbuffers/jsonify.h>\n");
+
+	if (!TAILQ_EMPTY(&schema->tables)) {
+		fprintf(fp, "\n");
+		fprintf(fp, "#if !defined(%s_JSONIFY_API)\n", schema->NAMESPACE);
+		fprintf(fp, "#define %s_JSONIFY_API\n", schema->NAMESPACE);
+		fprintf(fp, "\n");
+
+		TAILQ_FOREACH(table, &schema->tables, list) {
+			if (strcmp(schema->root, table->name) == 0) {
+				break;
+			}
+		}
+		if (table == NULL) {
+			linearbuffers_errorf("schema root is invalid");
+			goto bail;
+		}
+
+		namespace = namespace_create();
+		if (namespace == NULL) {
+			linearbuffers_errorf("can not create namespace");
+			goto bail;
+		}
+		rc  = namespace_push(namespace, schema->namespace_);
+		rc |= namespace_push(namespace, table->name);
+		rc |= namespace_push(namespace, "_");
+		if (rc != 0) {
+			linearbuffers_errorf("can not build namespace");
+			goto bail;
+		}
+
+		element = element_create();
+		if (element == NULL) {
+			linearbuffers_errorf("can not create element");
+			goto bail;
+		}
 
 		namespace_destroy(namespace);
 		element_destroy(element);

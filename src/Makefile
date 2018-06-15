@@ -19,6 +19,7 @@ linearbuffers-compiler_files-y = \
 	parser.lex.h \
 	parser.tab.c \
 	parser.tab.h \
+	debug.c \
 	schema.c \
 	main.c
 

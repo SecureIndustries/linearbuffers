@@ -42,3 +42,4 @@ struct schema * schema_parse_file (const char *filename);
 int schema_generate_pretty (struct schema *schema, const char *filename);
 int schema_generate_encoder (struct schema *schema, const char *filename);
 int schema_generate_decoder (struct schema *schema, const char *filename);
+int schema_generate_jsonify (struct schema *schema, const char *filename);
