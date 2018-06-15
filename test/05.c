@@ -5,6 +5,7 @@
 
 #include "05-encoder.h"
 #include "05-decoder.h"
+#include "05-jsonify.h"
 
 int main (int argc, char *argv[])
 {
@@ -12,8 +13,8 @@ int main (int argc, char *argv[])
 	size_t i;
 
 	uint8_t data[10];
-	const char *linearized;
 	uint64_t linearized_length;
+	const char *linearized_buffer;
 	struct linearbuffers_encoder *encoder;
 
 	struct linearbuffers_decoder decoder;
@@ -46,14 +47,16 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 
-	linearized = linearbuffers_encoder_linearized(encoder, &linearized_length);
-	if (linearized == NULL) {
+	linearized_buffer = linearbuffers_encoder_linearized(encoder, &linearized_length);
+	if (linearized_buffer == NULL) {
 		fprintf(stderr, "can not get linearized buffer\n");
 		goto bail;
 	}
-	fprintf(stderr, "linearized: %p, length: %ld\n", linearized, linearized_length);
+	fprintf(stderr, "linearized: %p, length: %ld\n", linearized_buffer, linearized_length);
 
-	linearbuffers_output_decode(&decoder, linearized, linearized_length);
+	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
+
+	linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
 	if (linearbuffers_output_type_get(&decoder) != linearbuffers_type_type_3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;

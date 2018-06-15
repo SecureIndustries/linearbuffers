@@ -1,0 +1,5 @@
+
+#if !defined(LINEARBUFFERS_JSONIFY_H)
+#define LINEARBUFFERS_JSONIFY_H
+
+#endif
