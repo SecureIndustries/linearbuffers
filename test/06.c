@@ -1,37 +1,52 @@
 
 #include <stdio.h>
+#include <string.h>
 
 #include "06-encoder.h"
 
+struct emitter_param {
+	uint64_t length;
+};
+
+static int emitter_function (void *context, uint64_t offset, const void *buffer, uint64_t length)
+{
+	struct emitter_param *emitter_param = context;
+	emitter_param->length = offset + length;
+	fprintf(stderr, "offset: 0x%08lx, length: 0x%08lx, buffer: %p\n", offset, length, buffer);
+	return 0;
+}
+
 int main (int argc, char *argv[])
 {
-	uint8_t data[10];
+	int rc;
+
+	struct emitter_param emitter_param;
 	struct linearbuffers_encoder *encoder;
+	struct linearbuffers_encoder_create_options encoder_create_options;
 
 	(void) argc;
 	(void) argv;
 
-	encoder = linearbuffers_encoder_create(NULL);
+	memset(&emitter_param, 0, sizeof(struct emitter_param));
+
+	memset(&encoder_create_options, 0, sizeof(struct linearbuffers_encoder_create_options));
+	encoder_create_options.emitter.context = &emitter_param;
+	encoder_create_options.emitter.function = emitter_function;
+
+	encoder = linearbuffers_encoder_create(&encoder_create_options);
 	if (encoder == NULL) {
 		fprintf(stderr, "can not create linearbuffers encoder\n");
 		goto bail;
 	}
 
-	linearbuffers_output_start(encoder);
-	linearbuffers_output_type_set(encoder, linearbuffers_type_type_3);
-	linearbuffers_output_length_set(encoder, 1);
-	linearbuffers_output_timevals_start(encoder);
-	linearbuffers_output_timevals_timeval_start(encoder);
-	linearbuffers_output_timevals_timeval_seconds_set(encoder, 2);
-	linearbuffers_output_timevals_timeval_useconds_set(encoder, 3);
-	linearbuffers_output_timevals_timeval_end(encoder);
-	linearbuffers_output_timevals_timeval_start(encoder);
-	linearbuffers_output_timevals_timeval_seconds_set(encoder, 4);
-	linearbuffers_output_timevals_timeval_useconds_set(encoder, 5);
-	linearbuffers_output_timevals_timeval_end(encoder);
-	linearbuffers_output_timevals_end(encoder);
-	linearbuffers_output_data_set(encoder, data, sizeof(data) / sizeof(data[0]));
-	linearbuffers_output_end(encoder);
+	rc  = linearbuffers_output_start(encoder);
+	rc |= linearbuffers_output_end(encoder);
+	if (rc != 0) {
+		fprintf(stderr, "can not encode output\n");
+		goto bail;
+	}
+
+	fprintf(stderr, "linearized length: %ld\n", emitter_param.length);
 
 	linearbuffers_encoder_destroy(encoder);
 

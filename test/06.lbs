@@ -1,22 +1,35 @@
 
-enum type {
-	unknown,
-	type_3  = 3,
-	type_4,
-	type_5,
-	type_10 = 10
-}
-
-table timeval {
-	seconds: uint64;
-	useconds: uint64;
-}
-
 table output {
-	type    : type;
-	length  : uint64;
-	timevals: [timeval];
-	data    : [ uint8 ];
+	0: uint8;
+	1: uint8;
+	2: uint8;
+	3: uint8;
+	4: uint8;
+	5: uint8;
+	6: uint8;
+	7: uint8;
+	8: uint8;
+	9: uint8;
+	10: uint8;
+	11: uint8;
+	12: uint8;
+	13: uint8;
+	14: uint8;
+	15: uint8;
+	16: uint8;
+	17: uint8;
+	18: uint8;
+	19: uint8;
+	20: uint8;
+	21: uint8;
+	22: uint8;
+	23: uint8;
+	24: uint8;
+	25: uint8;
+	26: uint8;
+	27: uint8;
+	28: uint8;
+	29: uint8;
 }
 
 root output;
