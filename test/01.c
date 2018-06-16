@@ -10,9 +10,10 @@ int main (int argc, char *argv[])
 	int rc;
 
 	uint64_t linearized_length;
-	const char *linearized_buffer;
+	const uint8_t *linearized_buffer;
 
 	struct linearbuffers_encoder *encoder;
+	struct linearbuffers_decoder decoder;
 
 	(void) argc;
 	(void) argv;
@@ -46,6 +47,40 @@ int main (int argc, char *argv[])
 	fprintf(stderr, "linearized: %p, length: %ld\n", linearized_buffer, linearized_length);
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
+
+	linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
+	if (linearbuffers_output_a_get(&decoder) != 0) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_b_get(&decoder) != 1) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_c_get(&decoder) != 2) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_d_get(&decoder) != 3) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_1_get(&decoder) != 4) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_2_get(&decoder) != 5) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_3_get(&decoder) != 6) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_4_get(&decoder) != 7) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
 
 	linearbuffers_encoder_destroy(encoder);
 

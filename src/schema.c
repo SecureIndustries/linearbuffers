@@ -79,6 +79,38 @@ struct schema {
 	struct schema_attributes attributes;
 };
 
+static int inttype_size (const char *type)
+{
+	if (type == NULL) {
+		return 0;
+	}
+	if (strcmp(type, "int8") == 0) {
+		return sizeof(int8_t);
+	}
+	if (strcmp(type, "uint8") == 0) {
+		return sizeof(int8_t);
+	}
+	if (strcmp(type, "int16") == 0) {
+		return sizeof(int16_t);
+	}
+	if (strcmp(type, "uint16") == 0) {
+		return sizeof(uint16_t);
+	}
+	if (strcmp(type, "int32") == 0) {
+		return sizeof(int32_t);
+	}
+	if (strcmp(type, "uint32") == 0) {
+		return sizeof(uint32_t);
+	}
+	if (strcmp(type, "int64") == 0) {
+		return sizeof(int64_t);
+	}
+	if (strcmp(type, "uint64") == 0) {
+		return sizeof(uint64_t);
+	}
+	return 0;
+}
+
 static int type_is_scalar (const char *type)
 {
 	if (type == NULL) {
@@ -1316,7 +1348,9 @@ bail:	return -1;
 TAILQ_HEAD(element_entries, element_entry);
 struct element_entry {
 	TAILQ_ENTRY(element_entry) list;
+	struct schema_table *table;
 	uint64_t id;
+	uint64_t offset;
 };
 
 struct element {
@@ -1332,7 +1366,7 @@ static void element_entry_destroy (struct element_entry *entry)
 	free(entry);
 }
 
-static struct element_entry * element_entry_create (uint64_t id)
+static struct element_entry * element_entry_create (struct schema_table *table, uint64_t id, uint64_t offset)
 {
 	struct element_entry *entry;
 	entry = malloc(sizeof(struct element_entry));
@@ -1341,7 +1375,9 @@ static struct element_entry * element_entry_create (uint64_t id)
 		goto bail;
 	}
 	memset(entry, 0, sizeof(struct element_entry));
+	entry->table = table;
 	entry->id = id;
+	entry->offset = offset;
 	return entry;
 bail:	if (entry != NULL) {
 		element_entry_destroy(entry);
@@ -1349,7 +1385,7 @@ bail:	if (entry != NULL) {
 	return NULL;
 }
 
-static int element_push (struct element *element, uint64_t id)
+static int element_push (struct element *element, struct schema_table *table, uint64_t id, uint64_t offset)
 {
 	struct element_entry *entry;
 	entry = NULL;
@@ -1357,7 +1393,7 @@ static int element_push (struct element *element, uint64_t id)
 		linearbuffers_errorf("element is invalid");
 		goto bail;
 	}
-	entry = element_entry_create(id);
+	entry = element_entry_create(table, id, offset);
 	if (entry == NULL) {
 		linearbuffers_errorf("can not create element entry");
 		goto bail;
@@ -1588,9 +1624,10 @@ bail:	if (namespace != NULL) {
 	return NULL;
 }
 
-static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, uint64_t element, FILE *fp)
+static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, uint64_t element, uint64_t offset, FILE *fp)
 {
 	uint64_t table_field_i;
+	uint64_t table_field_s;
 	struct schema_table_field *table_field;
 
 	if (schema == NULL) {
@@ -1606,20 +1643,38 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 		goto bail;
 	}
 
+	table_field_s = 0;
+	TAILQ_FOREACH(table_field, &table->fields, list) {
+		if (table_field->vector) {
+			table_field_s += sizeof(uint64_t);
+		} else if (type_is_scalar(table_field->type)) {
+			table_field_s += inttype_size(table_field->type);
+		} else if (type_is_enum(schema, table_field->type)) {
+			table_field_s += inttype_size(type_get_enum(schema, table_field->type)->type);
+		} else if (type_is_table(schema, table_field->type)) {
+			table_field_s += sizeof(uint64_t);
+		} else {
+			linearbuffers_errorf("type is invalid: %s", table_field->type);
+			goto bail;
+		}
+
+	}
 	fprintf(fp, "static inline int %sstart (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
-	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", element, table->nfields);
+	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", element, offset, table->nfields, table_field_s);
 	fprintf(fp, "    return rc;\n");
 	fprintf(fp, "}\n");
+
 	table_field_i = 0;
+	table_field_s = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		if (table_field->vector) {
 			if (type_is_scalar(table_field->type)) {
 				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const %s_t *value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), value_%s, value_%s_count);\n", table_field->type, table_field_i, table_field->name, table_field->name);
+				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s, value_%s_count);\n", table_field->type, table_field_i, table_field_s, table_field->name, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
@@ -1681,7 +1736,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				namespace_push(namespace, "_");
 				namespace_push(namespace, table_field->type);
 				namespace_push(namespace, "_");
-				schema_generate_encoder_table(schema, type_get_table(schema, table_field->type), namespace, UINT64_MAX, fp);
+				schema_generate_encoder_table(schema, type_get_table(schema, table_field->type), namespace, UINT64_MAX, UINT64_MAX, fp);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
@@ -1701,20 +1756,20 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field->name);
+				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s%s_enum_t value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace_, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), value_%s);\n", type_get_enum(schema, table_field->type)->type, table_field_i, table_field->name);
+				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", type_get_enum(schema, table_field->type)->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
-				schema_generate_encoder_table(schema, type_get_table(schema, table_field->type), namespace, table_field_i, fp);
+				schema_generate_encoder_table(schema, type_get_table(schema, table_field->type), namespace, table_field_i, table_field_s, fp);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 			} else {
@@ -1723,6 +1778,15 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 			}
 		}
 		table_field_i += 1;
+		if (table_field->vector) {
+			table_field_s += sizeof(uint64_t);
+		} else if (type_is_scalar(table_field->type)) {
+			table_field_s += inttype_size(table_field->type);
+		} else if (type_is_enum(schema, table_field->type)) {
+			table_field_s += inttype_size(type_get_enum(schema, table_field->type)->type);
+		} else if (type_is_table(schema, table_field->type)) {
+			table_field_s += sizeof(uint64_t);
+		}
 	}
 	fprintf(fp, "static inline int %send (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
 	fprintf(fp, "{\n");
@@ -1817,7 +1881,7 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		namespace_push(namespace, schema->namespace_);
 		namespace_push(namespace, table->name);
 		namespace_push(namespace, "_");
-		schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, fp);
+		schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, UINT64_MAX, fp);
 		namespace_destroy(namespace);
 
 		fprintf(fp, "\n");
@@ -1843,6 +1907,7 @@ bail:	if (fp != NULL &&
 static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, struct element *element, FILE *fp)
 {
 	uint64_t table_field_i;
+	uint64_t table_field_s;
 	struct schema_table_field *table_field;
 
 	struct element_entry *element_entry;
@@ -1868,23 +1933,27 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    return rc;\n");
 		fprintf(fp, "}\n");
 	}
+
 	table_field_i = 0;
+	table_field_s = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		fprintf(fp, "static inline int %s%s_present (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
 		fprintf(fp, "{\n");
+		fprintf(fp, "    uint8_t present;\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
 		TAILQ_FOREACH(element_entry, &element->entries, list) {
-			fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
-			fprintf(fp, "    if (offset == 0) {\n");
+			fprintf(fp, "    memcpy(&present, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(present));\n", sizeof(uint8_t) * (element_entry->id / 8));
+			fprintf(fp, "    if (!(present & 0x%02x)) {\n", (1 << (element_entry->id % 8)));
 			fprintf(fp, "        return 0;\n");
 			fprintf(fp, "    }\n");
+			fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 		}
-		fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
-		fprintf(fp, "    if (offset == 0) {\n");
-		fprintf(fp, "        return 0;\n");
+		fprintf(fp, "    memcpy(&present, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(present));\n", sizeof(uint8_t) * (table_field_i / 8));
+		fprintf(fp, "    if (present & 0x%02x) {\n", (1 << (table_field_i % 8)));
+		fprintf(fp, "        return 1;\n");
 		fprintf(fp, "    }\n");
-		fprintf(fp, "    return 1;\n");
+		fprintf(fp, "    return 0;\n");
 		fprintf(fp, "}\n");
 		if (table_field->vector) {
 			if (type_is_scalar(table_field->type)) {
@@ -1893,9 +1962,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    uint64_t offset;\n");
 				fprintf(fp, "    offset = 0;\n");
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 				}
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
 				fprintf(fp, "    return decoder->buffer + offset + sizeof(uint64_t);\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline %s_t %s%s_get_at (struct linearbuffers_decoder *decoder, uint64_t at)\n", table_field->type, namespace_linearized(namespace), table_field->name);
@@ -1903,9 +1972,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    uint64_t offset;\n");
 				fprintf(fp, "    offset = 0;\n");
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 				}
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
 				fprintf(fp, "    return ((%s_t *) (decoder->buffer + offset + sizeof(uint64_t)))[at];\n", table_field->type);
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
@@ -1914,9 +1983,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    uint64_t count;\n");
 				fprintf(fp, "    offset = 0;\n");
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 				}
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
 				fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
 				fprintf(fp, "    return count;\n");
 				fprintf(fp, "}\n");
@@ -1926,19 +1995,21 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    uint64_t count;\n");
 				fprintf(fp, "    offset = 0;\n");
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 				}
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
 				fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
 				fprintf(fp, "    return count * sizeof(%s_t);\n", table_field->type);
 				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
+				linearbuffers_errorf("type is invalid: %s", table_field->type);
+				goto bail;
 			} else if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
 				namespace_push(namespace, table_field->type);
 				namespace_push(namespace, "_");
-				element_push(element, table_field_i);
+				element_push(element, table, table_field_i, table_field_s);
 				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
 				element_pop(element);
 				namespace_pop(namespace);
@@ -1957,10 +2028,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    %s_t value;\n", table_field->type);
 				fprintf(fp, "    offset = 0;\n");
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 				}
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
-				fprintf(fp, "    memcpy(&value, decoder->buffer + offset, sizeof(value));\n");
+				fprintf(fp, "    memcpy(&value, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
 				fprintf(fp, "    return value;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
@@ -1970,16 +2040,15 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    %s%s_enum_t value;\n", schema->namespace_, table_field->type);
 				fprintf(fp, "    offset = 0;\n");
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", element_entry->id);
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 				}
-				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * UINT64_C(%" PRIu64 ")), sizeof(offset));\n", table_field_i);
-				fprintf(fp, "    memcpy(&value, decoder->buffer + offset, sizeof(value));\n");
+				fprintf(fp, "    memcpy(&value, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
 				fprintf(fp, "    return value;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
-				element_push(element, table_field_i);
+				element_push(element, table, table_field_i, table_field_s);
 				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
 				element_pop(element);
 				namespace_pop(namespace);
@@ -1990,6 +2059,15 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			}
 		}
 		table_field_i += 1;
+		if (table_field->vector) {
+			table_field_s += sizeof(uint64_t);
+		} else if (type_is_scalar(table_field->type)) {
+			table_field_s += inttype_size(table_field->type);
+		} else if (type_is_enum(schema, table_field->type)) {
+			table_field_s += inttype_size(type_get_enum(schema, table_field->type)->type);
+		} else if (type_is_table(schema, table_field->type)) {
+			table_field_s += sizeof(uint64_t);
+		}
 	}
 
 	return 0;
@@ -2192,12 +2270,14 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "        }\n");
 				fprintf(fp, "    }\n");
 			} else if (type_is_enum(schema, table_field->type)) {
+				linearbuffers_errorf("type is invalid: %s", table_field->type);
+				goto bail;
 			} else if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
 				namespace_push(namespace, table_field->type);
 				namespace_push(namespace, "_");
-				element_push(element, table_field_i);
+				element_push(element, table, table_field_i, 0);
 				schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
 				element_pop(element);
 				namespace_pop(namespace);
@@ -2244,7 +2324,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    }\n");
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
-				element_push(element, table_field_i);
+				element_push(element, table, table_field_i, 0);
 				schema_generate_jsonify_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
 				element_pop(element);
 				namespace_pop(namespace);

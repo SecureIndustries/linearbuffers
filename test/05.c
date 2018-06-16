@@ -10,13 +10,14 @@
 int main (int argc, char *argv[])
 {
 	int rc;
-	size_t i;
 
+	size_t i;
 	uint8_t data[10];
+
 	uint64_t linearized_length;
 	const char *linearized_buffer;
-	struct linearbuffers_encoder *encoder;
 
+	struct linearbuffers_encoder *encoder;
 	struct linearbuffers_decoder decoder;
 
 	(void) argc;

@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include "06-encoder.h"
+#include "06-decoder.h"
+#include "06-jsonify.h"
 
 struct emitter_param {
 	uint64_t length;
@@ -11,7 +13,7 @@ struct emitter_param {
 static int emitter_function (void *context, uint64_t offset, const void *buffer, uint64_t length)
 {
 	struct emitter_param *emitter_param = context;
-	emitter_param->length = offset + length;
+	emitter_param->length = (emitter_param->length > offset + length) ? emitter_param->length : offset + length;
 	fprintf(stderr, "offset: 0x%08lx, length: 0x%08lx, buffer: %p\n", offset, length, buffer);
 	return 0;
 }
@@ -40,6 +42,7 @@ int main (int argc, char *argv[])
 	}
 
 	rc  = linearbuffers_output_start(encoder);
+	rc |= linearbuffers_output_0_set(encoder, 1);
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
