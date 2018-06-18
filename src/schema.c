@@ -1950,10 +1950,10 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 		}
 		fprintf(fp, "    memcpy(&present, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(present));\n", sizeof(uint8_t) * (table_field_i / 8));
-		fprintf(fp, "    if (present & 0x%02x) {\n", (1 << (table_field_i % 8)));
-		fprintf(fp, "        return 1;\n");
+		fprintf(fp, "    if (!(present & 0x%02x)) {\n", (1 << (table_field_i % 8)));
+		fprintf(fp, "        return 0;\n");
 		fprintf(fp, "    }\n");
-		fprintf(fp, "    return 0;\n");
+		fprintf(fp, "    return 1;\n");
 		fprintf(fp, "}\n");
 		if (table_field->vector) {
 			if (type_is_scalar(table_field->type)) {

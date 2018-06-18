@@ -13,6 +13,7 @@ int main (int argc, char *argv[])
 	const char *linearized_buffer;
 
 	struct linearbuffers_encoder *encoder;
+	struct linearbuffers_decoder decoder;
 
 	(void) argc;
 	(void) argv;
@@ -44,6 +45,16 @@ int main (int argc, char *argv[])
 	fprintf(stderr, "linearized: %p, length: %ld\n", linearized_buffer, linearized_length);
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
+
+	linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
+	if (linearbuffers_output_1_s_get(&decoder) != 1) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_output_1_t_foo_get(&decoder) != 2) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
 
 	linearbuffers_encoder_destroy(encoder);
 
