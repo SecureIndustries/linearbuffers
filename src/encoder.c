@@ -154,7 +154,7 @@ enum entry_type {
 
 struct entry_table {
 	uint64_t elements;
-	uint8_t *present;
+	uint8_t present[32];
 };
 
 struct entry_vector {
@@ -261,9 +261,11 @@ static void entry_destroy (struct pool *pool, struct entry *entry)
 		TAILQ_REMOVE(&entry->childs, child, child);
 		entry_destroy(pool, child);
 	}
+#if 0
 	if (entry->u.table.present != NULL) {
 		free(entry->u.table.present);
 	}
+#endif
 	pool_free(pool, entry);
 }
 
@@ -408,11 +410,18 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
 	entry->type = entry_type_table;
 	entry->parent = parent;
 	entry->u.table.elements = elements;
+#if 0
 	entry->u.table.present = malloc((sizeof(uint8_t) * ((elements + 7) / 8)));
 	if (entry->u.table.present == NULL) {
 		linearbuffers_debugf("can not allocate memory");
 		goto bail;
 	}
+#else
+	if (sizeof(entry->u.table) < (sizeof(uint8_t) * ((elements + 7) / 8))) {
+		linearbuffers_debugf("can not allocate memory");
+		goto bail;
+	}
+#endif
 	memset(entry->u.table.present, 0, (sizeof(uint8_t) * ((elements + 7) / 8)));
 	if (parent == NULL) {
 		encoder->root = entry;
