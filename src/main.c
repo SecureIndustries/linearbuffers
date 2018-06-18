@@ -6,27 +6,30 @@
 
 #include "schema.h"
 
-#define OPTION_HELP		'h'
-#define OPTION_SCHEMA		's'
-#define OPTION_PRETTY		'p'
-#define OPTION_ENCODER		'e'
-#define OPTION_DECODER		'd'
-#define OPTION_JSONIFY		'j'
+#define OPTION_HELP			'h'
+#define OPTION_SCHEMA			's'
+#define OPTION_PRETTY			'p'
+#define OPTION_ENCODER			'e'
+#define OPTION_DECODER			'd'
+#define OPTION_DECODER_USE_MEMCPY	'm'
+#define OPTION_JSONIFY			'j'
 
-#define DEFAULT_SCHEMA		NULL
-#define DEFAULT_PRETTY		NULL
-#define DEFAULT_ENCODER		NULL
-#define DEFAULT_DECODER		NULL
-#define DEFAULT_JSONIFY		NULL
+#define DEFAULT_SCHEMA			NULL
+#define DEFAULT_PRETTY			NULL
+#define DEFAULT_ENCODER			NULL
+#define DEFAULT_DECODER			NULL
+#define DEFAULT_DECODER_USE_MEMCPY	0
+#define DEFAULT_JSONIFY			NULL
 
 static struct option options[] = {
-	{ "help"	, no_argument	   , 0, OPTION_HELP	},
-	{ "schema"	, required_argument, 0, OPTION_SCHEMA	},
-	{ "pretty"	, required_argument, 0, OPTION_PRETTY	},
-	{ "encoder"	, required_argument, 0, OPTION_ENCODER	},
-	{ "decoder"	, required_argument, 0, OPTION_DECODER	},
-	{ "jsonify"	, required_argument, 0, OPTION_JSONIFY	},
-	{ 0		, 0                , 0, 0		}
+	{ "help"		, no_argument	   , 0, OPTION_HELP			},
+	{ "schema"		, required_argument, 0, OPTION_SCHEMA			},
+	{ "pretty"		, required_argument, 0, OPTION_PRETTY			},
+	{ "encoder"		, required_argument, 0, OPTION_ENCODER			},
+	{ "decoder"		, required_argument, 0, OPTION_DECODER			},
+	{ "decoder-use-memcpy"	, required_argument, 0, OPTION_DECODER_USE_MEMCPY	},
+	{ "jsonify"		, required_argument, 0, OPTION_JSONIFY			},
+	{ 0			, 0                , 0, 0				}
 };
 
 static void print_help (const char *name)
@@ -38,6 +41,7 @@ static void print_help (const char *name)
 	fprintf(stdout, "  -p, --pretty : generated pretty file (default: %s)\n", (DEFAULT_PRETTY == NULL) ? "(null)" : DEFAULT_PRETTY);
 	fprintf(stdout, "  -e, --encoder: generated encoder file (default: %s)\n", (DEFAULT_ENCODER == NULL) ? "(null)" : DEFAULT_ENCODER);
 	fprintf(stdout, "  -d, --decoder: generated decoder file (default: %s)\n", (DEFAULT_DECODER == NULL) ? "(null)" : DEFAULT_DECODER);
+	fprintf(stdout, "  -m, --decoder-use-memcpy: decoding using memcpy, rather than casting (default: %d)\n", DEFAULT_DECODER_USE_MEMCPY);
 	fprintf(stdout, "  -j, --jsonify: generated jsonify file (default: %s)\n", (DEFAULT_JSONIFY == NULL) ? "(null)" : DEFAULT_JSONIFY);
 	fprintf(stdout, "  -h, --help   : this text\n");
 }
@@ -51,6 +55,7 @@ int main (int argc, char *argv[])
 	const char *option_pretty;
 	const char *option_encoder;
 	const char *option_decoder;
+	int option_decoder_use_memcpy;
 	const char *option_jsonify;
 
 	int rc;
@@ -60,10 +65,11 @@ int main (int argc, char *argv[])
 	option_pretty  = DEFAULT_PRETTY;
 	option_encoder = DEFAULT_ENCODER;
 	option_decoder = DEFAULT_DECODER;
+	option_decoder_use_memcpy = DEFAULT_DECODER_USE_MEMCPY;
 	option_jsonify = DEFAULT_JSONIFY;
 
 	while (1) {
-		c = getopt_long(argc, argv, "s:p:e:d:j:h", options, &option_index);
+		c = getopt_long(argc, argv, "s:p:e:d:m:j:h", options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -82,6 +88,9 @@ int main (int argc, char *argv[])
 				break;
 			case OPTION_DECODER:
 				option_decoder = optarg;
+				break;
+			case OPTION_DECODER_USE_MEMCPY:
+				option_decoder_use_memcpy = !!atoi(optarg);
 				break;
 			case OPTION_JSONIFY:
 				option_jsonify = optarg;
@@ -122,14 +131,14 @@ int main (int argc, char *argv[])
 		}
 	}
 	if (option_decoder != NULL) {
-		rc = schema_generate_decoder(schema, option_decoder);
+		rc = schema_generate_decoder(schema, option_decoder, option_decoder_use_memcpy);
 		if (rc != 0) {
 			fprintf(stderr, "can not generate schema file: %s\n", option_decoder);
 			goto bail;
 		}
 	}
 	if (option_jsonify != NULL) {
-		rc = schema_generate_jsonify(schema, option_jsonify);
+		rc = schema_generate_jsonify(schema, option_jsonify, option_decoder_use_memcpy);
 		if (rc != 0) {
 			fprintf(stderr, "can not generate schema file: %s\n", option_jsonify);
 			goto bail;
