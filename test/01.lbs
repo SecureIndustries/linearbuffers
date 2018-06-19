@@ -1,4 +1,10 @@
 
+enum anum {
+	0,
+	1,
+	2
+}
+
 table output {
 	int8: int8;
 	int16: int16;
@@ -9,6 +15,7 @@ table output {
 	uint32: uint32;
 	uint64: uint64;
 	string: string;
+	anum: anum;
 }
 
 root output;
