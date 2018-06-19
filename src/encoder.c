@@ -487,6 +487,10 @@ int linearbuffers_encoder_table_set_string (struct linearbuffers_encoder *encode
 		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
+	if (value == NULL) {
+		linearbuffers_debugf("value is invalid");
+		goto bail;
+	}
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		linearbuffers_debugf("logic error: stack is empty");
 		goto bail;
