@@ -480,6 +480,38 @@ linearbuffers_encoder_table_set_type(uint16);
 linearbuffers_encoder_table_set_type(uint32);
 linearbuffers_encoder_table_set_type(uint64);
 
+int linearbuffers_encoder_table_set_string (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, const char *value)
+{
+	struct entry *parent;
+	if (encoder == NULL) {
+		linearbuffers_debugf("encoder is invalid");
+		goto bail;
+	}
+	if (TAILQ_EMPTY(&encoder->stack)) {
+		linearbuffers_debugf("logic error: stack is empty");
+		goto bail;
+	}
+	parent = TAILQ_LAST(&encoder->stack, entries);
+	if (parent == NULL) {
+		linearbuffers_debugf("logic error: parent is invalid");
+		goto bail;
+	}
+	if (parent->type != entry_type_table) {
+		linearbuffers_debugf("logic error: parent is invalid");
+		goto bail;
+	}
+	if (element >= parent->u.table.elements) {
+		linearbuffers_debugf("logic error: element is invalid");
+		goto bail;
+	}
+	parent->u.table.present[element / 8] |= (1 << (element % 8));
+	encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint8_t) * ((parent->u.table.elements + 7) / 8)) + offset, &encoder->emitter.offset, sizeof(uint64_t));
+	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, strlen(value) + sizeof(char));
+	encoder->emitter.offset += strlen(value) + sizeof(char);
+	return 0;
+bail:	return -1;
+}
+
 #define linearbuffers_encoder_table_set_vector_type(__type__) \
 	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, const __type__ ## _t *value, uint64_t count) \
 	{ \

@@ -1,13 +1,14 @@
 
 table output {
-	a: int8;
-	b: int16;
-	c: int32;
-	d: int64;
-	1: uint8;
-	2: uint16;
-	3: uint32;
-	4: uint64;
+	int8: int8;
+	int16: int16;
+	int32: int32;
+	int64: int64;
+	uint8: uint8;
+	uint16: uint16;
+	uint32: uint32;
+	uint64: uint64;
+	string: string;
 }
 
 root output;

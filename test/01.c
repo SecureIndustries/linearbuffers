@@ -25,14 +25,15 @@ int main (int argc, char *argv[])
 	}
 
 	rc  = linearbuffers_output_start(encoder);
-	rc |= linearbuffers_output_a_set(encoder, 0);
-	rc |= linearbuffers_output_b_set(encoder, 1);
-	rc |= linearbuffers_output_c_set(encoder, 2);
-	rc |= linearbuffers_output_d_set(encoder, 3);
-	rc |= linearbuffers_output_1_set(encoder, 4);
-	rc |= linearbuffers_output_2_set(encoder, 5);
-	rc |= linearbuffers_output_3_set(encoder, 6);
-	rc |= linearbuffers_output_4_set(encoder, 7);
+	rc |= linearbuffers_output_int8_set(encoder, 0);
+	rc |= linearbuffers_output_int16_set(encoder, 1);
+	rc |= linearbuffers_output_int32_set(encoder, 2);
+	rc |= linearbuffers_output_int64_set(encoder, 3);
+	rc |= linearbuffers_output_uint8_set(encoder, 4);
+	rc |= linearbuffers_output_uint16_set(encoder, 5);
+	rc |= linearbuffers_output_uint32_set(encoder, 6);
+	rc |= linearbuffers_output_uint64_set(encoder, 7);
+	rc |= linearbuffers_output_string_set(encoder, "string");
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
@@ -49,35 +50,39 @@ int main (int argc, char *argv[])
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
 
 	linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
-	if (linearbuffers_output_a_get(&decoder) != 0) {
+	if (linearbuffers_output_int8_get(&decoder) != 0) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_b_get(&decoder) != 1) {
+	if (linearbuffers_output_int16_get(&decoder) != 1) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_c_get(&decoder) != 2) {
+	if (linearbuffers_output_int32_get(&decoder) != 2) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_d_get(&decoder) != 3) {
+	if (linearbuffers_output_int64_get(&decoder) != 3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_1_get(&decoder) != 4) {
+	if (linearbuffers_output_uint8_get(&decoder) != 4) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_2_get(&decoder) != 5) {
+	if (linearbuffers_output_uint16_get(&decoder) != 5) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_3_get(&decoder) != 6) {
+	if (linearbuffers_output_uint32_get(&decoder) != 6) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_4_get(&decoder) != 7) {
+	if (linearbuffers_output_uint64_get(&decoder) != 7) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (strcmp(linearbuffers_output_string_get(&decoder), "string") != 0) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}

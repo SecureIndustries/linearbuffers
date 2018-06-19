@@ -74,6 +74,7 @@ struct schema {
 	char *NAMESPACE;
 	char *NAMESPACE_;
 	char *root;
+	char *ROOT;
 	struct schema_enums enums;
 	struct schema_tables tables;
 	struct schema_attributes attributes;
@@ -138,6 +139,17 @@ static int type_is_scalar (const char *type)
 		return 1;
 	}
 	if (strcmp(type, "uint64") == 0) {
+		return 1;
+	}
+	return 0;
+}
+
+static int type_is_string (const char *type)
+{
+	if (type == NULL) {
+		return 0;
+	}
+	if (strcmp(type, "string") == 0) {
 		return 1;
 	}
 	return 0;
@@ -221,6 +233,10 @@ static int type_is_valid (struct schema *schema, const char *type)
 		return 0;
 	}
 	rc = type_is_scalar(type);
+	if (rc == 1) {
+		return 1;
+	}
+	rc = type_is_string(type);
 	if (rc == 1) {
 		return 1;
 	}
@@ -759,6 +775,9 @@ void schema_destroy (struct schema *schema)
 	if (schema->root != NULL) {
 		free(schema->root);
 	}
+	if (schema->ROOT != NULL) {
+		free(schema->ROOT);
+	}
 	TAILQ_FOREACH_SAFE(anum, &schema->enums, list, nanum) {
 		TAILQ_REMOVE(&schema->enums, anum, list);
 		schema_enum_destroy(anum);
@@ -934,6 +953,15 @@ static int schema_build (struct schema *schema)
 	}
 	for (i = 0; i < strlen(schema->NAMESPACE_); i++) {
 		schema->NAMESPACE_[i] = toupper(schema->NAMESPACE_[i]);
+	}
+
+	schema->ROOT = strdup(schema->root);
+	if (schema->ROOT == NULL) {
+		linearbuffers_errorf("can not allocate memory");
+		goto bail;
+	}
+	for (i = 0; i < strlen(schema->ROOT); i++) {
+		schema->ROOT[i] = toupper(schema->ROOT[i]);
 	}
 
 	TAILQ_FOREACH(anum, &schema->enums, list) {
@@ -1649,6 +1677,8 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 			table_field_s += sizeof(uint64_t);
 		} else if (type_is_scalar(table_field->type)) {
 			table_field_s += inttype_size(table_field->type);
+		} else if (type_is_string(table_field->type)) {
+			table_field_s += sizeof(uint64_t);
 		} else if (type_is_enum(schema, table_field->type)) {
 			table_field_s += inttype_size(type_get_enum(schema, table_field->type)->type);
 		} else if (type_is_table(schema, table_field->type)) {
@@ -1759,6 +1789,13 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
+			} else if (type_is_string(table_field->type)) {
+				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const char *value_%s)\n", namespace_linearized(namespace), table_field->name, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s%s_enum_t value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace_, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
@@ -1845,8 +1882,8 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_ENUM_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_ENUM_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_ENUM_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_ENUM_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(anum, &schema->enums, list) {
@@ -1859,8 +1896,8 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 
 	if (!TAILQ_EMPTY(&schema->tables)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_ENCODER_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_ENCODER_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_ENCODER_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_ENCODER_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(table, &schema->tables, list) {
@@ -2093,6 +2130,25 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				}
 				fprintf(fp, "    return value;\n");
 				fprintf(fp, "}\n");
+			} else if (type_is_string(table_field->type)) {
+				fprintf(fp, "static inline const char * %s%s_get (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    offset = 0;\n");
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+					} else {
+						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+					}
+				}
+				if (decoder_use_memcpy) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
+				} else {
+					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
+				}
+				fprintf(fp, "    return (const char *) (decoder->buffer + offset);\n");
+				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "static inline %s%s_enum_t %s%s_get (struct linearbuffers_decoder *decoder)\n", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "{\n");
@@ -2192,8 +2248,8 @@ int schema_generate_decoder (struct schema *schema, const char *filename, int de
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_ENUM_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_ENUM_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_ENUM_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_ENUM_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(anum, &schema->enums, list) {
@@ -2206,8 +2262,8 @@ int schema_generate_decoder (struct schema *schema, const char *filename, int de
 
 	if (!TAILQ_EMPTY(&schema->tables)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_DECODER_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_DECODER_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_DECODER_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_DECODER_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(table, &schema->tables, list) {
@@ -2370,6 +2426,15 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "            goto bail;\n");
 				fprintf(fp, "        }\n");
 				fprintf(fp, "    }\n");
+			} else if (type_is_string(table_field->type)) {
+				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "        const char *value;\n");
+				fprintf(fp, "        value = %s%s_get(&decoder);\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": \\\"%%s\\\"%s\\n\", value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "        if (rc < 0) {\n");
+				fprintf(fp, "            goto bail;\n");
+				fprintf(fp, "        }\n");
+				fprintf(fp, "    }\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "        %s%s_enum_t value;\n", schema->namespace_, table_field->type);
@@ -2480,8 +2545,8 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_ENUM_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_ENUM_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_ENUM_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_ENUM_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(anum, &schema->enums, list) {
@@ -2494,8 +2559,8 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 
 	if (!TAILQ_EMPTY(&schema->tables)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_DECODER_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_DECODER_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_DECODER_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_DECODER_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(table, &schema->tables, list) {
@@ -2538,8 +2603,8 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 
 	if (!TAILQ_EMPTY(&schema->tables)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "#if !defined(%s_JSONIFY_API)\n", schema->NAMESPACE);
-		fprintf(fp, "#define %s_JSONIFY_API\n", schema->NAMESPACE);
+		fprintf(fp, "#if !defined(%s_%s_JSONIFY_API)\n", schema->NAMESPACE, schema->ROOT);
+		fprintf(fp, "#define %s_%s_JSONIFY_API\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "\n");
 
 		TAILQ_FOREACH(table, &schema->tables, list) {
