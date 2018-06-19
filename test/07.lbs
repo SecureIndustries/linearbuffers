@@ -1,0 +1,19 @@
+
+table a_table {
+	int8: int8;
+}
+
+table output {
+	int8s   : [ int8 ];
+	int16s  : [ int16 ];
+	int32s  : [ int32 ];
+	int64s  : [ int64 ];
+	uint8s  : [ uint8 ];
+	uint16s : [ uint16 ];
+	uint32s : [ uint32 ];
+	uint64s : [ uint64 ];
+	strings : [ string ];
+	tables  : [ a_table ];
+}
+
+root output;
