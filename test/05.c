@@ -57,7 +57,11 @@ int main (int argc, char *argv[])
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
 
-	linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
+	rc = linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
+	if (rc != 0) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
 	if (linearbuffers_output_type_get(&decoder) != linearbuffers_type_type_3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;

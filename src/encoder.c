@@ -36,11 +36,15 @@ static int pool_init (struct pool *p, const uint64_t element_size, const uint64_
 static void pool_uninit (struct pool *p);
 
 #if defined(POOL_ENABLE) && (POOL_ENABLE == 1)
+
 static void * pool_malloc (struct pool *p);
 static void pool_free (struct pool *p, void *ptr);
+
 #else
+
 #define pool_malloc(p) malloc((p)->element_size)
 #define pool_free(p, d) free(d)
+
 #endif
 
 static void pool_uninit (struct pool *p)
@@ -130,19 +134,8 @@ static void pool_free (struct pool *p, void *ptr)
 	p->freed = (struct pool_element *) (((uint8_t *) ptr) - sizeof(struct pool_element));
 	p->freed->next = freed;
 }
-#endif
 
-enum entry_vector_type {
-	entry_vector_type_table,
-	entry_vector_type_int8,
-	entry_vector_type_int16,
-	entry_vector_type_int32,
-	entry_vector_type_int64,
-	entry_vector_type_uint8,
-	entry_vector_type_uint16,
-	entry_vector_type_uint32,
-	entry_vector_type_uint64,
-};
+#endif
 
 enum entry_type {
 	entry_type_unknown,
@@ -158,8 +151,6 @@ struct entry_table {
 };
 
 struct entry_vector {
-	enum entry_vector_type type;
-	uint64_t count;
 };
 
 TAILQ_HEAD(entries, entry);
@@ -200,9 +191,11 @@ static int encoder_default_emitter (void *context, uint64_t offset, const void *
 	linearbuffers_debugf("emitter offset: %08" PRIu64 ", buffer: %11p, length: %08" PRIu64 "", offset, buffer, length);
 	if (encoder->output.size < offset + length) {
 		void *tmp;
-		tmp = realloc(encoder->output.buffer, offset + length);
+		uint64_t size;
+		size = (((offset + length) + 4095) / 4096) * 4096;
+		tmp = realloc(encoder->output.buffer, size);
 		if (tmp == NULL) {
-			tmp = malloc(offset + length);
+			tmp = malloc(size);
 			if (tmp == NULL) {
 				linearbuffers_debugf("can not allocate memory");
 				goto bail;
@@ -213,7 +206,7 @@ static int encoder_default_emitter (void *context, uint64_t offset, const void *
 		} else {
 			encoder->output.buffer = tmp;
 		}
-		encoder->output.size = offset + length;
+		encoder->output.size = size;
 	}
 	if (buffer == NULL) {
 		memset(encoder->output.buffer + offset, 0, length);
@@ -281,7 +274,6 @@ static struct entry * entry_vector_create (struct pool *pool, struct entry *pare
 	TAILQ_INIT(&entry->childs);
 	entry->type = entry_type_vector;
 	entry->parent = parent;
-	entry->u.vector.type = entry_vector_type_table;
 	return entry;
 bail:	if (entry != NULL) {
 		entry_destroy(pool, entry);
@@ -429,7 +421,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child);
 	}
 	entry->offset = encoder->emitter.offset;
-	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, (sizeof(uint8_t) * ((elements + 7) / 8)));// + size);
+	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, (sizeof(uint8_t) * ((elements + 7) / 8)) + size);
 	encoder->emitter.offset += (sizeof(uint8_t) * ((elements + 7) / 8)) + size;
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
@@ -624,12 +616,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end 
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	encoder->emitter.function(encoder->emitter.context, entry->offset, entry->u.table.present, (sizeof(uint8_t) * ((entry->u.table.elements + 7) / 8)));
 	if (entry->parent != NULL) {
-		if (entry->parent->type == entry_type_vector) {
-			entry->parent->u.vector.count += 1;
-		}
 		TAILQ_REMOVE(&entry->parent->childs, entry, child);
-		if (entry->type == entry_type_table) {
-		}
 		entry_destroy(&encoder->pool.entry, entry);
 	} else {
 		entry_destroy(&encoder->pool.entry, entry);
@@ -694,9 +681,6 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	if (entry->parent != NULL) {
-		if (entry->parent->type == entry_type_vector) {
-			entry->parent->u.vector.count += 1;
-		}
 		TAILQ_REMOVE(&entry->parent->childs, entry, child);
 		entry_destroy(&encoder->pool.entry, entry);
 	} else {

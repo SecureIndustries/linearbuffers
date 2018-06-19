@@ -2077,7 +2077,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				} else {
 					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
 				}
-				fprintf(fp, "    return decoder->buffer + offset + sizeof(uint64_t);\n");
+				fprintf(fp, "    return decoder->buffer + offset + UINT64_C(%" PRIu64 ");\n", sizeof(uint64_t));
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline %s_t %s%s_get_at (struct linearbuffers_decoder *decoder, uint64_t at)\n", table_field->type, namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "{\n");
@@ -2095,7 +2095,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				} else {
 					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
 				}
-				fprintf(fp, "    return ((%s_t *) (decoder->buffer + offset + sizeof(uint64_t)))[at];\n", table_field->type);
+				fprintf(fp, "    return ((%s_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 ")))[at];\n", table_field->type, sizeof(uint64_t));
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "{\n");

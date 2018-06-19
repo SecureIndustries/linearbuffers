@@ -1,5 +1,4 @@
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +9,11 @@
 
 #include "debug.h"
 
-enum linearbuffers_debug_level linearbuffers_debug_level = linearbuffers_debug_level_error;
-static pthread_mutex_t linearbuffers_debug_mutex = PTHREAD_MUTEX_INITIALIZER;
+enum linearbuffers_debug_level linearbuffers_debug_level	= linearbuffers_debug_level_error;
+static pthread_mutex_t linearbuffers_debug_mutex		= PTHREAD_MUTEX_INITIALIZER;
+
+static char *debug_buffer	= NULL;
+static int debug_buffer_size	= 0;
 
 static void linearbuffers_debug_lock (void)
 {
@@ -65,7 +67,6 @@ enum linearbuffers_debug_level linearbuffers_debug_level_from_string (const char
 int linearbuffers_debug_printf (enum linearbuffers_debug_level level, const char *name, const char *function, const char *file, int line, const char *fmt, ...)
 {
 	int rc;
-	char *str;
 	va_list ap;
 
 	struct timeval timeval;
@@ -73,15 +74,30 @@ int linearbuffers_debug_printf (enum linearbuffers_debug_level level, const char
 	int milliseconds;
 	char date[80];
 
-	str = NULL;
-	va_start(ap, fmt);
-
 	linearbuffers_debug_lock();
 
-	rc = vasprintf(&str, fmt, ap);
+	va_start(ap, fmt);
+	rc = vsnprintf(debug_buffer, debug_buffer_size, fmt, ap);
+	va_end(ap);
 	if (rc < 0) {
 		linearbuffers_debug_unlock();
 		goto bail;
+	}
+	if (debug_buffer_size == 0 ||
+	    rc >= debug_buffer_size) {
+		free(debug_buffer);
+		debug_buffer = malloc(rc + 1);
+		if (debug_buffer == NULL) {
+			goto bail;
+		}
+		debug_buffer_size = rc + 1;
+		va_start(ap, fmt);
+		rc = vsnprintf(debug_buffer, debug_buffer_size, fmt, ap);
+		va_end(ap);
+		if (rc < 0) {
+			linearbuffers_debug_unlock();
+			goto bail;
+		}
 	}
 
 	gettimeofday(&timeval, NULL);
@@ -94,18 +110,19 @@ int linearbuffers_debug_printf (enum linearbuffers_debug_level level, const char
 	tm = localtime(&timeval.tv_sec);
 	strftime(date, sizeof(date), "%x-%H:%M:%S", tm);
 
-	fprintf(stderr, "linearbuffers:%s.%03d:%s:%s: %s (%s %s:%d)\n", date, milliseconds, name, linearbuffers_debug_level_to_string(level), str, function, file, line);
+	fprintf(stderr, "linearbuffers:%s.%03d:%s:%s: %s (%s %s:%d)\n", date, milliseconds, name, linearbuffers_debug_level_to_string(level), debug_buffer, function, file, line);
 
 	linearbuffers_debug_unlock();
 
-	va_end(ap);
-	if (str != NULL) {
-		free(str);
-	}
 	return 0;
 bail:	va_end(ap);
-	if (str != NULL) {
-		free(str);
-	}
 	return -1;
+}
+
+__attribute__((destructor)) int linearbuffers_debug_fini (void)
+{
+	if (debug_buffer != NULL) {
+		free(debug_buffer);
+	}
+	return 0;
 }
