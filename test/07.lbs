@@ -1,4 +1,10 @@
 
+enum a_enum {
+	0,
+	1,
+	2
+}
+
 table a_table {
 	int8: int8;
 }
@@ -14,6 +20,7 @@ table output {
 	uint64s : [ uint64 ];
 	strings : [ string ];
 	tables  : [ a_table ];
+	enums   : [ a_enum ];
 }
 
 root output;

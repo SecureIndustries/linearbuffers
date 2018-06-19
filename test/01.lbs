@@ -1,5 +1,5 @@
 
-enum anum {
+enum a_enum {
 	0,
 	1,
 	2
@@ -15,7 +15,7 @@ table output {
 	uint32: uint32;
 	uint64: uint64;
 	string: string;
-	anum: anum;
+	anum: a_enum;
 }
 
 root output;

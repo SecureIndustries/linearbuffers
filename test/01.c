@@ -33,8 +33,8 @@ int main (int argc, char *argv[])
 	rc |= linearbuffers_output_uint16_set(encoder, 5);
 	rc |= linearbuffers_output_uint32_set(encoder, 6);
 	rc |= linearbuffers_output_uint64_set(encoder, 7);
-	rc |= linearbuffers_output_string_set(encoder, "string");
-	rc |= linearbuffers_output_anum_set(encoder, linearbuffers_anum_1);
+	rc |= linearbuffers_output_string_set(encoder, "1234567890");
+	rc |= linearbuffers_output_anum_set(encoder, linearbuffers_a_enum_1);
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
