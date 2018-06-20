@@ -22,8 +22,6 @@ define test-defaults
     $1_ldflags-y = \
     	-Wl,-Bstatic \
         -llinearbuffers-encoder \
-        -llinearbuffers-decoder \
-        -llinearbuffers-jsonify \
 		-Wl,-Bdynamic
 
 	$1_depends-y = \

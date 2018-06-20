@@ -3,19 +3,13 @@ target-y = \
 	linearbuffers-compiler
 
 target.o-y = \
-	liblinearbuffers-encoder.o \
-	liblinearbuffers-decoder.o \
-	liblinearbuffers-jsonify.o
+	liblinearbuffers-encoder.o
 
 target.a-y = \
-	liblinearbuffers-encoder.a \
-	liblinearbuffers-decoder.a \
-	liblinearbuffers-jsonify.a
+	liblinearbuffers-encoder.a
 
 target.so-y = \
-	liblinearbuffers-encoder.so \
-	liblinearbuffers-decoder.so \
-	liblinearbuffers-jsonify.so
+	liblinearbuffers-encoder.so
 
 linearbuffers-compiler_files-y = \
 	parser.lex.c \
@@ -63,44 +57,6 @@ liblinearbuffers-decoder.o_files-y = \
 	debug.c \
 	decoder.c
 
-liblinearbuffers-decoder.o_cflags-y = \
-	-fvisibility=hidden
-
-liblinearbuffers-decoder.a_files-y = \
-	debug.c \
-	decoder.c
-
-liblinearbuffers-decoder.a_cflags-y = \
-	-fvisibility=hidden
-
-liblinearbuffers-decoder.so_files-y = \
-	debug.c \
-	decoder.c
-
-liblinearbuffers-decoder.so_cflags-y = \
-	-fvisibility=hidden
-
-liblinearbuffers-jsonify.o_files-y = \
-	debug.c \
-	jsonify.c
-
-liblinearbuffers-jsonify.o_cflags-y = \
-	-fvisibility=hidden
-
-liblinearbuffers-jsonify.a_files-y = \
-	debug.c \
-	jsonify.c
-
-liblinearbuffers-jsonify.a_cflags-y = \
-	-fvisibility=hidden
-
-liblinearbuffers-jsonify.so_files-y = \
-	debug.c \
-	jsonify.c
-
-liblinearbuffers-jsonify.so_cflags-y = \
-	-fvisibility=hidden
-
 dist.dir = ../dist
 dist.base = linearbuffers
 
@@ -115,13 +71,7 @@ dist.include-y = \
 dist.lib-y = \
 	liblinearbuffers-encoder.o \
 	liblinearbuffers-encoder.a \
-	liblinearbuffers-encoder.so \
-	liblinearbuffers-decoder.o \
-	liblinearbuffers-decoder.a \
-	liblinearbuffers-decoder.so \
-	liblinearbuffers-jsonify.o \
-	liblinearbuffers-jsonify.a \
-	liblinearbuffers-jsonify.so
+	liblinearbuffers-encoder.so
 
 include ../Makefile.lib
 
