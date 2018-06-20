@@ -28,15 +28,15 @@ define test-defaults
 		../dist/lib/liblinearbuffers-encoder.a
 
     $1-encoder.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
-	${Q}@echo "  GEN        ${CURDIR}/$$@"
+	${Q}@echo "  LBS        ${CURDIR}/$$@"
 	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -e $1-encoder.h
 
     $1-decoder.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
-	${Q}@echo "  GEN        ${CURDIR}/$$@"
+	${Q}@echo "  LBS        ${CURDIR}/$$@"
 	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -d $1-decoder.h
 
     $1-jsonify.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
-	${Q}@echo "  GEN        ${CURDIR}/$$@"
+	${Q}@echo "  LBS        ${CURDIR}/$$@"
 	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -j $1-jsonify.h
 endef
 

@@ -83,7 +83,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (strcmp(linearbuffers_output_string_get(&decoder), "string") != 0) {
+	if (strcmp(linearbuffers_output_string_get(&decoder), "1234567890") != 0) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}

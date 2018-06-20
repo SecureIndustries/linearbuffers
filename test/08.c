@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "07-encoder.h"
-#include "07-decoder.h"
-#include "07-jsonify.h"
+#include "08-encoder.h"
+#include "08-decoder.h"
+#include "08-jsonify.h"
 
 #define ARRAY_COUNT	4
 
@@ -82,16 +82,68 @@ int main (int argc, char *argv[])
 	}
 
 	rc  = linearbuffers_output_start(encoder);
-	rc |= linearbuffers_output_int8s_set(encoder, int8s, sizeof(int8s) / sizeof(int8s[0]));
-	rc |= linearbuffers_output_int16s_set(encoder, int16s, sizeof(int16s) / sizeof(int16s[0]));
-	rc |= linearbuffers_output_int32s_set(encoder, int32s, sizeof(int32s) / sizeof(int32s[0]));
-	rc |= linearbuffers_output_int64s_set(encoder, int64s, sizeof(int64s) / sizeof(int64s[0]));
-	rc |= linearbuffers_output_uint8s_set(encoder, uint8s, sizeof(uint8s) / sizeof(uint8s[0]));
-	rc |= linearbuffers_output_uint16s_set(encoder, uint16s, sizeof(uint16s) / sizeof(uint16s[0]));
-	rc |= linearbuffers_output_uint32s_set(encoder, uint32s, sizeof(uint32s) / sizeof(uint32s[0]));
-	rc |= linearbuffers_output_uint64s_set(encoder, uint64s, sizeof(uint64s) / sizeof(uint64s[0]));
-	rc |= linearbuffers_output_strings_set(encoder, (const char **) strings, sizeof(strings) / sizeof(strings[0]));
-	rc |= linearbuffers_output_enums_set(encoder, enums, sizeof(enums) / sizeof(enums[0]));
+
+	rc |= linearbuffers_output_int8s_start(encoder);
+	for (i = 0; i < sizeof(int8s) / sizeof(int8s[0]); i++) {
+		rc |= linearbuffers_output_int8s_push(encoder, int8s[i]);
+	}
+	rc |= linearbuffers_output_int8s_end(encoder);
+
+	rc |= linearbuffers_output_int16s_start(encoder);
+	for (i = 0; i < sizeof(int16s) / sizeof(int16s[0]); i++) {
+		rc |= linearbuffers_output_int16s_push(encoder, int16s[i]);
+	}
+	rc |= linearbuffers_output_int16s_end(encoder);
+
+	rc |= linearbuffers_output_int32s_start(encoder);
+	for (i = 0; i < sizeof(int32s) / sizeof(int32s[0]); i++) {
+		rc |= linearbuffers_output_int32s_push(encoder, int32s[i]);
+	}
+	rc |= linearbuffers_output_int32s_end(encoder);
+
+	rc |= linearbuffers_output_int64s_start(encoder);
+	for (i = 0; i < sizeof(int64s) / sizeof(int64s[0]); i++) {
+		rc |= linearbuffers_output_int64s_push(encoder, int64s[i]);
+	}
+	rc |= linearbuffers_output_int64s_end(encoder);
+
+	rc |= linearbuffers_output_uint8s_start(encoder);
+	for (i = 0; i < sizeof(uint8s) / sizeof(uint8s[0]); i++) {
+		rc |= linearbuffers_output_uint8s_push(encoder, uint8s[i]);
+	}
+	rc |= linearbuffers_output_uint8s_end(encoder);
+
+	rc |= linearbuffers_output_uint16s_start(encoder);
+	for (i = 0; i < sizeof(uint16s) / sizeof(uint16s[0]); i++) {
+		rc |= linearbuffers_output_uint16s_push(encoder, uint16s[i]);
+	}
+	rc |= linearbuffers_output_uint16s_end(encoder);
+
+
+	rc |= linearbuffers_output_uint32s_start(encoder);
+	for (i = 0; i < sizeof(uint32s) / sizeof(uint32s[0]); i++) {
+		rc |= linearbuffers_output_uint32s_push(encoder, uint32s[i]);
+	}
+	rc |= linearbuffers_output_uint32s_end(encoder);
+
+	rc |= linearbuffers_output_uint64s_start(encoder);
+	for (i = 0; i < sizeof(uint64s) / sizeof(uint64s[0]); i++) {
+		rc |= linearbuffers_output_uint64s_push(encoder, uint64s[i]);
+	}
+	rc |= linearbuffers_output_uint64s_end(encoder);
+
+	rc |= linearbuffers_output_strings_start(encoder);
+	for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
+		rc |= linearbuffers_output_strings_push(encoder, strings[i]);
+	}
+	rc |= linearbuffers_output_strings_end(encoder);
+
+	rc |= linearbuffers_output_enums_start(encoder);
+	for (i = 0; i < sizeof(enums) / sizeof(enums[0]); i++) {
+		rc |= linearbuffers_output_enums_push(encoder, enums[i]);
+	}
+	rc |= linearbuffers_output_enums_end(encoder);
+
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
@@ -106,195 +158,193 @@ int main (int argc, char *argv[])
 	fprintf(stderr, "linearized: %p, length: %ld\n", linearized_buffer, linearized_length);
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
-
 	rc = linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
 	if (rc != 0) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_decode\n");
 		goto bail;
 	}
 
 	if (linearbuffers_output_int8s_get_count(&decoder) != sizeof(int8s) / sizeof(int8s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_int8s_get_length(&decoder) != sizeof(int8s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_int8s_get(&decoder), int8s, sizeof(int8s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_int8s_get_count(&decoder); i++) {
 		if (int8s[i] != linearbuffers_output_int8s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_int16s_get_count(&decoder) != sizeof(int16s) / sizeof(int16s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int16s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_int16s_get_length(&decoder) != sizeof(int16s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int16s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_int16s_get(&decoder), int16s, sizeof(int16s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int16s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_int16s_get_count(&decoder); i++) {
 		if (int16s[i] != linearbuffers_output_int16s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_int16s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_int32s_get_count(&decoder) != sizeof(int32s) / sizeof(int32s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int32s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_int32s_get_length(&decoder) != sizeof(int32s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int32s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_int32s_get(&decoder), int32s, sizeof(int32s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int32s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_int32s_get_count(&decoder); i++) {
 		if (int32s[i] != linearbuffers_output_int32s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_int32s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_int64s_get_count(&decoder) != sizeof(int64s) / sizeof(int64s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int64s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_int64s_get_length(&decoder) != sizeof(int64s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int64s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_int64s_get(&decoder), int64s, sizeof(int64s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int64s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_int64s_get_count(&decoder); i++) {
 		if (int64s[i] != linearbuffers_output_int64s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_int64s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_uint8s_get_count(&decoder) != sizeof(uint8s) / sizeof(uint8s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint8s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_uint8s_get_length(&decoder) != sizeof(uint8s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint8s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_uint8s_get(&decoder), uint8s, sizeof(uint8s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint8s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_uint8s_get_count(&decoder); i++) {
 		if (uint8s[i] != linearbuffers_output_uint8s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_uint8s_get_at(%ld) (%u != %u)\n", i, uint8s[i], linearbuffers_output_uint8s_get_at(&decoder, i));
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_uint16s_get_count(&decoder) != sizeof(uint16s) / sizeof(uint16s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint16s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_uint16s_get_length(&decoder) != sizeof(uint16s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint16s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_uint16s_get(&decoder), uint16s, sizeof(uint16s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint16s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_uint16s_get_count(&decoder); i++) {
 		if (uint16s[i] != linearbuffers_output_uint16s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_uint16s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_uint32s_get_count(&decoder) != sizeof(uint32s) / sizeof(uint32s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint32s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_uint32s_get_length(&decoder) != sizeof(uint32s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint32s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_uint32s_get(&decoder), uint32s, sizeof(uint32s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint32s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_uint32s_get_count(&decoder); i++) {
 		if (uint32s[i] != linearbuffers_output_uint32s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_uint32s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_uint64s_get_count(&decoder) != sizeof(uint64s) / sizeof(uint64s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint64s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_uint64s_get_length(&decoder) != sizeof(uint64s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint64s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_uint64s_get(&decoder), uint64s, sizeof(uint64s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_uint64s_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_uint64s_get_count(&decoder); i++) {
 		if (uint64s[i] != linearbuffers_output_uint64s_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_uint64s_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_strings_get_count(&decoder) != sizeof(strings) / sizeof(strings[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_strings_get_count\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_strings_get_count(&decoder); i++) {
 		if (strcmp(strings[i], linearbuffers_output_strings_get_at(&decoder, i)) != 0) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_strings_get_at\n");
 			goto bail;
 		}
 	}
 
 	if (linearbuffers_output_enums_get_count(&decoder) != sizeof(enums) / sizeof(enums[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_enums_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_enums_get_length(&decoder) != sizeof(enums)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_enums_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_enums_get(&decoder), enums, sizeof(enums))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_enums_get\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_enums_get_count(&decoder); i++) {
 		if (enums[i] != linearbuffers_output_enums_get_at(&decoder, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_enums_get_at\n");
 			goto bail;
 		}
 	}
-
 	linearbuffers_encoder_destroy(encoder);
 
 	for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
