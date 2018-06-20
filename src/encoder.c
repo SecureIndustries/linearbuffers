@@ -11,131 +11,121 @@
 #include "queue.h"
 #include "encoder.h"
 
+#if !defined(MIN)
+#define MIN(a, b)			((a) < (b) ? (a) : (b))
+#endif
 #if !defined(MAX)
-#define MAX(a, b)			((a) < (b) ? (b) : (a))
+#define MAX(a, b)			((a) > (b) ? (a) : (b))
 #endif
 
 #define POOL_ENABLE			1
-#define POOL_DEFAULT_BLOCKS_COUNT	1
 
 struct pool_element {
 	struct pool_element *next;
 };
 
-struct pool {
-	uint64_t element_size;
-	uint64_t block_size;
-	uint64_t used;
-	uint64_t block;
-	struct pool_element *freed;
-	uint64_t blocks_used;
-	uint8_t **blocks;
+struct pool_block {
+	struct pool_block *next;
+	uint8_t buffer[0];
 };
 
-static int pool_init (struct pool *p, const uint64_t element_size, const uint64_t block_size);
-static void pool_uninit (struct pool *p);
+struct pool {
+	uint64_t selements;
+	uint64_t nelements;
+	uint64_t uelements;
+	struct pool_element *felements;
+	struct pool_block *cblock;
+	struct pool_block *blocks;
+};
+
+static int pool_init (struct pool *pool, const uint64_t selements, const uint64_t nelements);
+static void pool_uninit (struct pool *pool);
 
 #if defined(POOL_ENABLE) && (POOL_ENABLE == 1)
 
-static void * pool_malloc (struct pool *p);
-static void pool_free (struct pool *p, void *ptr);
+static void * pool_malloc (struct pool *pool);
+static void pool_free (struct pool *pool, void *ptr);
 
 #else
 
-#define pool_malloc(p) malloc((p)->element_size)
+#define pool_malloc(p) malloc((p)->selements)
 #define pool_free(p, d) free(d)
 
 #endif
 
-static void pool_uninit (struct pool *p)
+static void pool_uninit (struct pool *pool)
 {
-	uint64_t i;
-	for(i = 0; i < p->blocks_used; i++) {
-		if (p->blocks[i] == NULL) {
-			break;
-		} else {
-			free(p->blocks[i]);
-		}
+	struct pool_block *block;
+	struct pool_block *nblock;
+	for (block = pool->blocks; block && ((nblock = block->next), 1); block = nblock) {
+		free(block);
 	}
-	free(p->blocks);
-	memset(p, 0, sizeof(struct pool));
+	memset(pool, 0, sizeof(struct pool));
 }
 
-static int pool_init (struct pool *p, const uint64_t element_size, const uint64_t block_size)
+static int pool_init (struct pool *p, const uint64_t selements, const uint64_t nelements)
 {
-	uint64_t i;
 	memset(p, 0, sizeof(struct pool));
-	linearbuffers_debugf("init element_size: %lu, block_size: %lu", element_size, block_size);
-	p->element_size = sizeof(struct pool_element) + element_size;
-	p->block_size = block_size;
-	p->blocks_used = POOL_DEFAULT_BLOCKS_COUNT;
-	p->block = 0;
-	p->blocks = malloc(sizeof(uint8_t *) *  p->blocks_used);
-	if (p->blocks == NULL) {
-		linearbuffers_errorf("can not allocate memory");
-		goto bail;
-	}
-	for (i = 0; i < p->blocks_used; ++i) {
-		p->blocks[i] = malloc(p->element_size * p->block_size);
-		if (p->blocks[i] == NULL) {
-			linearbuffers_errorf("can not allocate memory");
-			goto bail;
-		}
-	}
+	linearbuffers_debugf("init selements: %lu, nelements: %lu", selements, nelements);
+	p->selements = selements;
+	p->nelements = nelements;
+	p->felements = NULL;
+	p->cblock = NULL;
+	p->blocks = NULL;
 	return 0;
-bail:	pool_uninit(p);
-	return -1;
 }
 
 #if defined(POOL_ENABLE) && (POOL_ENABLE == 1)
 
-static void * pool_malloc (struct pool *p)
+static void * pool_malloc (struct pool *pool)
 {
 	struct pool_element *element;
-	if (p->freed != NULL) {
-		element = p->freed;
-		p->freed = p->freed->next;
+	if (pool->felements != NULL) {
+		element = pool->felements;
+		pool->felements = pool->felements->next;
 		return ((uint8_t *) element) + sizeof(struct pool_element);
 	}
-	if (p->used + 1 > p->block_size) {
-		p->used = 0;
-		if (p->block + 1 >= p->blocks_used) {
-			uint64_t i;
-			void *blocks;
-			blocks = realloc(p->blocks, sizeof(uint8_t *) *  (p->blocks_used + 1));
-			if (blocks == NULL) {
-				linearbuffers_errorf("can not allocate memory");
-				return NULL;
-			} else {
-				p->blocks = blocks;
-			}
-			for (i = p->blocks_used; i < p->blocks_used + 1; i++) {
-				p->blocks[i] = NULL;
-			}
-			p->blocks_used += 1;
+	linearbuffers_debugf("uelements: %ld, nelements: %ld", pool->uelements, pool->nelements);
+	if (pool->uelements + 1 > pool->nelements ||
+	    pool->cblock == NULL) {
+		struct pool_block *block;
+		struct pool_block *blocks;
+		linearbuffers_debugf("  creating new block");
+		block = malloc(sizeof(struct pool_block) + ((sizeof(struct pool_element) + pool->selements) * pool->nelements));
+		if (block == NULL) {
+			linearbuffers_errorf("can not allocate memory");
+			return NULL;
 		}
-		if (p->blocks[p->block + 1] == NULL) {
-			p->blocks[p->block + 1] = malloc(p->element_size * p->block_size);
-			if (p->blocks[p->block + 1] == NULL) {
-				linearbuffers_errorf("can not allocate memory");
-				return NULL;
-			}
-		}
-		p->block += 1;
+		blocks = pool->blocks;
+		pool->blocks = block;
+		pool->blocks->next = blocks;
+		pool->cblock = block;
+		pool->uelements = 0;
 	}
-	element = (struct pool_element *) (p->blocks[p->block] + p->used * p->element_size);
-	p->used += 1;
+	element = (struct pool_element *) (pool->cblock->buffer + ((sizeof(struct pool_element) + pool->selements) * pool->uelements));
+	pool->uelements += 1;
 	return ((uint8_t *) element) + sizeof(struct pool_element);
 }
 
 static void pool_free (struct pool *p, void *ptr)
 {
-	struct pool_element *freed = p->freed;
-	p->freed = (struct pool_element *) (((uint8_t *) ptr) - sizeof(struct pool_element));
-	p->freed->next = freed;
+	struct pool_element *felements = p->felements;
+	p->felements = (struct pool_element *) (((uint8_t *) ptr) - sizeof(struct pool_element));
+	p->felements->next = felements;
 }
 
 #endif
+
+#define PRESENT_BUFFER_COUNT	32
+struct present_buffer {
+	struct present_buffer *next;
+	uint8_t buffer[PRESENT_BUFFER_COUNT];
+};
+
+struct present {
+	uint64_t bytes;
+	struct present_buffer *buffers;
+};
 
 enum entry_type {
 	entry_type_unknown,
@@ -147,7 +137,7 @@ enum entry_type {
 
 struct entry_table {
 	uint64_t elements;
-	uint8_t present[32];
+	struct present present;
 };
 
 struct entry_vector {
@@ -182,6 +172,7 @@ struct linearbuffers_encoder {
 	} output;
 	struct {
 		struct pool entry;
+		struct pool present;
 	} pool;
 };
 
@@ -218,16 +209,54 @@ static int encoder_default_emitter (void *context, uint64_t offset, const void *
 bail:	return -1;
 }
 
-__attribute__ ((__visibility__("default"))) const void * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length)
+static int present_mark (struct present *present, uint64_t element)
 {
-	if (encoder == NULL) {
-		linearbuffers_debugf("encoder is invalid");
-		return NULL;
+	uint64_t byte;
+	uint64_t buffer;
+	struct present_buffer *present_buffer;
+	byte = element / 8;
+	buffer = byte / PRESENT_BUFFER_COUNT;
+	present_buffer = present->buffers;
+	while (buffer--) {
+		present_buffer = present_buffer->next;
 	}
-	if (length != NULL) {
-		*length = encoder->output.length;
+	present_buffer->buffer[byte % PRESENT_BUFFER_COUNT] |= (1 << (element % 8));
+	return 0;
+}
+
+static void present_uninit (struct pool *pool, struct present *present)
+{
+	struct present_buffer *buffer;
+	struct present_buffer *nbuffer;
+	for (buffer = present->buffers; buffer && ((nbuffer = buffer->next), 1); buffer = nbuffer) {
+		pool_free(pool, buffer);
 	}
-	return encoder->output.buffer;
+	memset(present, 0, sizeof(struct present));
+}
+
+static int present_init (struct pool *pool, struct present *present, uint64_t elements)
+{
+	uint64_t buffers;
+	struct present_buffer *present_buffer;
+	struct present_buffer *present_buffers;
+	memset(present, 0, sizeof(struct present));
+	present->bytes = sizeof(uint8_t) * ((elements + 7) / 8);
+	buffers = (present->bytes + PRESENT_BUFFER_COUNT - 1) / PRESENT_BUFFER_COUNT;
+	fprintf(stderr, "buffers: %ld\n", buffers);
+	while (buffers--) {
+		present_buffer = pool_malloc(pool);
+		if (present_buffer == NULL) {
+			linearbuffers_debugf("can not allocate memory");
+			goto bail;
+		}
+		memset(present_buffer->buffer, 0, PRESENT_BUFFER_COUNT);
+		present_buffers = present->buffers;
+		present->buffers = present_buffer;
+		present->buffers->next = present_buffers;
+	}
+	return 0;
+bail:	present_uninit(pool, present);
+	return -1;
 }
 
 static const char * entry_type_string (enum entry_type type)
@@ -243,7 +272,7 @@ static const char * entry_type_string (enum entry_type type)
 	return "unknown";
 }
 
-static void entry_destroy (struct pool *pool, struct entry *entry)
+static void entry_destroy (struct pool *epool, struct pool *ppool, struct entry *entry)
 {
 	struct entry *child;
 	struct entry *nchild;
@@ -252,20 +281,18 @@ static void entry_destroy (struct pool *pool, struct entry *entry)
 	}
 	TAILQ_FOREACH_SAFE(child, &entry->childs, child, nchild) {
 		TAILQ_REMOVE(&entry->childs, child, child);
-		entry_destroy(pool, child);
+		entry_destroy(epool, ppool, child);
 	}
-#if 0
-	if (entry->u.table.present != NULL) {
-		free(entry->u.table.present);
+	if (entry->type == entry_type_table) {
+		present_uninit(ppool, &entry->u.table.present);
 	}
-#endif
-	pool_free(pool, entry);
+	pool_free(epool, entry);
 }
 
-static struct entry * entry_vector_create (struct pool *pool, struct entry *parent)
+static struct entry * entry_vector_create (struct pool *epool, struct pool *ppool, struct entry *parent)
 {
 	struct entry *entry;
-	entry = pool_malloc(pool);
+	entry = pool_malloc(epool);
 	if (entry == NULL) {
 		linearbuffers_debugf("can not allocate memory");
 		goto bail;
@@ -276,9 +303,21 @@ static struct entry * entry_vector_create (struct pool *pool, struct entry *pare
 	entry->parent = parent;
 	return entry;
 bail:	if (entry != NULL) {
-		entry_destroy(pool, entry);
+		entry_destroy(epool, ppool, entry);
 	}
 	return NULL;
+}
+
+__attribute__ ((__visibility__("default"))) const void * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length)
+{
+	if (encoder == NULL) {
+		linearbuffers_debugf("encoder is invalid");
+		return NULL;
+	}
+	if (length != NULL) {
+		*length = encoder->output.length;
+	}
+	return encoder->output.buffer;
 }
 
 __attribute__ ((__visibility__("default"))) struct linearbuffers_encoder * linearbuffers_encoder_create (struct linearbuffers_encoder_create_options *options)
@@ -293,6 +332,7 @@ __attribute__ ((__visibility__("default"))) struct linearbuffers_encoder * linea
 	memset(encoder, 0, sizeof(struct linearbuffers_encoder));
 	TAILQ_INIT(&encoder->stack);
 	pool_init(&encoder->pool.entry, sizeof(struct entry), 32);
+	pool_init(&encoder->pool.present, sizeof(struct present_buffer), 32);
 	encoder->emitter.function = encoder_default_emitter;
 	encoder->emitter.context = encoder;
 	if (options != NULL) {
@@ -314,12 +354,13 @@ __attribute__ ((__visibility__("default"))) void linearbuffers_encoder_destroy (
 		return;
 	}
 	if (encoder->root != NULL) {
-		entry_destroy(&encoder->pool.entry, encoder->root);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, encoder->root);
 	}
 	if (encoder->output.buffer != NULL) {
 		free(encoder->output.buffer);
 	}
 	pool_uninit(&encoder->pool.entry);
+	pool_uninit(&encoder->pool.present);
 	free(encoder);
 }
 
@@ -329,7 +370,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (str
 		linearbuffers_debugf("encoder is invalid");
 		goto bail;
 	}
-	entry_destroy(&encoder->pool.entry, encoder->root);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, encoder->root);
 	encoder->root = NULL;
 	encoder->emitter.offset = 0;
 	TAILQ_INIT(&encoder->stack);
@@ -348,6 +389,7 @@ bail:	return -1;
 
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, uint64_t elements, uint64_t size)
 {
+	int rc;
 	struct entry *entry;
 	struct entry *parent;
 	entry = NULL;
@@ -380,8 +422,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
 				linearbuffers_debugf("logic error: element is invalid");
 				goto bail;
 			}
-			parent->u.table.present[element / 8] |= (1 << (element % 8));
-			encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint8_t) * ((parent->u.table.elements + 7) / 8)) + offset, &encoder->emitter.offset, sizeof(uint64_t));
+			present_mark(&parent->u.table.present, element);
+			encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
 		} else if (parent->type == entry_type_vector) {
 			if (element != UINT64_MAX) {
 				linearbuffers_debugf("logic error: element is invalid");
@@ -402,31 +444,23 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
 	entry->type = entry_type_table;
 	entry->parent = parent;
 	entry->u.table.elements = elements;
-#if 0
-	entry->u.table.present = malloc((sizeof(uint8_t) * ((elements + 7) / 8)));
-	if (entry->u.table.present == NULL) {
-		linearbuffers_debugf("can not allocate memory");
+	rc = present_init(&encoder->pool.present, &entry->u.table.present, elements);
+	if (rc != 0) {
+		linearbuffers_debugf("can not init table present");
 		goto bail;
 	}
-#else
-	if (sizeof(entry->u.table) < (sizeof(uint8_t) * ((elements + 7) / 8))) {
-		linearbuffers_debugf("can not allocate memory");
-		goto bail;
-	}
-#endif
-	memset(entry->u.table.present, 0, (sizeof(uint8_t) * ((elements + 7) / 8)));
 	if (parent == NULL) {
 		encoder->root = entry;
 	} else {
 		TAILQ_INSERT_TAIL(&parent->childs, entry, child);
 	}
 	entry->offset = encoder->emitter.offset;
-	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, (sizeof(uint8_t) * ((elements + 7) / 8)) + size);
-	encoder->emitter.offset += (sizeof(uint8_t) * ((elements + 7) / 8)) + size;
+	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, entry->u.table.present.bytes + size);
+	encoder->emitter.offset += entry->u.table.present.bytes + size;
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
 bail:	if (entry != NULL) {
-		entry_destroy(&encoder->pool.entry, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 	}
 	return -1;
 }
@@ -456,8 +490,8 @@ bail:	if (entry != NULL) {
 			linearbuffers_debugf("logic error: element is invalid"); \
 			goto bail; \
 		} \
-		parent->u.table.present[element / 8] |= (1 << (element % 8)); \
-		encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint8_t) * ((parent->u.table.elements + 7) / 8)) + offset, &value, sizeof(__type__ ## _t)); \
+		present_mark(&parent->u.table.present, element); \
+		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &value, sizeof(__type__ ## _t)); \
 		return 0; \
 	bail:	return -1; \
 	}
@@ -500,8 +534,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_
 		linearbuffers_debugf("logic error: element is invalid");
 		goto bail;
 	}
-	parent->u.table.present[element / 8] |= (1 << (element % 8));
-	encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint8_t) * ((parent->u.table.elements + 7) / 8)) + offset, &encoder->emitter.offset, sizeof(uint64_t));
+	present_mark(&parent->u.table.present, element); \
+	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, strlen(value) + sizeof(char));
 	encoder->emitter.offset += strlen(value) + sizeof(char);
 	return 0;
@@ -533,8 +567,8 @@ bail:	return -1;
 			linearbuffers_debugf("logic error: element is invalid"); \
 			goto bail; \
 		} \
-		parent->u.table.present[element / 8] |= (1 << (element % 8)); \
-		encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint8_t) * ((parent->u.table.elements + 7) / 8)) + offset, &encoder->emitter.offset, sizeof(uint64_t)); \
+		present_mark(&parent->u.table.present, element); \
+		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t)); \
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &count, sizeof(uint64_t)); \
 		encoder->emitter.offset += sizeof(uint64_t); \
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, count * sizeof(__type__ ## _t)); \
@@ -580,8 +614,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_
 		linearbuffers_debugf("logic error: element is invalid");
 		goto bail;
 	}
-	parent->u.table.present[element / 8] |= (1 << (element % 8));
-	encoder->emitter.function(encoder->emitter.context, parent->offset + (sizeof(uint8_t) * ((parent->u.table.elements + 7) / 8)) + offset, &encoder->emitter.offset, sizeof(uint64_t));
+	present_mark(&parent->u.table.present, element); \
+	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
 	counts = encoder->emitter.offset;
 	encoder->emitter.offset += sizeof(uint64_t);
 	offsets = encoder->emitter.offset;
@@ -600,6 +634,9 @@ bail:	return -1;
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 {
 	struct entry *entry;
+	uint64_t present_bytes;
+	uint64_t present_bufferi;
+	struct present_buffer *present_buffer;
 	if (encoder == NULL) {
 		linearbuffers_debugf("encoder is invalid");
 		goto bail;
@@ -614,12 +651,16 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end 
 		goto bail;
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
-	encoder->emitter.function(encoder->emitter.context, entry->offset, entry->u.table.present, (sizeof(uint8_t) * ((entry->u.table.elements + 7) / 8)));
+	for (present_bufferi = 0 , present_bytes = entry->u.table.present.bytes   , present_buffer = entry->u.table.present.buffers;
+	     present_buffer;
+	     present_bufferi += 1, present_bytes -= PRESENT_BUFFER_COUNT, present_buffer = present_buffer->next) {
+		encoder->emitter.function(encoder->emitter.context, entry->offset + present_bufferi * PRESENT_BUFFER_COUNT, present_buffer->buffer, MIN(present_bytes, PRESENT_BUFFER_COUNT));
+	}
 	if (entry->parent != NULL) {
 		TAILQ_REMOVE(&entry->parent->childs, entry, child);
-		entry_destroy(&encoder->pool.entry, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 	} else {
-		entry_destroy(&encoder->pool.entry, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 		encoder->root = NULL;
 	}
 	return 0;
@@ -651,7 +692,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 		linearbuffers_debugf("logic error: element is invalid");
 		goto bail;
 	}
-	entry = entry_vector_create(&encoder->pool.entry, parent);
+	entry = entry_vector_create(&encoder->pool.entry, &encoder->pool.present, parent);
 	if (entry == NULL) {
 		linearbuffers_debugf("can not create entry vector");
 		goto bail;
@@ -682,9 +723,9 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	if (entry->parent != NULL) {
 		TAILQ_REMOVE(&entry->parent->childs, entry, child);
-		entry_destroy(&encoder->pool.entry, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 	} else {
-		entry_destroy(&encoder->pool.entry, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 		encoder->root = NULL;
 	}
 	return 0;
