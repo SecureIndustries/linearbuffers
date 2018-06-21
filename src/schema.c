@@ -2398,7 +2398,6 @@ int schema_generate_decoder (struct schema *schema, const char *filename, int de
 	fprintf(fp, "#include <stddef.h>\n");
 	fprintf(fp, "#include <stdint.h>\n");
 	fprintf(fp, "#include <string.h>\n");
-	fprintf(fp, "#include <linearbuffers/decoder.h>\n");
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");
@@ -2821,8 +2820,6 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 	fprintf(fp, "#include <stdint.h>\n");
 	fprintf(fp, "#include <string.h>\n");
 	fprintf(fp, "#include <inttypes.h>\n");
-	fprintf(fp, "#include <linearbuffers/decoder.h>\n");
-	fprintf(fp, "#include <linearbuffers/jsonify.h>\n");
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
 		fprintf(fp, "\n");

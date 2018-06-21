@@ -64,9 +64,7 @@ dist.bin-y = \
 	linearbuffers-compiler
 
 dist.include-y = \
-	encoder.h \
-	decoder.h \
-	jsonify.h
+	encoder.h
 
 dist.lib-y = \
 	liblinearbuffers-encoder.o \
