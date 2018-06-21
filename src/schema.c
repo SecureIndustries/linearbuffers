@@ -1822,6 +1822,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_nset (struct linearbuffers_encoder *encoder, const char *value_%s, uint64_t n)\n", namespace_linearized(namespace), table_field->name, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_table_nset_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s, n);\n", table_field->type, table_field_i, table_field_s, table_field->name);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s%s_enum_t value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace_, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
