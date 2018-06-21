@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "07-encoder.h"
-#include "07-decoder.h"
-#include "07-jsonify.h"
+#include "09-encoder.h"
+#include "09-decoder.h"
+#include "09-jsonify.h"
 
 #define ARRAY_COUNT	4
 
@@ -316,43 +316,44 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_tables_get_count(output); i++) {
-		if (linearbuffers_output_tables_a_table_int8_get(output, i) != int8s[i]) {
+		const struct linearbuffers_a_table *a_table = linearbuffers_output_tables_get_at(output, i);
+		if (linearbuffers_a_table_int8_get(a_table) != int8s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_int16_get(output, i) != int16s[i]) {
+		if (linearbuffers_a_table_int16_get(a_table) != int16s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_int32_get(output, i) != int32s[i]) {
+		if (linearbuffers_a_table_int32_get(a_table) != int32s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_int64_get(output, i) != int64s[i]) {
+		if (linearbuffers_a_table_int64_get(a_table) != int64s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_uint8_get(output, i) != uint8s[i]) {
+		if (linearbuffers_a_table_uint8_get(a_table) != uint8s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_uint16_get(output, i) != uint16s[i]) {
+		if (linearbuffers_a_table_uint16_get(a_table) != uint16s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_uint32_get(output, i) != uint32s[i]) {
+		if (linearbuffers_a_table_uint32_get(a_table) != uint32s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_uint64_get(output, i) != uint64s[i]) {
+		if (linearbuffers_a_table_uint64_get(a_table) != uint64s[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (strcmp(linearbuffers_output_tables_a_table_string_get(output, i), strings[i]) != 0) {
+		if (strcmp(linearbuffers_a_table_string_get(a_table), strings[i]) != 0) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
-		if (linearbuffers_output_tables_a_table_anum_get(output, i) != enums[i]) {
+		if (linearbuffers_a_table_anum_get(a_table) != enums[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}

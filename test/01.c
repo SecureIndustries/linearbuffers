@@ -13,7 +13,7 @@ int main (int argc, char *argv[])
 	const uint8_t *linearized_buffer;
 
 	struct linearbuffers_encoder *encoder;
-	struct linearbuffers_decoder decoder;
+	const struct linearbuffers_output *output;
 
 	(void) argc;
 	(void) argv;
@@ -50,40 +50,44 @@ int main (int argc, char *argv[])
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
 
-	linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
-	if (linearbuffers_output_int8_get(&decoder) != 0) {
+	output = linearbuffers_output_decode(linearized_buffer, linearized_length);
+	if (output == NULL) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_int16_get(&decoder) != 1) {
+	if (linearbuffers_output_int8_get(output) != 0) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_int32_get(&decoder) != 2) {
+	if (linearbuffers_output_int16_get(output) != 1) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_int64_get(&decoder) != 3) {
+	if (linearbuffers_output_int32_get(output) != 2) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_uint8_get(&decoder) != 4) {
+	if (linearbuffers_output_int64_get(output) != 3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_uint16_get(&decoder) != 5) {
+	if (linearbuffers_output_uint8_get(output) != 4) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_uint32_get(&decoder) != 6) {
+	if (linearbuffers_output_uint16_get(output) != 5) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_uint64_get(&decoder) != 7) {
+	if (linearbuffers_output_uint32_get(output) != 6) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (strcmp(linearbuffers_output_string_get(&decoder), "1234567890") != 0) {
+	if (linearbuffers_output_uint64_get(output) != 7) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (strcmp(linearbuffers_output_string_get(output), "1234567890") != 0) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}

@@ -18,7 +18,7 @@ int main (int argc, char *argv[])
 	const char *linearized_buffer;
 
 	struct linearbuffers_encoder *encoder;
-	struct linearbuffers_decoder decoder;
+	const struct linearbuffers_output *output;
 
 	(void) argc;
 	(void) argv;
@@ -57,37 +57,37 @@ int main (int argc, char *argv[])
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, printf);
 
-	rc = linearbuffers_output_decode(&decoder, linearized_buffer, linearized_length);
-	if (rc != 0) {
+	output = linearbuffers_output_decode(linearized_buffer, linearized_length);
+	if (output == NULL) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_type_get(&decoder) != linearbuffers_type_type_3) {
+	if (linearbuffers_output_type_get(output) != linearbuffers_type_type_3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_length_get(&decoder) != 1) {
+	if (linearbuffers_output_length_get(output) != 1) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_timeval_seconds_get(&decoder) != 2) {
+	if (linearbuffers_output_timeval_seconds_get(output) != 2) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_data_get_count(&decoder) != sizeof(data) / sizeof(data[0])) {
+	if (linearbuffers_output_data_get_count(output) != sizeof(data) / sizeof(data[0])) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_data_get_length(&decoder) != sizeof(data)) {
+	if (linearbuffers_output_data_get_length(output) != sizeof(data)) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_data_get(&decoder), data, sizeof(data))) {
+	if (memcmp(linearbuffers_output_data_get(output), data, sizeof(data))) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	for (i = 0; i < linearbuffers_output_data_get_count(&decoder); i++) {
-		if (data[i] != linearbuffers_output_data_get(&decoder)[i]) {
+	for (i = 0; i < linearbuffers_output_data_get_count(output); i++) {
+		if (data[i] != linearbuffers_output_data_get(output)[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}

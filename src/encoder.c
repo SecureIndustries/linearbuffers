@@ -566,6 +566,7 @@ linearbuffers_encoder_table_set_type(uint64);
 
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_string (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, const char *value)
 {
+	uint64_t eoffset;
 	struct entry *parent;
 	if (encoder == NULL) {
 		linearbuffers_debugf("encoder is invalid");
@@ -593,7 +594,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_
 		goto bail;
 	}
 	present_table_mark(&parent->u.table.present, element);
-	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
+	eoffset = encoder->emitter.offset - parent->offset;
+	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &eoffset, sizeof(uint64_t));
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, strlen(value) + sizeof(char));
 	encoder->emitter.offset += strlen(value) + sizeof(char);
 	return 0;
@@ -603,6 +605,7 @@ bail:	return -1;
 int linearbuffers_encoder_table_nset_string (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, const char *value, uint64_t n)
 {
 	const char _null = 0;
+	uint64_t eoffset;
 	struct entry *parent;
 	if (encoder == NULL) {
 		linearbuffers_debugf("encoder is invalid");
@@ -630,7 +633,8 @@ int linearbuffers_encoder_table_nset_string (struct linearbuffers_encoder *encod
 		goto bail;
 	}
 	present_table_mark(&parent->u.table.present, element);
-	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
+	eoffset = encoder->emitter.offset - parent->offset;
+	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &eoffset, sizeof(uint64_t));
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, n);
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &_null, 1);
 	encoder->emitter.offset += n + 1;
@@ -641,6 +645,7 @@ bail:	return -1;
 #define linearbuffers_encoder_table_set_vector_type(__type__) \
 	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, const __type__ ## _t *value, uint64_t count) \
 	{ \
+		uint64_t eoffset; \
 		struct entry *parent; \
 		if (encoder == NULL) { \
 			linearbuffers_debugf("encoder is invalid"); \
@@ -664,7 +669,8 @@ bail:	return -1;
 			goto bail; \
 		} \
 		present_table_mark(&parent->u.table.present, element); \
-		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t)); \
+		eoffset = encoder->emitter.offset - parent->offset; \
+		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &eoffset, sizeof(uint64_t)); \
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &count, sizeof(uint64_t)); \
 		encoder->emitter.offset += sizeof(uint64_t); \
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, count * sizeof(__type__ ## _t)); \
@@ -686,6 +692,7 @@ linearbuffers_encoder_table_set_vector_type(uint64);
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder)
 {
 	struct entry *entry;
+	uint64_t eoffset;
 	uint64_t present_bytes;
 	uint64_t present_bufferi;
 	struct present_buffer *present_buffer;
@@ -715,7 +722,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end 
 	if (entry->parent != NULL) {
 		if (entry->parent->type == entry_type_table) {
 			present_table_mark(&entry->parent->u.table.present, entry->parent_element);
-			encoder->emitter.function(encoder->emitter.context, entry->parent->offset + entry->parent->u.table.present.bytes + entry->parent_offset, &entry->offset, sizeof(uint64_t));
+			eoffset = entry->offset - entry->parent->offset;
+			encoder->emitter.function(encoder->emitter.context, entry->parent->offset + entry->parent->u.table.present.bytes + entry->parent_offset, &eoffset, sizeof(uint64_t));
 		} else if (entry->parent->type == entry_type_vector) {
 			offset_table_push(&entry->parent->u.vector.offset, entry->offset, &encoder->pool.offset);
 		}
@@ -902,6 +910,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 	TAILQ_INIT(&entry->childs);
 	entry->type = entry_type_vector;
 	entry->parent = parent;
+	entry->parent_element = element;
+	entry->parent_offset = offset;
 	entry->u.vector.type = vector_type_string;
 	entry->u.vector.elements = 0;
 	rc = offset_table_init(&encoder->pool.offset, &entry->u.vector.offset);
@@ -909,8 +919,6 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 		linearbuffers_debugf("can not init table present");
 		goto bail;
 	}
-	present_table_mark(&parent->u.table.present, element);
-	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
 	entry->offset = encoder->emitter.offset;
 	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, sizeof(uint64_t) + sizeof(uint64_t));
 	encoder->emitter.offset += sizeof(uint64_t) + sizeof(uint64_t);
@@ -926,7 +934,10 @@ bail:	if (entry != NULL) {
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end_string (struct linearbuffers_encoder *encoder)
 {
 	struct entry *entry;
+	uint64_t i;
+	uint64_t eoffset;
 	uint64_t offset_bytes;
+	uint64_t offset_emitter;
 	struct offset_buffer *offset_buffer;
 	if (encoder == NULL) {
 		linearbuffers_debugf("encoder is invalid");
@@ -950,15 +961,22 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 		goto bail;
 	}
 	encoder->emitter.function(encoder->emitter.context, entry->offset, &entry->u.vector.elements, sizeof(uint64_t));
-	encoder->emitter.function(encoder->emitter.context, entry->offset + sizeof(uint64_t), &encoder->emitter.offset, sizeof(uint64_t));
+	offset_emitter = encoder->emitter.offset - entry->offset;
+	encoder->emitter.function(encoder->emitter.context, entry->offset + sizeof(uint64_t), &offset_emitter, sizeof(uint64_t));
 	for (offset_bytes = entry->u.vector.elements, offset_buffer = entry->u.vector.offset.buffers;
 	     offset_buffer;
 	     offset_bytes -= OFFSET_BUFFER_COUNT    , offset_buffer = offset_buffer->next) {
+		for (i = 0; i < MIN(offset_bytes, OFFSET_BUFFER_COUNT); i++) {
+			offset_buffer->buffer[i] = offset_buffer->buffer[i] - (offset_emitter + entry->offset);
+		}
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, offset_buffer->buffer, MIN(offset_bytes, OFFSET_BUFFER_COUNT) * sizeof(uint64_t));
 		encoder->emitter.offset += MIN(offset_bytes, OFFSET_BUFFER_COUNT) * sizeof(uint64_t);
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	if (entry->parent != NULL) {
+		present_table_mark(&entry->parent->u.table.present, entry->parent_element);
+		eoffset = entry->offset - entry->parent->offset;
+		encoder->emitter.function(encoder->emitter.context, entry->parent->offset + entry->parent->u.table.present.bytes + entry->parent_offset, &eoffset, sizeof(uint64_t));
 		TAILQ_REMOVE(&entry->parent->childs, entry, child);
 		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 	} else {
@@ -1037,6 +1055,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 	TAILQ_INIT(&entry->childs);
 	entry->type = entry_type_vector;
 	entry->parent = parent;
+	entry->parent_element = element;
+	entry->parent_offset = offset;
 	entry->u.vector.type = vector_type_table;
 	entry->u.vector.elements = 0;
 	rc = offset_table_init(&encoder->pool.offset, &entry->u.vector.offset);
@@ -1044,8 +1064,6 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 		linearbuffers_debugf("can not init table present");
 		goto bail;
 	}
-	present_table_mark(&parent->u.table.present, element);
-	encoder->emitter.function(encoder->emitter.context, parent->offset + parent->u.table.present.bytes + offset, &encoder->emitter.offset, sizeof(uint64_t));
 	entry->offset = encoder->emitter.offset;
 	encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, sizeof(uint64_t) + sizeof(uint64_t));
 	encoder->emitter.offset += sizeof(uint64_t) + sizeof(uint64_t);
@@ -1061,7 +1079,10 @@ bail:	if (entry != NULL) {
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end_table (struct linearbuffers_encoder *encoder)
 {
 	struct entry *entry;
+	uint64_t i;
+	uint64_t eoffset;
 	uint64_t offset_bytes;
+	uint64_t offset_emitter;
 	struct offset_buffer *offset_buffer;
 	if (encoder == NULL) {
 		linearbuffers_debugf("encoder is invalid");
@@ -1085,15 +1106,22 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 		goto bail;
 	}
 	encoder->emitter.function(encoder->emitter.context, entry->offset, &entry->u.vector.elements, sizeof(uint64_t));
-	encoder->emitter.function(encoder->emitter.context, entry->offset + sizeof(uint64_t), &encoder->emitter.offset, sizeof(uint64_t));
+	offset_emitter = encoder->emitter.offset - entry->offset;
+	encoder->emitter.function(encoder->emitter.context, entry->offset + sizeof(uint64_t), &offset_emitter, sizeof(uint64_t));
 	for (offset_bytes = entry->u.vector.elements, offset_buffer = entry->u.vector.offset.buffers;
 	     offset_buffer;
 	     offset_bytes -= OFFSET_BUFFER_COUNT    , offset_buffer = offset_buffer->next) {
+		for (i = 0; i < MIN(offset_bytes, OFFSET_BUFFER_COUNT); i++) {
+			offset_buffer->buffer[i] = offset_buffer->buffer[i] - (offset_emitter + entry->offset);
+		}
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, offset_buffer->buffer, MIN(offset_bytes, OFFSET_BUFFER_COUNT) * sizeof(uint64_t));
 		encoder->emitter.offset += MIN(offset_bytes, OFFSET_BUFFER_COUNT) * sizeof(uint64_t);
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
 	if (entry->parent != NULL) {
+		present_table_mark(&entry->parent->u.table.present, entry->parent_element);
+		eoffset = entry->offset - entry->parent->offset;
+		encoder->emitter.function(encoder->emitter.context, entry->parent->offset + entry->parent->u.table.present.bytes + entry->parent_offset, &eoffset, sizeof(uint64_t));
 		TAILQ_REMOVE(&entry->parent->childs, entry, child);
 		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
 	} else {
