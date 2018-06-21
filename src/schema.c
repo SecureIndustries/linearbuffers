@@ -1364,6 +1364,7 @@ struct element_entry {
 	struct schema_table *table;
 	uint64_t id;
 	uint64_t offset;
+	int vector;
 };
 
 struct element {
@@ -1379,7 +1380,7 @@ static void element_entry_destroy (struct element_entry *entry)
 	free(entry);
 }
 
-static struct element_entry * element_entry_create (struct schema_table *table, uint64_t id, uint64_t offset)
+static struct element_entry * element_entry_create (struct schema_table *table, uint64_t id, uint64_t offset, int vector)
 {
 	struct element_entry *entry;
 	entry = malloc(sizeof(struct element_entry));
@@ -1391,6 +1392,7 @@ static struct element_entry * element_entry_create (struct schema_table *table, 
 	entry->table = table;
 	entry->id = id;
 	entry->offset = offset;
+	entry->vector = vector;
 	return entry;
 bail:	if (entry != NULL) {
 		element_entry_destroy(entry);
@@ -1398,7 +1400,7 @@ bail:	if (entry != NULL) {
 	return NULL;
 }
 
-static int element_push (struct element *element, struct schema_table *table, uint64_t id, uint64_t offset)
+static int element_push (struct element *element, struct schema_table *table, uint64_t id, uint64_t offset, int vector)
 {
 	struct element_entry *entry;
 	entry = NULL;
@@ -1406,7 +1408,7 @@ static int element_push (struct element *element, struct schema_table *table, ui
 		linearbuffers_errorf("element is invalid");
 		goto bail;
 	}
-	entry = element_entry_create(table, id, offset);
+	entry = element_entry_create(table, id, offset, vector);
 	if (entry == NULL) {
 		linearbuffers_errorf("can not create element entry");
 		goto bail;
@@ -1983,10 +1985,12 @@ bail:	if (fp != NULL &&
 static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, struct element *element, int decoder_use_memcpy, FILE *fp)
 {
 	int rc;
+
 	uint64_t table_field_i;
 	uint64_t table_field_s;
 	struct schema_table_field *table_field;
 
+	uint64_t element_entry_i;
 	struct element_entry *element_entry;
 
 	if (schema == NULL) {
@@ -2014,11 +2018,20 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 	table_field_i = 0;
 	table_field_s = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
-		fprintf(fp, "static inline int %s%s_present (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
+		fprintf(fp, "static inline int %s%s_present (struct linearbuffers_decoder *decoder", namespace_linearized(namespace), table_field->name);
+		element_entry_i = 0;
+		TAILQ_FOREACH(element_entry, &element->entries, list) {
+			if (element_entry->vector) {
+				fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+			}
+			element_entry_i += 1;
+		}
+		fprintf(fp, ")\n");
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint8_t present;\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
+		element_entry_i = 0;
 		TAILQ_FOREACH(element_entry, &element->entries, list) {
 			if (decoder_use_memcpy) {
 				fprintf(fp, "    memcpy(&present, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(present));\n", sizeof(uint8_t) * (element_entry->id / 8));
@@ -2033,6 +2046,16 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			} else {
 				fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 			}
+			if (element_entry->vector) {
+				if (decoder_use_memcpy) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at_%" PRIu64 "), sizeof(offset));\n", element_entry_i);
+				} else {
+					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+					fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at_%" PRIu64 "];\n", element_entry_i);
+				}
+			}
+			element_entry_i += 1;
 		}
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    memcpy(&present, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(present));\n", sizeof(uint8_t) * (table_field_i / 8));
@@ -2044,18 +2067,129 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    }\n");
 		fprintf(fp, "    return 1;\n");
 		fprintf(fp, "}\n");
+
 		if (table_field->vector) {
-			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline const %s_t * %s%s_get (struct linearbuffers_decoder *decoder)\n", table_field->type, namespace_linearized(namespace), table_field->name);
+			fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder", namespace_linearized(namespace), table_field->name);
+			element_entry_i = 0;
+			TAILQ_FOREACH(element_entry, &element->entries, list) {
+				if (element_entry->vector) {
+					fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+				}
+				element_entry_i += 1;
+			}
+			fprintf(fp, ")\n");
+			fprintf(fp, "{\n");
+			fprintf(fp, "    uint64_t offset;\n");
+			fprintf(fp, "    uint64_t count;\n");
+			fprintf(fp, "    offset = 0;\n");
+			element_entry_i = 0;
+			TAILQ_FOREACH(element_entry, &element->entries, list) {
+				if (decoder_use_memcpy) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+				} else {
+					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+				}
+				if (element_entry->vector) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
+					} else {
+						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+						fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at_%" PRIu64 "];\n", element_entry_i);
+					}
+				}
+				element_entry_i += 1;
+			}
+			if (decoder_use_memcpy) {
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
+				fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
+			} else {
+				fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
+				fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
+			}
+			fprintf(fp, "    return count;\n");
+			fprintf(fp, "}\n");
+
+			if (type_is_scalar(table_field->type) ||
+			    type_is_enum(schema, table_field->type)) {
+				fprintf(fp, "static inline uint64_t %s%s_get_length (struct linearbuffers_decoder *decoder", namespace_linearized(namespace), table_field->name);
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ")\n");
 				fprintf(fp, "{\n");
 				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    uint64_t count;\n");
 				fprintf(fp, "    offset = 0;\n");
+				element_entry_i = 0;
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
 					if (decoder_use_memcpy) {
 						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 					} else {
 						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 					}
+					if (element_entry->vector) {
+						if (decoder_use_memcpy) {
+							fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
+						} else {
+							fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at_%" PRIu64 "];\n", element_entry_i);
+						}
+					}
+					element_entry_i += 1;
+				}
+				if (decoder_use_memcpy) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
+					fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
+				} else {
+					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
+					fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
+				}
+				if (type_is_scalar(table_field->type)) {
+					fprintf(fp, "    return count * sizeof(%s_t);\n", table_field->type);
+				} else {
+					fprintf(fp, "    return count * sizeof(%s%s_enum_t);\n", schema->namespace_, table_field->type);
+				}
+				fprintf(fp, "}\n");
+
+				if (type_is_scalar(table_field->type)) {
+					fprintf(fp, "static inline const %s_t * %s%s_get (struct linearbuffers_decoder *decoder", table_field->type, namespace_linearized(namespace), table_field->name);
+				} else if (type_is_enum(schema, table_field->type)) {
+					fprintf(fp, "static inline const %s%s_enum_t * %s%s_get (struct linearbuffers_decoder *decoder", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
+				}
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ")\n");
+				fprintf(fp, "{\n");
+				fprintf(fp, "    uint64_t offset;\n");
+				fprintf(fp, "    offset = 0;\n");
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+					} else {
+						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+					}
+					if (element_entry->vector) {
+						if (decoder_use_memcpy) {
+							fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
+						} else {
+							fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at_%" PRIu64 "];\n", element_entry_i);
+						}
+					}
+					element_entry_i += 1;
 				}
 				if (decoder_use_memcpy) {
 					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
@@ -2064,207 +2198,78 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				}
 				fprintf(fp, "    return decoder->buffer + offset + UINT64_C(%" PRIu64 ");\n", sizeof(uint64_t));
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline %s_t %s%s_get_at (struct linearbuffers_decoder *decoder, uint64_t at)\n", table_field->type, namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				fprintf(fp, "    return ((%s_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 ")))[at];\n", table_field->type, sizeof(uint64_t));
-				fprintf(fp, "}\n");
-				fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    uint64_t count;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
-				} else {
-					fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
-				}
-				fprintf(fp, "    return count;\n");
-				fprintf(fp, "}\n");
-				fprintf(fp, "static inline uint64_t %s%s_get_length (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    uint64_t count;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-					fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-					fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
-				}
-				fprintf(fp, "    return count * sizeof(%s_t);\n", table_field->type);
-				fprintf(fp, "}\n");
+			}
+
+			if (type_is_scalar(table_field->type)) {
+				fprintf(fp, "static inline %s_t %s%s_get_at (struct linearbuffers_decoder *decoder", table_field->type, namespace_linearized(namespace), table_field->name);
+			} else if (type_is_enum(schema, table_field->type)) {
+				fprintf(fp, "static inline %s%s_enum_t %s%s_get_at (struct linearbuffers_decoder *decoder", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
 			} else if (type_is_string(table_field->type)) {
-				fprintf(fp, "static inline const char * %s%s_get_at (struct linearbuffers_decoder *decoder, uint64_t at)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
+				fprintf(fp, "static inline const char * %s%s_get_at (struct linearbuffers_decoder *decoder", namespace_linearized(namespace), table_field->name);
+			} else if (type_is_table(schema, table_field->type)) {
+				fprintf(fp, "static inline uint64_t %s%s_get_at (struct linearbuffers_decoder *decoder", namespace_linearized(namespace), table_field->name);
+			}
+			element_entry_i = 0;
+			TAILQ_FOREACH(element_entry, &element->entries, list) {
+				if (element_entry->vector) {
+					fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+				}
+				element_entry_i += 1;
+			}
+			fprintf(fp, ", uint64_t at)\n");
+			fprintf(fp, "{\n");
+			fprintf(fp, "    uint64_t offset;\n");
+			fprintf(fp, "    offset = 0;\n");
+			element_entry_i = 0;
+			TAILQ_FOREACH(element_entry, &element->entries, list) {
+				if (decoder_use_memcpy) {
+					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+				} else {
+					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+				}
+				if (element_entry->vector) {
 					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
 					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+						fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at_%" PRIu64 "];\n", element_entry_i);
 					}
 				}
+				element_entry_i += 1;
+			}
+			if (decoder_use_memcpy) {
+				fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
+			} else {
+				fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
+			}
+			if (type_is_string(table_field->type) ||
+			    type_is_table(schema, table_field->type)) {
 				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
 					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
 					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
 				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
 					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
 					fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at];\n");
 				}
-				fprintf(fp, "    return (const char *) (decoder->buffer + offset);\n");
-				fprintf(fp, "}\n");
-				fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    uint64_t count;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
-				} else {
-					fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
-				}
-				fprintf(fp, "    return count;\n");
-				fprintf(fp, "}\n");
+			}
+			if (type_is_scalar(table_field->type)) {
+				fprintf(fp, "    return ((%s_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 ")))[at];\n", table_field->type, sizeof(uint64_t));
 			} else if (type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline const %s%s_enum_t * %s%s_get (struct linearbuffers_decoder *decoder)\n", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				fprintf(fp, "    return decoder->buffer + offset + UINT64_C(%" PRIu64 ");\n", sizeof(uint64_t));
-				fprintf(fp, "}\n");
-				fprintf(fp, "static inline %s%s_enum_t %s%s_get_at (struct linearbuffers_decoder *decoder, uint64_t at)\n", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
 				fprintf(fp, "    return ((%s%s_enum_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 ")))[at];\n", schema->namespace_, table_field->type, sizeof(uint64_t));
-				fprintf(fp, "}\n");
-				fprintf(fp, "static inline uint64_t %s%s_get_count (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    uint64_t count;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
-				} else {
-					fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
-				}
-				fprintf(fp, "    return count;\n");
-				fprintf(fp, "}\n");
-				fprintf(fp, "static inline uint64_t %s%s_get_length (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    uint64_t count;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&count, decoder->buffer + offset, sizeof(count));\n");
-				} else {
-					fprintf(fp, "    count = *(uint64_t *) (decoder->buffer + offset);\n");
-				}
-				fprintf(fp, "    return count * sizeof(%s%s_enum_t);\n", schema->namespace_, table_field->type);
-				fprintf(fp, "}\n");
+			} else if (type_is_string(table_field->type)) {
+				fprintf(fp, "    return (const char *) (decoder->buffer + offset);\n");
 			} else if (type_is_table(schema, table_field->type)) {
+				fprintf(fp, "    return offset;\n");
+			}
+			fprintf(fp, "}\n");
+
+			if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
 				namespace_push(namespace, table_field->type);
 				namespace_push(namespace, "_");
-				element_push(element, table, table_field_i, table_field_s);
+				element_push(element, table, table_field_i, table_field_s, 1);
 				rc = schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, decoder_use_memcpy, fp);
 				if (rc != 0) {
 					linearbuffers_errorf("can not generate decoder for table: %s", table->name);
@@ -2275,74 +2280,82 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
-			} else {
-				linearbuffers_errorf("type is invalid: %s", table_field->type);
-				goto bail;
 			}
 		} else {
 			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline %s_t %s%s_get (struct linearbuffers_decoder *decoder)\n", table_field->type, namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    %s_t value;\n", table_field->type);
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&value, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    value = *(%s_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", table_field->type, ((table->nfields + 7) / 8) + table_field_s);
-				}
-				fprintf(fp, "    return value;\n");
-				fprintf(fp, "}\n");
+				fprintf(fp, "static inline %s_t %s%s_get (struct linearbuffers_decoder *decoder", table_field->type, namespace_linearized(namespace), table_field->name);
 			} else if (type_is_string(table_field->type)) {
-				fprintf(fp, "static inline const char * %s%s_get (struct linearbuffers_decoder *decoder)\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    offset = 0;\n");
-				TAILQ_FOREACH(element_entry, &element->entries, list) {
-					if (decoder_use_memcpy) {
-						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					} else {
-						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
-					}
-				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
-				} else {
-					fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				}
-				fprintf(fp, "    return (const char *) (decoder->buffer + offset);\n");
-				fprintf(fp, "}\n");
+				fprintf(fp, "static inline const char * %s%s_get (struct linearbuffers_decoder *decoder", namespace_linearized(namespace), table_field->name);
 			} else if (type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline %s%s_enum_t %s%s_get (struct linearbuffers_decoder *decoder)\n", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline %s%s_enum_t %s%s_get (struct linearbuffers_decoder *decoder", schema->namespace_, table_field->type, namespace_linearized(namespace), table_field->name);
+			}
+			if (type_is_scalar(table_field->type) ||
+			    type_is_string(table_field->type) ||
+			    type_is_enum(schema, table_field->type)) {
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ")\n");
 				fprintf(fp, "{\n");
 				fprintf(fp, "    uint64_t offset;\n");
-				fprintf(fp, "    %s%s_enum_t value;\n", schema->namespace_, table_field->type);
+				if (type_is_scalar(table_field->type)) {
+					fprintf(fp, "    %s_t value;\n", table_field->type);
+				} else if (type_is_enum(schema, table_field->type)) {
+					fprintf(fp, "    %s%s_enum_t value;\n", schema->namespace_, table_field->type);
+				} else if (type_is_string(table_field->type)) {
+
+				}
 				fprintf(fp, "    offset = 0;\n");
+				element_entry_i = 0;
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
 					if (decoder_use_memcpy) {
 						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 					} else {
 						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
 					}
+					if (element_entry->vector) {
+						if (decoder_use_memcpy) {
+							fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
+						} else {
+							fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    offset = ((uint64_t *) (decoder->buffer + offset))[at_%" PRIu64 "];\n", element_entry_i);
+						}
+					}
+					element_entry_i += 1;
 				}
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&value, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
+				if (type_is_scalar(table_field->type)) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    memcpy(&value, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
+					} else {
+						fprintf(fp, "    value = *(%s_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", table_field->type, ((table->nfields + 7) / 8) + table_field_s);
+					}
+					fprintf(fp, "    return value;\n");
+				} else if (type_is_enum(schema, table_field->type)) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    memcpy(&value, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
+					} else {
+						fprintf(fp, "    value = *(%s%s_enum_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", schema->namespace_, table_field->type, ((table->nfields + 7) / 8) + table_field_s);
+					}
+					fprintf(fp, "    return value;\n");
 				} else {
-					fprintf(fp, "    value = *(%s%s_enum_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", schema->namespace_, table_field->type, ((table->nfields + 7) / 8) + table_field_s);
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    memcpy(&offset, decoder->buffer + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
+					} else {
+						fprintf(fp, "    offset = *(uint64_t *) (decoder->buffer + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
+					}
+					fprintf(fp, "    return (const char *) (decoder->buffer + offset);\n");
 				}
-				fprintf(fp, "    return value;\n");
 				fprintf(fp, "}\n");
-			} else if (type_is_table(schema, table_field->type)) {
+			}
+			if (type_is_table(schema, table_field->type)) {
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
-				element_push(element, table, table_field_i, table_field_s);
+				element_push(element, table, table_field_i, table_field_s, 0);
 				rc = schema_generate_decoder_table(schema, type_get_table(schema, table_field->type), namespace, element, decoder_use_memcpy, fp);
 				if (rc != 0) {
 					linearbuffers_errorf("can not generate decoder for table: %s", table->name);
@@ -2351,9 +2364,6 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				element_pop(element);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
-			} else {
-				linearbuffers_errorf("type is invalid: %s", table_field->type);
-				goto bail;
 			}
 		}
 		table_field_i += 1;
@@ -2512,8 +2522,13 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 {
 	int rc;
 	char *prefix;
+	uint64_t prefix_count;
+
 	uint64_t table_field_i;
 	struct schema_table_field *table_field;
+
+	uint64_t element_entry_i;
+	struct element_entry *element_entry;
 
 	if (schema == NULL) {
 		linearbuffers_errorf("schema is invalid");
@@ -2546,29 +2561,63 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    }\n");
 	}
 
-	prefix = malloc(((element->nentries + 1) * 4) + 1);
-	memset(prefix, ' ', (element->nentries + 1) * 4);
-	prefix[(element->nentries + 1) * 4] = '\0';
+	prefix_count = element->nentries + 1;
+	TAILQ_FOREACH(element_entry, &element->entries, list) {
+		if (element_entry->vector) {
+			prefix_count += 1;
+		}
+	}
+
+	prefix = malloc((prefix_count * 4) + 1);
+	memset(prefix, ' ', prefix_count * 4);
+	prefix[prefix_count * 4] = '\0';
 
 	table_field_i = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
+		fprintf(fp, "    if (%s%s_present(&decoder", namespace_linearized(namespace), table_field->name);
+		element_entry_i = 0;
+		TAILQ_FOREACH(element_entry, &element->entries, list) {
+			if (element_entry->vector) {
+				fprintf(fp, ", at_%" PRIu64 "", element_entry_i);
+			}
+			element_entry_i += 1;
+		}
+		fprintf(fp, ")) {\n");
+
 		if (table_field->vector) {
+			fprintf(fp, "        uint64_t at_%" PRIu64 ";\n", element_entry_i);
+			fprintf(fp, "        uint64_t count;\n");
+
+			fprintf(fp, "        count = %s%s_get_count(&decoder", namespace_linearized(namespace), table_field->name);
+			element_entry_i = 0;
+			TAILQ_FOREACH(element_entry, &element->entries, list) {
+				if (element_entry->vector) {
+					fprintf(fp, ", at_%" PRIu64 "", element_entry_i);
+				}
+				element_entry_i += 1;
+			}
+			fprintf(fp, ");\n");
+			fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": [\\n\");\n", prefix, table_field->name);
+			fprintf(fp, "        if (rc < 0) {\n");
+			fprintf(fp, "            goto bail;\n");
+			fprintf(fp, "        }\n");
+			fprintf(fp, "        for (at_%" PRIu64 " = 0; at_%" PRIu64 " < count; at_%" PRIu64 "++) {\n", element_entry_i, element_entry_i, element_entry_i);
+
 			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        uint64_t at;\n");
-				fprintf(fp, "        uint64_t count;\n");
-				fprintf(fp, "        const %s_t *value;\n", table_field->type);
-				fprintf(fp, "        value = %s%s_get(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        count = %s%s_get_count(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": [\\n\");\n", prefix, table_field->name);
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        for (at = 0; at < count; at++) {\n");
+				fprintf(fp, "            %s_t value;\n", table_field->type);
+				fprintf(fp, "            value = %s%s_get_at(&decoder", namespace_linearized(namespace), table_field->name);
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ", at_%" PRIu64 ");\n", element_entry_i);
 				if (strncmp(table_field->type, "int", 3) == 0) {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value[at], ((at + 1) == count) ? \"\" : \",\");\n", prefix);
+					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
 				} else {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value[at], ((at + 1) == count) ? \"\" : \",\");\n", prefix);
+					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
 				}
 				fprintf(fp, "            if (rc < 0) {\n");
 				fprintf(fp, "                goto bail;\n");
@@ -2578,45 +2627,21 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "        if (rc < 0) {\n");
 				fprintf(fp, "            goto bail;\n");
 				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
-			} else if (type_is_string(table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        uint64_t at;\n");
-				fprintf(fp, "        uint64_t count;\n");
-				fprintf(fp, "        const char *value;\n");
-				fprintf(fp, "        count = %s%s_get_count(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": [\\n\");\n", prefix, table_field->name);
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        for (at = 0; at < count; at++) {\n");
-				fprintf(fp, "            value = %s%s_get_at(&decoder, at);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "            rc = emitter(\"%s    \\\"%%s\\\"%%s\\n\", value, ((at + 1) == count) ? \"\" : \",\");\n", prefix);
-				fprintf(fp, "            if (rc < 0) {\n");
-				fprintf(fp, "                goto bail;\n");
-				fprintf(fp, "            }\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
 			} else if (type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        uint64_t at;\n");
-				fprintf(fp, "        uint64_t count;\n");
-				fprintf(fp, "        const %s%s_enum_t *value;\n", schema->namespace_, table_field->type);
-				fprintf(fp, "        value = %s%s_get(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        count = %s%s_get_count(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": [\\n\");\n", prefix, table_field->name);
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        for (at = 0; at < count; at++) {\n");
+				fprintf(fp, "            %s%s_enum_t value;\n", schema->namespace_, table_field->type);
+				fprintf(fp, "            value = %s%s_get_at(&decoder", namespace_linearized(namespace), table_field->name);
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ", at_%" PRIu64 ");\n", element_entry_i);
 				if (strncmp(type_get_enum(schema, table_field->type)->type, "int", 3) == 0) {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value[at], ((at + 1) == count) ? \"\" : \",\");\n", prefix);
+					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
 				} else {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value[at], ((at + 1) == count) ? \"\" : \",\");\n", prefix);
+					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
 				}
 				fprintf(fp, "            if (rc < 0) {\n");
 				fprintf(fp, "                goto bail;\n");
@@ -2626,16 +2651,39 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "        if (rc < 0) {\n");
 				fprintf(fp, "            goto bail;\n");
 				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
+			} else if (type_is_string(table_field->type)) {
+				fprintf(fp, "            const char *value;\n");
+				fprintf(fp, "            value = %s%s_get_at(&decoder", namespace_linearized(namespace), table_field->name);
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ", at_%" PRIu64 ");\n", element_entry_i);
+				fprintf(fp, "            rc = emitter(\"%s    \\\"%%s\\\"%%s\\n\", value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
+				fprintf(fp, "            if (rc < 0) {\n");
+				fprintf(fp, "                goto bail;\n");
+				fprintf(fp, "            }\n");
+				fprintf(fp, "        }\n");
+				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "        if (rc < 0) {\n");
+				fprintf(fp, "            goto bail;\n");
+				fprintf(fp, "        }\n");
 			} else if (type_is_table(schema, table_field->type)) {
+				fprintf(fp, "        rc = emitter(\"%s    {\\n\");\n", prefix);
+				fprintf(fp, "        if (rc < 0) {\n");
+				fprintf(fp, "            goto bail;\n");
+				fprintf(fp, "        }\n");
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
 				namespace_push(namespace, table_field->type);
 				namespace_push(namespace, "_");
-				element_push(element, table, table_field_i, 0);
+				element_push(element, table, table_field_i, 0, 1);
 				rc = schema_generate_jsonify_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
 				if (rc != 0) {
-					linearbuffers_errorf("can not generate jsonify for table: %s", table->name);
+					linearbuffers_errorf("can not generate decoder for table: %s", table->name);
 					goto bail;
 				}
 				element_pop(element);
@@ -2643,56 +2691,67 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				namespace_pop(namespace);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
+				fprintf(fp, "        rc = emitter(\"%s    }%%s\\n\", ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
+				fprintf(fp, "        if (rc < 0) {\n");
+				fprintf(fp, "            goto bail;\n");
+				fprintf(fp, "        }\n");
+				fprintf(fp, "        }\n");
+				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "        if (rc < 0) {\n");
+				fprintf(fp, "            goto bail;\n");
+				fprintf(fp, "        }\n");
 			} else {
 				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
 			}
 		} else {
-			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        %s_t value;\n", table_field->type);
-				fprintf(fp, "        value = %s%s_get(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				if (strncmp(table_field->type, "int", 3) == 0) {
-					fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				} else {
-					fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+			if (type_is_scalar(table_field->type) ||
+			    type_is_string(table_field->type) ||
+			    type_is_enum(schema, table_field->type)) {
+				if (type_is_scalar(table_field->type)) {
+					fprintf(fp, "        %s_t value;\n", table_field->type);
+				} else if (type_is_enum(schema, table_field->type)) {
+					fprintf(fp, "        %s%s_enum_t value;\n", schema->namespace_, table_field->type);
+				} else if (type_is_string(table_field->type)) {
+					fprintf(fp, "        const char *value;\n");
+				}
+				fprintf(fp, "        value = %s%s_get(&decoder", namespace_linearized(namespace), table_field->name);
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ");\n");
+				if (type_is_scalar(table_field->type)) {
+					if (strncmp(table_field->type, "int", 3) == 0) {
+						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					} else {
+						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					}
+				} else if (type_is_enum(schema, table_field->type)) {
+					if (strncmp(type_get_enum(schema, table_field->type)->type, "int", 3) == 0) {
+						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					} else {
+						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					}
+				} else if (type_is_string(table_field->type)) {
+					fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": \\\"%%s\\\"%s\\n\", value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
 				}
 				fprintf(fp, "        if (rc < 0) {\n");
 				fprintf(fp, "            goto bail;\n");
 				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
-			} else if (type_is_string(table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        const char *value;\n");
-				fprintf(fp, "        value = %s%s_get(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": \\\"%%s\\\"%s\\n\", value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
-			} else if (type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
-				fprintf(fp, "        %s%s_enum_t value;\n", schema->namespace_, table_field->type);
-				fprintf(fp, "        value = %s%s_get(&decoder);\n", namespace_linearized(namespace), table_field->name);
-				if (strncmp(table_field->type, "int", 3) == 0) {
-					fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				} else {
-					fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				}
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
-			} else if (type_is_table(schema, table_field->type)) {
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
+			}
+
+			if (type_is_table(schema, table_field->type)) {
 				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": {\\n\");\n", prefix, table_field->name);
 				fprintf(fp, "        if (rc < 0) {\n");
 				fprintf(fp, "            goto bail;\n");
 				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
 				namespace_push(namespace, table_field->name);
 				namespace_push(namespace, "_");
-				element_push(element, table, table_field_i, 0);
+				element_push(element, table, table_field_i, 0, 0);
 				rc = schema_generate_jsonify_table(schema, type_get_table(schema, table_field->type), namespace, element, fp);
 				if (rc != 0) {
 					linearbuffers_errorf("can not generate jsonify for table: %s", table->name);
@@ -2701,17 +2760,13 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				element_pop(element);
 				namespace_pop(namespace);
 				namespace_pop(namespace);
-				fprintf(fp, "    if (%s%s_present(&decoder)) {\n", namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "        rc = emitter(\"%s}%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
 				fprintf(fp, "        if (rc < 0) {\n");
 				fprintf(fp, "            goto bail;\n");
 				fprintf(fp, "        }\n");
-				fprintf(fp, "    }\n");
-			} else {
-				linearbuffers_errorf("type is invalid: %s", table_field->type);
-				goto bail;
 			}
 		}
+		fprintf(fp, "    }\n");
 		table_field_i += 1;
 	}
 

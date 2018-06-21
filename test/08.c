@@ -144,6 +144,23 @@ int main (int argc, char *argv[])
 	}
 	rc |= linearbuffers_output_enums_end(encoder);
 
+	rc |= linearbuffers_output_tables_start(encoder);
+	for (i = 0; i < ARRAY_COUNT; i++) {
+		rc |= linearbuffers_output_tables_a_table_start(encoder);
+		rc |= linearbuffers_output_tables_a_table_int8_set(encoder, int8s[i]);
+		rc |= linearbuffers_output_tables_a_table_int16_set(encoder, int16s[i]);
+		rc |= linearbuffers_output_tables_a_table_int32_set(encoder, int32s[i]);
+		rc |= linearbuffers_output_tables_a_table_int64_set(encoder, int64s[i]);
+		rc |= linearbuffers_output_tables_a_table_uint8_set(encoder, uint8s[i]);
+		rc |= linearbuffers_output_tables_a_table_uint16_set(encoder, uint16s[i]);
+		rc |= linearbuffers_output_tables_a_table_uint32_set(encoder, uint32s[i]);
+		rc |= linearbuffers_output_tables_a_table_uint64_set(encoder, uint64s[i]);
+		rc |= linearbuffers_output_tables_a_table_string_set(encoder, strings[i]);
+		rc |= linearbuffers_output_tables_a_table_anum_set(encoder, enums[i]);
+		rc |= linearbuffers_output_tables_a_table_end(encoder);
+	}
+	rc |= linearbuffers_output_tables_end(encoder);
+
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
@@ -345,6 +362,54 @@ int main (int argc, char *argv[])
 			goto bail;
 		}
 	}
+
+	if (linearbuffers_output_tables_get_count(&decoder) != ARRAY_COUNT) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	for (i = 0; i < linearbuffers_output_tables_get_count(&decoder); i++) {
+		if (linearbuffers_output_tables_a_table_int8_get(&decoder, i) != int8s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_int16_get(&decoder, i) != int16s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_int32_get(&decoder, i) != int32s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_int64_get(&decoder, i) != int64s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_uint8_get(&decoder, i) != uint8s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_uint16_get(&decoder, i) != uint16s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_uint32_get(&decoder, i) != uint32s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_uint64_get(&decoder, i) != uint64s[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (strcmp(linearbuffers_output_tables_a_table_string_get(&decoder, i), strings[i]) != 0) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+		if (linearbuffers_output_tables_a_table_anum_get(&decoder, i) != enums[i]) {
+			fprintf(stderr, "decoder failed\n");
+			goto bail;
+		}
+	}
+
 	linearbuffers_encoder_destroy(encoder);
 
 	for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
