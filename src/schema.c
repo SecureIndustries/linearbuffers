@@ -2568,7 +2568,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 
 	table_field_i = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
-		fprintf(fp, "    if (%s%s_present(decoder", namespace_linearized(namespace), table_field->name);
+		fprintf(fp, "%sif (%s%s_present(decoder", prefix, namespace_linearized(namespace), table_field->name);
 		element_entry_i = 0;
 		TAILQ_FOREACH(element_entry, &element->entries, list) {
 			if (element_entry->vector) {
@@ -2579,10 +2579,10 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 		fprintf(fp, ")) {\n");
 
 		if (table_field->vector) {
-			fprintf(fp, "        uint64_t at_%" PRIu64 ";\n", element_entry_i);
-			fprintf(fp, "        uint64_t count;\n");
+			fprintf(fp, "%s    uint64_t at_%" PRIu64 ";\n", prefix, element_entry_i);
+			fprintf(fp, "%s    uint64_t count;\n", prefix);
 
-			fprintf(fp, "        count = %s%s_get_count(decoder", namespace_linearized(namespace), table_field->name);
+			fprintf(fp, "%s    count = %s%s_get_count(decoder", prefix, namespace_linearized(namespace), table_field->name);
 			element_entry_i = 0;
 			TAILQ_FOREACH(element_entry, &element->entries, list) {
 				if (element_entry->vector) {
@@ -2591,15 +2591,15 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				element_entry_i += 1;
 			}
 			fprintf(fp, ");\n");
-			fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": [\\n\");\n", prefix, table_field->name);
-			fprintf(fp, "        if (rc < 0) {\n");
-			fprintf(fp, "            goto bail;\n");
-			fprintf(fp, "        }\n");
-			fprintf(fp, "        for (at_%" PRIu64 " = 0; at_%" PRIu64 " < count; at_%" PRIu64 "++) {\n", element_entry_i, element_entry_i, element_entry_i);
+			fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": [\\n\");\n", prefix, prefix, table_field->name);
+			fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+			fprintf(fp, "%s        goto bail;\n", prefix);
+			fprintf(fp, "%s    }\n", prefix);
+			fprintf(fp, "%s    for (at_%" PRIu64 " = 0; at_%" PRIu64 " < count; at_%" PRIu64 "++) {\n", prefix, element_entry_i, element_entry_i, element_entry_i);
 
 			if (type_is_scalar(table_field->type)) {
-				fprintf(fp, "            %s_t value;\n", table_field->type);
-				fprintf(fp, "            value = %s%s_get_at(decoder", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "%s        %s_t value;\n", prefix, table_field->type);
+				fprintf(fp, "%s        value = %s%s_get_at(decoder", prefix, namespace_linearized(namespace), table_field->name);
 				element_entry_i = 0;
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
 					if (element_entry->vector) {
@@ -2609,21 +2609,21 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				}
 				fprintf(fp, ", at_%" PRIu64 ");\n", element_entry_i);
 				if (strncmp(table_field->type, "int", 3) == 0) {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
+					fprintf(fp, "%s        rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element_entry_i);
 				} else {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
+					fprintf(fp, "%s        rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element_entry_i);
 				}
-				fprintf(fp, "            if (rc < 0) {\n");
-				fprintf(fp, "                goto bail;\n");
-				fprintf(fp, "            }\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s            goto bail;\n", prefix);
+				fprintf(fp, "%s        }\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
+				fprintf(fp, "%s    rc = emitter(\"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 			} else if (type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "            %s%s_enum_t value;\n", schema->namespace_, table_field->type);
-				fprintf(fp, "            value = %s%s_get_at(decoder", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "%s        %s%s_enum_t value;\n", prefix, schema->namespace_, table_field->type);
+				fprintf(fp, "%s        value = %s%s_get_at(decoder", prefix, namespace_linearized(namespace), table_field->name);
 				element_entry_i = 0;
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
 					if (element_entry->vector) {
@@ -2633,21 +2633,21 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				}
 				fprintf(fp, ", at_%" PRIu64 ");\n", element_entry_i);
 				if (strncmp(type_get_enum(schema, table_field->type)->type, "int", 3) == 0) {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
+					fprintf(fp, "%s        rc = emitter(\"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element_entry_i);
 				} else {
-					fprintf(fp, "            rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
+					fprintf(fp, "%s        rc = emitter(\"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element_entry_i);
 				}
-				fprintf(fp, "            if (rc < 0) {\n");
-				fprintf(fp, "                goto bail;\n");
-				fprintf(fp, "            }\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s            goto bail;\n", prefix);
+				fprintf(fp, "%s        }\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
+				fprintf(fp, "%s    rc = emitter(\"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 			} else if (type_is_string(table_field->type)) {
-				fprintf(fp, "            const char *value;\n");
-				fprintf(fp, "            value = %s%s_get_at(decoder", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "%s        const char *value;\n", prefix);
+				fprintf(fp, "%s        value = %s%s_get_at(decoder", prefix, namespace_linearized(namespace), table_field->name);
 				element_entry_i = 0;
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
 					if (element_entry->vector) {
@@ -2656,20 +2656,20 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 					element_entry_i += 1;
 				}
 				fprintf(fp, ", at_%" PRIu64 ");\n", element_entry_i);
-				fprintf(fp, "            rc = emitter(\"%s    \\\"%%s\\\"%%s\\n\", value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
-				fprintf(fp, "            if (rc < 0) {\n");
-				fprintf(fp, "                goto bail;\n");
-				fprintf(fp, "            }\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s        rc = emitter(\"%s    \\\"%%s\\\"%%s\\n\", value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element_entry_i);
+				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s            goto bail;\n", prefix);
+				fprintf(fp, "%s        }\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
+				fprintf(fp, "%s    rc = emitter(\"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 			} else if (type_is_table(schema, table_field->type)) {
-				fprintf(fp, "        rc = emitter(\"%s    {\\n\");\n", prefix);
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s        rc = emitter(\"%s    {\\n\");\n", prefix, prefix);
+				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s            goto bail;\n", prefix);
+				fprintf(fp, "%s        }\n", prefix);
 				namespace_push(namespace, "%s_%s_", table_field->name, table_field->type);
 				element_push(element, table, table_field_i, 0, 1);
 				rc = schema_generate_jsonify_table(schema, head, type_get_table(schema, table_field->type), namespace, element, fp);
@@ -2679,15 +2679,15 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				}
 				element_pop(element);
 				namespace_pop(namespace);
-				fprintf(fp, "        rc = emitter(\"%s    }%%s\\n\", ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element_entry_i);
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        }\n");
-				fprintf(fp, "        rc = emitter(\"%s]%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s        rc = emitter(\"%s    }%%s\\n\", ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element_entry_i);
+				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s            goto bail;\n", prefix);
+				fprintf(fp, "%s        }\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
+				fprintf(fp, "%s    rc = emitter(\"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 			} else {
 				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
@@ -2697,13 +2697,13 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 			    type_is_string(table_field->type) ||
 			    type_is_enum(schema, table_field->type)) {
 				if (type_is_scalar(table_field->type)) {
-					fprintf(fp, "        %s_t value;\n", table_field->type);
+					fprintf(fp, "%s    %s_t value;\n", prefix, table_field->type);
 				} else if (type_is_enum(schema, table_field->type)) {
-					fprintf(fp, "        %s%s_enum_t value;\n", schema->namespace_, table_field->type);
+					fprintf(fp, "%s    %s%s_enum_t value;\n", prefix, schema->namespace_, table_field->type);
 				} else if (type_is_string(table_field->type)) {
-					fprintf(fp, "        const char *value;\n");
+					fprintf(fp, "%s    const char *value;\n", prefix);
 				}
-				fprintf(fp, "        value = %s%s_get(decoder", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "%s    value = %s%s_get(decoder", prefix, namespace_linearized(namespace), table_field->name);
 				element_entry_i = 0;
 				TAILQ_FOREACH(element_entry, &element->entries, list) {
 					if (element_entry->vector) {
@@ -2714,29 +2714,29 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, ");\n");
 				if (type_is_scalar(table_field->type)) {
 					if (strncmp(table_field->type, "int", 3) == 0) {
-						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
 					} else {
-						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
 					}
 				} else if (type_is_enum(schema, table_field->type)) {
 					if (strncmp(type_get_enum(schema, table_field->type)->type, "int", 3) == 0) {
-						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
 					} else {
-						fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
 					}
 				} else if (type_is_string(table_field->type)) {
-					fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": \\\"%%s\\\"%s\\n\", value);\n", prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": \\\"%%s\\\"%s\\n\", value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
 				}
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 			}
 
 			if (type_is_table(schema, table_field->type)) {
-				fprintf(fp, "        rc = emitter(\"%s\\\"%s\\\": {\\n\");\n", prefix, table_field->name);
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s    rc = emitter(\"%s\\\"%s\\\": {\\n\");\n", prefix, prefix, table_field->name);
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 				namespace_push(namespace, "%s_", table_field->name);
 				element_push(element, table, table_field_i, 0, 0);
 				rc = schema_generate_jsonify_table(schema, head, type_get_table(schema, table_field->type), namespace, element, fp);
@@ -2746,13 +2746,13 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				}
 				element_pop(element);
 				namespace_pop(namespace);
-				fprintf(fp, "        rc = emitter(\"%s}%s\\n\");\n", prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "        if (rc < 0) {\n");
-				fprintf(fp, "            goto bail;\n");
-				fprintf(fp, "        }\n");
+				fprintf(fp, "%s    rc = emitter(\"%s}%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+				fprintf(fp, "%s        goto bail;\n", prefix);
+				fprintf(fp, "%s    }\n", prefix);
 			}
 		}
-		fprintf(fp, "    }\n");
+		fprintf(fp, "%s}\n", prefix);
 		table_field_i += 1;
 	}
 
