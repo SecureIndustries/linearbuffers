@@ -49,8 +49,3 @@ int schema_type_is_enum (struct schema *schema, const char *type);
 int schema_type_is_table (struct schema *schema, const char *type);
 int schema_type_is_valid (struct schema *schema, const char *type);
 int schema_value_is_scalar (const char *value);
-
-int schema_generate_pretty (struct schema *schema, const char *filename);
-int schema_generate_encoder (struct schema *schema, const char *filename);
-int schema_generate_decoder (struct schema *schema, const char *filename, int decoder_use_memcpy);
-int schema_generate_jsonify (struct schema *schema, const char *filename, int decoder_use_memcpy);

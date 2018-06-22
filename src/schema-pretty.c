@@ -7,10 +7,8 @@
 #include "schema.h"
 #include "schema-private.h"
 
-int schema_generate_pretty (struct schema *schema, const char *filename)
+int schema_generate_pretty (struct schema *schema, FILE *fp)
 {
-	FILE *fp;
-
 	struct schema_enum *anum;
 	struct schema_enum_field *anum_field;
 
@@ -21,20 +19,8 @@ int schema_generate_pretty (struct schema *schema, const char *filename)
 		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
-	if (filename == NULL) {
-		linearbuffers_errorf("filename is invalid");
-		goto bail;
-	}
-
-	if (strcmp(filename, "stdout") == 0) {
-		fp = stdout;
-	} else if (strcmp(filename, "stderr") == 0) {
-		fp = stderr;
-	} else {
-		fp = fopen(filename, "w");
-	}
 	if (fp == NULL) {
-		linearbuffers_errorf("can not dump to file: %s", filename);
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -79,19 +65,6 @@ int schema_generate_pretty (struct schema *schema, const char *filename)
 		fprintf(fp, "}\n");
 	}
 
-	if (fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
 	return 0;
-bail:	if (fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
-	if (fp != stdout &&
-	    fp != stderr &&
-	    filename != NULL) {
-		unlink(filename);
-	}
-	return -1;
+bail:	return -1;
 }

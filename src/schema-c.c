@@ -619,36 +619,22 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 bail:	return -1;
 }
 
-int schema_generate_encoder (struct schema *schema, const char *filename)
+int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 {
 	int rc;
-	FILE *fp;
 
 	struct namespace *namespace;
 	struct schema_enum *anum;
 	struct schema_table *table;
 
-	fp = NULL;
 	namespace = NULL;
 
 	if (schema == NULL) {
 		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
-	if (filename == NULL) {
-		linearbuffers_errorf("filename is invalid");
-		goto bail;
-	}
-
-	if (strcmp(filename, "stdout") == 0) {
-		fp = stdout;
-	} else if (strcmp(filename, "stderr") == 0) {
-		fp = stderr;
-	} else {
-		fp = fopen(filename, "w");
-	}
 	if (fp == NULL) {
-		linearbuffers_errorf("can not dump to file: %s", filename);
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -708,22 +694,8 @@ int schema_generate_encoder (struct schema *schema, const char *filename)
 		fprintf(fp, "#endif\n");
 	}
 
-	if (fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
 	return 0;
-bail:	if (fp != NULL &&
-	    fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
-	if (fp != stdout &&
-	    fp != stderr &&
-	    filename != NULL) {
-		unlink(filename);
-	}
-	if (namespace != NULL) {
+bail:	if (namespace != NULL) {
 		namespace_destroy(namespace);
 	}
 	return -1;
@@ -1128,10 +1100,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 bail:	return -1;
 }
 
-int schema_generate_decoder (struct schema *schema, const char *filename, int decoder_use_memcpy)
+int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_memcpy)
 {
 	int rc;
-	FILE *fp;
 
 	struct element *element;
 	struct namespace *namespace;
@@ -1140,7 +1111,6 @@ int schema_generate_decoder (struct schema *schema, const char *filename, int de
 	struct schema_table *root;
 	struct schema_table *table;
 
-	fp = NULL;
 	element = NULL;
 	namespace = NULL;
 
@@ -1148,20 +1118,8 @@ int schema_generate_decoder (struct schema *schema, const char *filename, int de
 		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
-	if (filename == NULL) {
-		linearbuffers_errorf("filename is invalid");
-		goto bail;
-	}
-
-	if (strcmp(filename, "stdout") == 0) {
-		fp = stdout;
-	} else if (strcmp(filename, "stderr") == 0) {
-		fp = stderr;
-	} else {
-		fp = fopen(filename, "w");
-	}
 	if (fp == NULL) {
-		linearbuffers_errorf("can not dump to file: %s", filename);
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -1259,22 +1217,8 @@ int schema_generate_decoder (struct schema *schema, const char *filename, int de
 		fprintf(fp, "#endif\n");
 	}
 
-	if (fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
 	return 0;
-bail:	if (fp != NULL &&
-	    fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
-	if (fp != stdout &&
-	    fp != stderr &&
-	    filename != NULL) {
-		unlink(filename);
-	}
-	if (namespace != NULL) {
+bail:	if (namespace != NULL) {
 		namespace_destroy(namespace);
 	}
 	if (element != NULL) {
@@ -1543,10 +1487,9 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 bail:	return -1;
 }
 
-int schema_generate_jsonify (struct schema *schema, const char *filename, int decoder_use_memcpy)
+int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_memcpy)
 {
 	int rc;
-	FILE *fp;
 
 	struct element *element;
 	struct namespace *namespace;
@@ -1554,7 +1497,6 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 	struct schema_enum *anum;
 	struct schema_table *table;
 
-	fp = NULL;
 	element = NULL;
 	namespace = NULL;
 
@@ -1562,20 +1504,8 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 		linearbuffers_errorf("schema is invalid");
 		goto bail;
 	}
-	if (filename == NULL) {
-		linearbuffers_errorf("filename is invalid");
-		goto bail;
-	}
-
-	if (strcmp(filename, "stdout") == 0) {
-		fp = stdout;
-	} else if (strcmp(filename, "stderr") == 0) {
-		fp = stderr;
-	} else {
-		fp = fopen(filename, "w");
-	}
 	if (fp == NULL) {
-		linearbuffers_errorf("can not dump to file: %s", filename);
+		linearbuffers_errorf("fp is invalid");
 		goto bail;
 	}
 
@@ -1692,22 +1622,8 @@ int schema_generate_jsonify (struct schema *schema, const char *filename, int de
 		fprintf(fp, "#endif\n");
 	}
 
-	if (fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
 	return 0;
-bail:	if (fp != NULL &&
-	    fp != stdout &&
-	    fp != stderr) {
-		fclose(fp);
-	}
-	if (fp != stdout &&
-	    fp != stderr &&
-	    filename != NULL) {
-		unlink(filename);
-	}
-	if (namespace != NULL) {
+bail:	if (namespace != NULL) {
 		namespace_destroy(namespace);
 	}
 	if (element != NULL) {
