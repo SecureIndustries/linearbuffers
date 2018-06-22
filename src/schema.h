@@ -39,6 +39,17 @@ void schema_destroy (struct schema *schema);
 struct schema * schema_create (void);
 
 struct schema * schema_parse_file (const char *filename);
+
+struct schema_enum * schema_type_get_enum (struct schema *schema, const char *type);
+struct schema_table * schema_type_get_table (struct schema *schema, const char *type);
+int schema_inttype_size (const char *type);
+int schema_type_is_scalar (const char *type);
+int schema_type_is_string (const char *type);
+int schema_type_is_enum (struct schema *schema, const char *type);
+int schema_type_is_table (struct schema *schema, const char *type);
+int schema_type_is_valid (struct schema *schema, const char *type);
+int schema_value_is_scalar (const char *value);
+
 int schema_generate_pretty (struct schema *schema, const char *filename);
 int schema_generate_encoder (struct schema *schema, const char *filename);
 int schema_generate_decoder (struct schema *schema, const char *filename, int decoder_use_memcpy);

@@ -1,0 +1,56 @@
+
+#include <stdint.h>
+#include "queue.h"
+
+TAILQ_HEAD(schema_attributes, schema_attribute);
+struct schema_attribute {
+	TAILQ_ENTRY(schema_attribute) list;
+	char *name;
+	char *value;
+};
+
+TAILQ_HEAD(schema_enum_fields, schema_enum_field);
+struct schema_enum_field {
+	TAILQ_ENTRY(schema_enum_field) list;
+	char *name;
+	char *value;
+	struct schema_attributes attributes;
+};
+
+TAILQ_HEAD(schema_enums, schema_enum);
+struct schema_enum {
+	TAILQ_ENTRY(schema_enum) list;
+	char *name;
+	char *type;
+	char *TYPE;
+	struct schema_enum_fields fields;
+	struct schema_attributes attributes;
+};
+
+TAILQ_HEAD(schema_table_fields, schema_table_field);
+struct schema_table_field {
+	TAILQ_ENTRY(schema_table_field) list;
+	char *name;
+	char *type;
+	int vector;
+	struct schema_attributes attributes;
+};
+
+TAILQ_HEAD(schema_tables, schema_table);
+struct schema_table {
+	TAILQ_ENTRY(schema_table) list;
+	char *name;
+	uint64_t nfields;
+	struct schema_table_fields fields;
+	struct schema_attributes attributes;
+};
+
+struct schema {
+	char *namespace;
+	char *NAMESPACE;
+	char *root;
+	char *ROOT;
+	struct schema_enums enums;
+	struct schema_tables tables;
+	struct schema_attributes attributes;
+};

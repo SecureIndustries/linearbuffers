@@ -18,6 +18,8 @@ linearbuffers-compiler_files-y = \
 	parser.tab.h \
 	debug.c \
 	schema.c \
+	schema-pretty.c \
+	schema-c.c \
 	main.c
 
 linearbuffers-compiler_parser.lex.c_cflags-y = \
