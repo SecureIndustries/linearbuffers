@@ -29,15 +29,15 @@ define test-defaults
 
     $1-encoder.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-encoder.h -e 1
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-encoder.h -e 1 -m 0
 
     $1-decoder.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-decoder.h -d 1
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-decoder.h -d 1 -m 0
 
     $1-jsonify.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-jsonify.h -j 1
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-jsonify.h -j 1 -m 0
 endef
 
 $(eval $(foreach T,${tests},$(eval $(call test-defaults,$T))))
