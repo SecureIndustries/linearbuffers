@@ -116,7 +116,7 @@ static void pool_free (struct pool *p, void *ptr)
 
 #endif
 
-#define PRESENT_BUFFER_COUNT	32
+#define PRESENT_BUFFER_COUNT	(64 / 8)
 struct present_buffer {
 	struct present_buffer *next;
 	uint8_t buffer[PRESENT_BUFFER_COUNT];
@@ -127,7 +127,7 @@ struct present_table {
 	struct present_buffer *buffers;
 };
 
-#define OFFSET_BUFFER_COUNT	32
+#define OFFSET_BUFFER_COUNT	(64)
 struct offset_buffer {
 	struct offset_buffer *next;
 	uint64_t buffer[OFFSET_BUFFER_COUNT];
@@ -390,9 +390,9 @@ __attribute__ ((__visibility__("default"))) struct linearbuffers_encoder * linea
 	}
 	memset(encoder, 0, sizeof(struct linearbuffers_encoder));
 	TAILQ_INIT(&encoder->stack);
-	pool_init(&encoder->pool.entry, sizeof(struct entry), 32);
-	pool_init(&encoder->pool.present, sizeof(struct present_buffer), 32);
-	pool_init(&encoder->pool.offset, sizeof(struct offset_buffer), 32);
+	pool_init(&encoder->pool.entry, sizeof(struct entry), 8);
+	pool_init(&encoder->pool.present, sizeof(struct present_buffer), 8);
+	pool_init(&encoder->pool.offset, sizeof(struct offset_buffer), 8);
 	encoder->emitter.function = encoder_default_emitter;
 	encoder->emitter.context = encoder;
 	if (options != NULL) {
