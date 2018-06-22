@@ -1683,6 +1683,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_%s(encoder);\n", table_field->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_%s(encoder);\n", table_field->type);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
 			} else if (type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s%s_enum_t *value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, schema->namespace_, table_field->type, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
@@ -1706,6 +1712,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_%s(encoder);\n", type_get_enum(schema, table_field->type)->type);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_%s(encoder);\n", type_get_enum(schema, table_field->type)->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (type_is_string(table_field->type)) {
@@ -1747,6 +1759,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_string(encoder);\n");
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_string(encoder);\n");
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
 			} else if (type_is_table(schema, table_field->type)) {
 				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "{\n");
@@ -1765,6 +1783,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_table(encoder);\n");
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_table(encoder);\n");
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else {
@@ -1829,6 +1853,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
 	fprintf(fp, "    rc = linearbuffers_encoder_table_end(encoder);\n");
+	fprintf(fp, "    return rc;\n");
+	fprintf(fp, "}\n");
+	fprintf(fp, "static inline int %scancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
+	fprintf(fp, "{\n");
+	fprintf(fp, "    int rc;\n");
+	fprintf(fp, "    rc = linearbuffers_encoder_table_cancel(encoder);\n");
 	fprintf(fp, "    return rc;\n");
 	fprintf(fp, "}\n");
 

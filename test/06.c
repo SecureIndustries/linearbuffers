@@ -10,11 +10,15 @@ struct emitter_param {
 	uint64_t length;
 };
 
-static int emitter_function (void *context, uint64_t offset, const void *buffer, uint64_t length)
+static int emitter_function (void *context, uint64_t offset, const void *buffer, int64_t length)
 {
 	struct emitter_param *emitter_param = context;
-	emitter_param->length = (emitter_param->length > offset + length) ? emitter_param->length : offset + length;
-	fprintf(stderr, "offset: 0x%08lx, length: 0x%08lx, buffer: %p\n", offset, length, buffer);
+	if (length < 0) {
+		emitter_param->length = offset + length;
+	} else {
+		emitter_param->length = (emitter_param->length > offset + length) ? emitter_param->length : offset + length;
+	}
+	fprintf(stderr, "offset: 0x%08lx, length: %08ld, buffer: %p\n", offset, length, buffer);
 	return 0;
 }
 

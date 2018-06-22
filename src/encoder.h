@@ -6,14 +6,14 @@ struct linearbuffers_encoder;
 
 struct linearbuffers_encoder_create_options {
 	struct {
-		int (*function) (void *context, uint64_t offset, const void *buffer, uint64_t length);
+		int (*function) (void *context, uint64_t offset, const void *buffer, int64_t length);
 		void *context;
 	} emitter;
 };
 
 struct linearbuffers_encoder_reset_options {
 	struct {
-		int (*function) (void *context, uint64_t offset, const void *buffer, uint64_t length);
+		int (*function) (void *context, uint64_t offset, const void *buffer, int64_t length);
 		void *context;
 	} emitter;
 };
@@ -25,6 +25,7 @@ int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder, struct l
 
 int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, uint64_t elements, uint64_t size);
 int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_table_cancel (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_table_set_int8 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, int8_t value);
 int linearbuffers_encoder_table_set_int16 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, int16_t value);
@@ -51,33 +52,43 @@ int linearbuffers_encoder_table_set_vector_uint64 (struct linearbuffers_encoder 
 
 int linearbuffers_encoder_vector_start_int8 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_int8 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_int8 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_int16 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_int16 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_int16 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_int32 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_int32 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_int32 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_int64 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_int64 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_int64 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_uint8 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_uint8 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_uint8 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_uint16 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_uint16 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_uint16 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_uint32 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_uint32 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_uint32 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_uint64 (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_uint64 (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_uint64 (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_string (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_string (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_string (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_start_table (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset);
 int linearbuffers_encoder_vector_end_table (struct linearbuffers_encoder *encoder);
+int linearbuffers_encoder_vector_cancel_table (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_vector_push_int8 (struct linearbuffers_encoder *encoder, int8_t value);
 int linearbuffers_encoder_vector_push_int16 (struct linearbuffers_encoder *encoder, int16_t value);
