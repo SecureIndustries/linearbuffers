@@ -778,7 +778,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_canc
 bail:	return -1;
 }
 
-#define linearbuffers_encoder_vector_start_type(__type__) \
+#define linearbuffers_encoder_vector_start_scalar_type(__type__) \
 	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_start_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset) \
 	{ \
 		int rc; \
@@ -944,14 +944,14 @@ bail:	return -1;
 	bail:	return -1; \
 	}
 
-linearbuffers_encoder_vector_start_type(int8);
-linearbuffers_encoder_vector_start_type(int16);
-linearbuffers_encoder_vector_start_type(int32);
-linearbuffers_encoder_vector_start_type(int64);
-linearbuffers_encoder_vector_start_type(uint8);
-linearbuffers_encoder_vector_start_type(uint16);
-linearbuffers_encoder_vector_start_type(uint32);
-linearbuffers_encoder_vector_start_type(uint64);
+linearbuffers_encoder_vector_start_scalar_type(int8);
+linearbuffers_encoder_vector_start_scalar_type(int16);
+linearbuffers_encoder_vector_start_scalar_type(int32);
+linearbuffers_encoder_vector_start_scalar_type(int64);
+linearbuffers_encoder_vector_start_scalar_type(uint8);
+linearbuffers_encoder_vector_start_scalar_type(uint16);
+linearbuffers_encoder_vector_start_scalar_type(uint32);
+linearbuffers_encoder_vector_start_scalar_type(uint64);
 
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_start_string (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset)
 {
