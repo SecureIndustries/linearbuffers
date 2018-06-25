@@ -362,7 +362,7 @@ bail:	if (namespace != NULL) {
 	return NULL;
 }
 
-static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, uint64_t element, uint64_t offset, FILE *fp)
+static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, uint64_t element, uint64_t offset, int head, FILE *fp)
 {
 	int rc;
 	uint64_t table_field_i;
@@ -400,10 +400,11 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 		}
 
 	}
+
 	fprintf(fp, "static inline int %sstart (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
-	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", element, offset, table->nfields, table_field_s);
+	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, %s, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", (head) ? "1" : "0", element, offset, table->nfields, table_field_s);
 	fprintf(fp, "    return rc;\n");
 	fprintf(fp, "}\n");
 
@@ -525,8 +526,14 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_table(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", table_field_i, table_field_s);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
+				fprintf(fp, "static inline int %s%s_push (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->type);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_push_table(encoder, (uint64_t) value_%s);\n", table_field->type);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
 				namespace_push(namespace, "%s_%s_", table_field->name, table_field->type);
-				rc = schema_generate_encoder_table(schema, schema_type_get_table(schema, table_field->type), namespace, UINT64_MAX, UINT64_MAX, fp);
+				rc = schema_generate_encoder_table(schema, schema_type_get_table(schema, table_field->type), namespace, UINT64_MAX, UINT64_MAX, 0, fp);
 				if (rc != 0) {
 					linearbuffers_errorf("can not generate encoder for table: %s", table_field->name);
 					goto bail;
@@ -577,8 +584,14 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_table(schema, table_field->type)) {
+				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->name);
+				fprintf(fp, "{\n");
+				fprintf(fp, "    int rc;\n");
+				fprintf(fp, "    rc = linearbuffers_encoder_table_set_table(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), (uint64_t) value_%s);\n", table_field_i, table_field_s, table_field->name);
+				fprintf(fp, "    return rc;\n");
+				fprintf(fp, "}\n");
 				namespace_push(namespace, "%s_", table_field->name);
-				rc = schema_generate_encoder_table(schema, schema_type_get_table(schema, table_field->type), namespace, table_field_i, table_field_s, fp);
+				rc = schema_generate_encoder_table(schema, schema_type_get_table(schema, table_field->type), namespace, table_field_i, table_field_s, 0, fp);
 				if (rc != 0) {
 					linearbuffers_errorf("can not generate encoder for table: %s", table_field->name);
 					goto bail;
@@ -602,12 +615,26 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 			table_field_s += sizeof(uint64_t);
 		}
 	}
-	fprintf(fp, "static inline int %send (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
-	fprintf(fp, "{\n");
-	fprintf(fp, "    int rc;\n");
-	fprintf(fp, "    rc = linearbuffers_encoder_table_end(encoder);\n");
-	fprintf(fp, "    return rc;\n");
-	fprintf(fp, "}\n");
+
+	if (head) {
+		fprintf(fp, "__attribute__((warn_unused_result)) static inline const struct %s_%s * %s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, schema->namespace, table->name);
+		fprintf(fp, "{\n");
+		fprintf(fp, "    int rc;\n");
+		fprintf(fp, "    uint64_t offset;\n");
+		fprintf(fp, "    rc = linearbuffers_encoder_table_end(encoder, &offset);\n");
+		fprintf(fp, "    if (rc != 0) {\n");
+		fprintf(fp, "        return NULL;\n");
+		fprintf(fp, "    }\n");
+		fprintf(fp, "    return (const struct %s_%s *) offset;\n", schema->namespace, table->name);
+		fprintf(fp, "}\n");
+	} else {
+		fprintf(fp, "static inline int %send (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
+		fprintf(fp, "{\n");
+		fprintf(fp, "    int rc;\n");
+		fprintf(fp, "    rc = linearbuffers_encoder_table_end(encoder, NULL);\n");
+		fprintf(fp, "    return rc;\n");
+		fprintf(fp, "}\n");
+	}
 	fprintf(fp, "static inline int %scancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
@@ -626,6 +653,7 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 	struct namespace *namespace;
 	struct schema_enum *anum;
 	struct schema_table *table;
+	struct schema_table *root;
 
 	namespace = NULL;
 
@@ -661,14 +689,40 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 		fprintf(fp, "\n");
 		fprintf(fp, "#if !defined(%s_%s_ENCODER_API)\n", schema->NAMESPACE, schema->ROOT);
 		fprintf(fp, "#define %s_%s_ENCODER_API\n", schema->NAMESPACE, schema->ROOT);
-		fprintf(fp, "\n");
+
+		root = NULL;
 
 		TAILQ_FOREACH(table, &schema->tables, list) {
 			if (strcmp(schema->root, table->name) == 0) {
-				break;
+				root = table;
+				continue;
 			}
+
+			namespace = namespace_create();
+			if (namespace == NULL) {
+				linearbuffers_errorf("can not create namespace");
+				goto bail;
+			}
+			rc = namespace_push(namespace, "%s_%s_", schema->namespace, table->name);
+			if (rc != 0) {
+				linearbuffers_errorf("can not build namespace");
+				goto bail;
+			}
+
+			fprintf(fp, "\n");
+			fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
+			fprintf(fp, "\n");
+
+			rc = schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, UINT64_MAX, 1, fp);
+			if (rc != 0) {
+				linearbuffers_errorf("can not generate decoder for table: %s", table->name);
+				goto bail;
+			}
+
+			namespace_destroy(namespace);
 		}
-		if (table == NULL) {
+
+		if (root == NULL) {
 			linearbuffers_errorf("schema root is invalid");
 			goto bail;
 		}
@@ -678,14 +732,14 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 			linearbuffers_errorf("can not create namespace");
 			goto bail;
 		}
-		rc = namespace_push(namespace, "%s_%s_", schema->namespace, table->name);
+		rc = namespace_push(namespace, "%s_%s_", schema->namespace, root->name);
 		if (rc != 0) {
 			linearbuffers_errorf("can not build namespace");
 			goto bail;
 		}
-		rc = schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, UINT64_MAX, fp);
+		rc = schema_generate_encoder_table(schema, root, namespace, UINT64_MAX, UINT64_MAX, 0, fp);
 		if (rc != 0) {
-			linearbuffers_errorf("can not generate encoder for table: %s", table->name);
+			linearbuffers_errorf("can not generate encoder for table: %s", root->name);
 			goto bail;
 		}
 		namespace_destroy(namespace);
