@@ -1105,6 +1105,49 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "}\n");
 			}
 			if (schema_type_is_table(schema, table_field->type)) {
+				fprintf(fp, "static inline const struct %s_%s * %s%s_get (const struct %s_%s *decoder", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (element_entry->vector) {
+						fprintf(fp, ", uint64_t at_%" PRIu64 "", element_entry_i);
+					}
+					element_entry_i += 1;
+				}
+				fprintf(fp, ")\n");
+				fprintf(fp, "{\n");
+				fprintf(fp, "    uint64_t offset;\n");
+				if (!TAILQ_EMPTY(&element->entries)) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    uint64_t toffset;\n");
+					}
+				}
+				fprintf(fp, "    offset = 0;\n");
+				element_entry_i = 0;
+				TAILQ_FOREACH(element_entry, &element->entries, list) {
+					if (decoder_use_memcpy) {
+						fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+					} else {
+						fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", ((element_entry->table->nfields + 7) / 8) + element_entry->offset);
+					}
+					if (element_entry->vector) {
+						if (decoder_use_memcpy) {
+							fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", sizeof(uint64_t));
+							fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + (sizeof(uint64_t) * at_%" PRIu64 "), sizeof(offset));\n", element_entry_i);
+						} else {
+							fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", sizeof(uint64_t));
+							fprintf(fp, "    offset += ((uint64_t *) (((const void *) decoder) + offset))[at_%" PRIu64 "];\n", element_entry_i);
+						}
+					}
+					element_entry_i += 1;
+				}
+				if (decoder_use_memcpy) {
+					fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
+				} else {
+					fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
+				}
+				fprintf(fp, "    return ((const void *) decoder) + offset;\n");
+				fprintf(fp, "}\n");
+
 				namespace_push(namespace, "%s_", table_field->name);
 				element_push(element, table, table_field_i, table_field_s, 0);
 				rc = schema_generate_decoder_table(schema, head, schema_type_get_table(schema, table_field->type), namespace, element, decoder_use_memcpy, root, fp);
