@@ -353,7 +353,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_enums_get_length\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_enums_get(output), enums, sizeof(enums))) {
+	if (memcmp(linearbuffers_output_enums_get_values(output), enums, sizeof(enums))) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_enums_get\n");
 		goto bail;
 	}

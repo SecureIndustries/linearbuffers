@@ -82,12 +82,12 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_data_get(output), data, sizeof(data))) {
+	if (memcmp(linearbuffers_output_data_get_values(output), data, sizeof(data))) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_data_get_count(output); i++) {
-		if (data[i] != linearbuffers_output_data_get(output)[i]) {
+		if (data[i] != linearbuffers_output_data_get_values(output)[i]) {
 			fprintf(stderr, "decoder failed\n");
 			goto bail;
 		}
