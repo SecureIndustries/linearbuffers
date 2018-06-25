@@ -13,7 +13,10 @@ int main (int argc, char *argv[])
 	const char *linearized_buffer;
 
 	struct linearbuffers_encoder *encoder;
+
 	const struct linearbuffers_output *output;
+	const struct linearbuffers_output_a *output_a;
+	const struct linearbuffers_output_b *output_b;
 
 	(void) argc;
 	(void) argv;
@@ -48,15 +51,28 @@ int main (int argc, char *argv[])
 
 	output = linearbuffers_output_decode(linearized_buffer, linearized_length);
 	if (output == NULL) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_decode\n");
 		goto bail;
 	}
+
 	if (linearbuffers_output_1_foo_get(output) != 1) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_1_foo_get\n");
 		goto bail;
 	}
 	if (linearbuffers_output_2_bar_get(output) != 2) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_2_bar_get\n");
+		goto bail;
+	}
+
+	output_a = linearbuffers_output_1_get(output);
+	if (linearbuffers_output_a_foo_get(output_a) != 1) {
+		fprintf(stderr, "decoder failed: linearbuffers_output_a_foo_get\n");
+		goto bail;
+	}
+
+	output_b = linearbuffers_output_2_get(output);
+	if (linearbuffers_output_b_bar_get(output_b) != 2) {
+		fprintf(stderr, "decoder failed: linearbuffers_output_b_bar_get\n");
 		goto bail;
 	}
 

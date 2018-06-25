@@ -715,7 +715,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "struct %s_%s_vector;\n", schema->namespace, type);
 		fprintf(fp, "\n");
-		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    uint64_t count;\n");
@@ -727,7 +727,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		}
 		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline uint64_t %s_%s_vector_get_length (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline uint64_t %s_%s_vector_get_length (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    uint64_t count;\n");
@@ -739,13 +739,13 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		}
 		fprintf(fp, "    return count * sizeof(%s_t);\n", type);
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline const %s_t * %s_%s_vector_get_values (const struct linearbuffers_%s_vector *decoder)\n", type, schema->namespace, type, type);
+		fprintf(fp, "static inline const %s_t * %s_%s_vector_get_values (const struct %s_%s_vector *decoder)\n", type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
 		fprintf(fp, "    return ((const void *) decoder) + offset + UINT64_C(%" PRIu64 ");\n", sizeof(uint64_t));
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline %s_t %s_%s_vector_get_at (const struct linearbuffers_%s_vector *decoder, uint64_t at)\n", type, schema->namespace, type, type);
+		fprintf(fp, "static inline %s_t %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
@@ -753,9 +753,9 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		fprintf(fp, "}\n");
 	} else if (schema_type_is_enum(schema, type)) {
 		fprintf(fp, "\n");
-		fprintf(fp, "struct %s_%s_vector;\n", schema->namespace, type);
+		fprintf(fp, "struct %s_%s_enum_vector;\n", schema->namespace, type);
 		fprintf(fp, "\n");
-		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_enum_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    uint64_t count;\n");
@@ -767,7 +767,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		}
 		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline uint64_t %s_%s_vector_get_length (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline uint64_t %s_%s_vector_get_length (const struct %s_%s_enum_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    uint64_t count;\n");
@@ -779,13 +779,13 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		}
 		fprintf(fp, "    return count * sizeof(%s_%s_enum_t);\n", schema->namespace, type);
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline const %s_%s_enum_t * %s_%s_vector_get_values (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type, type);
+		fprintf(fp, "static inline const %s_%s_enum_t * %s_%s_vector_get_values (const struct %s_%s_enum_vector *decoder)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
 		fprintf(fp, "    return ((const void *) decoder) + offset + UINT64_C(%" PRIu64 ");\n", sizeof(uint64_t));
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline %s_%s_enum_t %s_%s_vector_get_at (const struct linearbuffers_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, type);
+		fprintf(fp, "static inline %s_%s_enum_t %s_%s_vector_get_at (const struct %s_%s_enum_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
@@ -795,7 +795,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "struct %s_%s_vector;\n", schema->namespace, type);
 		fprintf(fp, "\n");
-		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    uint64_t count;\n");
@@ -807,7 +807,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		}
 		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline const char * %s_%s_vector_get_at (const struct linearbuffers_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline const char * %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
@@ -824,7 +824,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "struct %s_%s_vector;\n", schema->namespace, type);
 		fprintf(fp, "\n");
-		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct linearbuffers_%s_vector *decoder)\n", schema->namespace, type, type);
+		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    uint64_t count;\n");
@@ -836,7 +836,7 @@ static int schema_generate_decoder_vector (struct schema *schema, const char *ty
 		}
 		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
-		fprintf(fp, "static inline const struct %s_%s * %s_%s_vector_get_at (const struct linearbuffers_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, type);
+		fprintf(fp, "static inline const struct %s_%s * %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
 		fprintf(fp, "    offset = 0;\n");
@@ -1386,8 +1386,8 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
 	}
 
 	fprintf(fp, "\n");
-	fprintf(fp, "#if !defined(%s_%s_DECODER_VECTOR_API)\n", schema->NAMESPACE, schema->ROOT);
-	fprintf(fp, "#define %s_%s_DECODER_VECTOR_API\n", schema->NAMESPACE, schema->ROOT);
+	fprintf(fp, "#if !defined(%s_DECODER_VECTOR_API)\n", schema->NAMESPACE);
+	fprintf(fp, "#define %s_DECODER_VECTOR_API\n", schema->NAMESPACE);
 
 	schema_generate_decoder_vector(schema, "int8", decoder_use_memcpy, fp);
 	schema_generate_decoder_vector(schema, "int16", decoder_use_memcpy, fp);
@@ -1398,6 +1398,13 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
 	schema_generate_decoder_vector(schema, "uint32", decoder_use_memcpy, fp);
 	schema_generate_decoder_vector(schema, "uint64", decoder_use_memcpy, fp);
 	schema_generate_decoder_vector(schema, "string", decoder_use_memcpy, fp);
+
+	fprintf(fp, "\n");
+	fprintf(fp, "#endif\n");
+
+	fprintf(fp, "\n");
+	fprintf(fp, "#if !defined(%s_%s_DECODER_VECTOR_API)\n", schema->NAMESPACE, schema->ROOT);
+	fprintf(fp, "#define %s_%s_DECODER_VECTOR_API\n", schema->NAMESPACE, schema->ROOT);
 
 	TAILQ_FOREACH(anum, &schema->enums, list) {
 		schema_generate_decoder_vector(schema, anum->name, decoder_use_memcpy, fp);

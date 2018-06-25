@@ -199,7 +199,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_int16s_get_length\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_int16s_get(output), int16s, sizeof(int16s))) {
+	if (memcmp(linearbuffers_output_int16s_get_values(output), int16s, sizeof(int16s))) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_int16s_get\n");
 		goto bail;
 	}
@@ -223,7 +223,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_int64s_get_length\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_int64s_get(output), int64s, sizeof(int64s))) {
+	if (memcmp(linearbuffers_output_int64s_get_values(output), int64s, sizeof(int64s))) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_int64s_get\n");
 		goto bail;
 	}
@@ -247,7 +247,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_uint16s_get_length\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_uint16s_get(output), uint16s, sizeof(uint16s))) {
+	if (memcmp(linearbuffers_output_uint16s_get_values(output), uint16s, sizeof(uint16s))) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_uint16s_get\n");
 		goto bail;
 	}
@@ -271,7 +271,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_uint64s_get_length\n");
 		goto bail;
 	}
-	if (memcmp(linearbuffers_output_uint64s_get(output), uint64s, sizeof(uint64s))) {
+	if (memcmp(linearbuffers_output_uint64s_get_values(output), uint64s, sizeof(uint64s))) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_uint64s_get\n");
 		goto bail;
 	}

@@ -1,15 +1,15 @@
 
-table a {
+table output_a {
 	foo: int8;
 }
 
-table b {
+table output_b {
 	bar: int8;
 }
 
 table output {
-	1: a;
-	2: b;
+	1: output_a;
+	2: output_b;
 }
 
 root output;
