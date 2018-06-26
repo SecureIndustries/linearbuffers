@@ -1,12 +1,12 @@
 
-table timeval {
+table output_timeval {
 	seconds : uint64;
 	useconds: uint64;
 }
 
 table output {
 	length : uint64;
-	timeval: timeval;
+	timeval: output_timeval;
 	data   : [ uint8 ];
 }
 

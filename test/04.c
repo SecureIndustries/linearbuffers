@@ -26,10 +26,10 @@ int main (int argc, char *argv[])
 
 	rc  = linearbuffers_output_start(encoder);
 	rc |= linearbuffers_output_length_set(encoder, 1);
-	rc |= linearbuffers_timeval_start(encoder);
-	rc |= linearbuffers_timeval_seconds_set(encoder, 2);
-	rc |= linearbuffers_timeval_useconds_set(encoder, 3);
-	rc |= linearbuffers_output_timeval_set(encoder, linearbuffers_timeval_end(encoder));
+	rc |= linearbuffers_output_timeval_start(encoder);
+	rc |= linearbuffers_output_timeval_seconds_set(encoder, 2);
+	rc |= linearbuffers_output_timeval_useconds_set(encoder, 3);
+	rc |= linearbuffers_output_timeval_set(encoder, linearbuffers_output_timeval_end(encoder));
 	rc |= linearbuffers_output_data_set_values(encoder, NULL, 0);
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
@@ -55,11 +55,11 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_timeval_seconds_get(linearbuffers_output_timeval_get(output)) != 2) {
+	if (linearbuffers_output_timeval_seconds_get(linearbuffers_output_timeval_get(output)) != 2) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_timeval_useconds_get(linearbuffers_output_timeval_get(output)) != 3) {
+	if (linearbuffers_output_timeval_useconds_get(linearbuffers_output_timeval_get(output)) != 3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
