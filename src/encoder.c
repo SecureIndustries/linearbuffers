@@ -580,6 +580,10 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_
 		linearbuffers_errorf("encoder is invalid");
 		goto bail;
 	}
+	if (value <= 0) {
+		linearbuffers_errorf("value is invalid");
+		goto bail;
+	}
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		linearbuffers_errorf("logic error: stack is empty");
 		goto bail;
@@ -1348,6 +1352,10 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_pus
 	struct entry *parent;
 	if (encoder == NULL) {
 		linearbuffers_errorf("encoder is invalid");
+		goto bail;
+	}
+	if (value <= 0) {
+		linearbuffers_errorf("value is invalid");
 		goto bail;
 	}
 	if (TAILQ_EMPTY(&encoder->stack)) {

@@ -362,9 +362,8 @@ bail:	if (namespace != NULL) {
 	return NULL;
 }
 
-static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, struct namespace *namespace, uint64_t element, uint64_t offset, int head, FILE *fp)
+static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, uint64_t element, uint64_t offset, int head, FILE *fp)
 {
-	int rc;
 	uint64_t table_field_i;
 	uint64_t table_field_s;
 	struct schema_table_field *table_field;
@@ -401,7 +400,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 
 	}
 
-	fprintf(fp, "static inline int %sstart (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
+	fprintf(fp, "static inline int %s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name);
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
 	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, %s, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", (head) ? "1" : "0", element, offset, table->nfields, table_field_s);
@@ -413,69 +412,69 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		if (table_field->vector) {
 			if (schema_type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const %s_t *value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->name, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const %s_t *value_%s, uint64_t value_%s_count)\n", schema->namespace, table->name, table_field->name, table_field->type, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s, value_%s_count);\n", table_field->type, table_field_i, table_field_s, table_field->name, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", table_field->type, table_field_i, table_field_s);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_push (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->type);
+				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", schema->namespace, table->name, table_field->name, table_field->type, table_field->type);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_push_%s(encoder, value_%s);\n", table_field->type, table_field->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_end (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_%s(encoder);\n", table_field->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_%s(encoder);\n", table_field->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s_%s_enum_t *value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->name, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_%s_enum_t *value_%s, uint64_t value_%s_count)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_vector_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s, value_%s_count);\n", schema_type_get_enum(schema, table_field->type)->type, table_field_i, table_field_s, table_field->name, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", schema_type_get_enum(schema, table_field->type)->type, table_field_i, table_field_s);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_push (struct linearbuffers_encoder *encoder, %s_%s_enum_t value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, %s_%s_enum_t value_%s)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_push_%s(encoder, value_%s);\n", schema_type_get_enum(schema, table_field->type)->type, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_end (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_%s(encoder);\n", schema_type_get_enum(schema, table_field->type)->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_%s(encoder);\n", schema_type_get_enum(schema, table_field->type)->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_string(table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const char **value_%s, uint64_t value_%s_count)\n", namespace_linearized(namespace), table_field->name, table_field->name, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const char **value_%s, uint64_t value_%s_count)\n", schema->namespace, table->name, table_field->name, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    uint64_t i;\n");
@@ -495,57 +494,50 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    }\n");
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_string(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", table_field_i, table_field_s);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_push (struct linearbuffers_encoder *encoder, const char *value_%s)\n", namespace_linearized(namespace), table_field->name, table_field->type);
+				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, const char *value_%s)\n", schema->namespace, table->name, table_field->name, table_field->type);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_push_%s(encoder, value_%s);\n", table_field->type, table_field->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_end (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_string(encoder);\n");
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_string(encoder);\n");
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_table(schema, table_field->type)) {
-				fprintf(fp, "static inline int %s%s_start (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_table(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", table_field_i, table_field_s);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_push (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->type);
+				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->type);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_push_table(encoder, (uint64_t) value_%s);\n", table_field->type);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				namespace_push(namespace, "%s_%s_", table_field->name, table_field->type);
-				rc = schema_generate_encoder_table(schema, schema_type_get_table(schema, table_field->type), namespace, UINT64_MAX, UINT64_MAX, 0, fp);
-				if (rc != 0) {
-					linearbuffers_errorf("can not generate encoder for table: %s", table_field->name);
-					goto bail;
-				}
-				namespace_pop(namespace);
-				fprintf(fp, "static inline int %s%s_end (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_end_table(encoder);\n");
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_cancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace), table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_vector_cancel_table(encoder);\n");
@@ -557,46 +549,39 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 			}
 		} else {
 			if (schema_type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", namespace_linearized(namespace), table_field->name, table_field->type, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", schema->namespace, table->name, table_field->name, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_string(table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const char *value_%s)\n", namespace_linearized(namespace), table_field->name, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const char *value_%s)\n", schema->namespace, table->name, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				fprintf(fp, "static inline int %s%s_nset (struct linearbuffers_encoder *encoder, const char *value_%s, uint64_t n)\n", namespace_linearized(namespace), table_field->name, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_nset (struct linearbuffers_encoder *encoder, const char *value_%s, uint64_t n)\n", schema->namespace, table->name, table_field->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_nset_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s, n);\n", table_field->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, %s_%s_enum_t value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_%s_enum_t value_%s)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", schema_type_get_enum(schema, table_field->type)->type, table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 			} else if (schema_type_is_table(schema, table_field->type)) {
-				fprintf(fp, "static inline int %s%s_set (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type, table_field->name);
+				fprintf(fp, "static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    rc = linearbuffers_encoder_table_set_table(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), (uint64_t) value_%s);\n", table_field_i, table_field_s, table_field->name);
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
-				namespace_push(namespace, "%s_", table_field->name);
-				rc = schema_generate_encoder_table(schema, schema_type_get_table(schema, table_field->type), namespace, table_field_i, table_field_s, 0, fp);
-				if (rc != 0) {
-					linearbuffers_errorf("can not generate encoder for table: %s", table_field->name);
-					goto bail;
-				}
-				namespace_pop(namespace);
 			} else {
 				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
@@ -628,14 +613,14 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    return (const struct %s_%s *) offset;\n", schema->namespace, table->name);
 		fprintf(fp, "}\n");
 	} else {
-		fprintf(fp, "static inline int %send (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
+		fprintf(fp, "static inline int %s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    int rc;\n");
 		fprintf(fp, "    rc = linearbuffers_encoder_table_end(encoder, NULL);\n");
 		fprintf(fp, "    return rc;\n");
 		fprintf(fp, "}\n");
 	}
-	fprintf(fp, "static inline int %scancel (struct linearbuffers_encoder *encoder)\n", namespace_linearized(namespace));
+	fprintf(fp, "static inline int %s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name);
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
 	fprintf(fp, "    rc = linearbuffers_encoder_table_cancel(encoder);\n");
@@ -713,7 +698,7 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 			fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
 			fprintf(fp, "\n");
 
-			rc = schema_generate_encoder_table(schema, table, namespace, UINT64_MAX, UINT64_MAX, 1, fp);
+			rc = schema_generate_encoder_table(schema, table, UINT64_MAX, UINT64_MAX, 1, fp);
 			if (rc != 0) {
 				linearbuffers_errorf("can not generate decoder for table: %s", table->name);
 				goto bail;
@@ -737,7 +722,7 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 			linearbuffers_errorf("can not build namespace");
 			goto bail;
 		}
-		rc = schema_generate_encoder_table(schema, root, namespace, UINT64_MAX, UINT64_MAX, 0, fp);
+		rc = schema_generate_encoder_table(schema, root, UINT64_MAX, UINT64_MAX, 0, fp);
 		if (rc != 0) {
 			linearbuffers_errorf("can not generate encoder for table: %s", root->name);
 			goto bail;

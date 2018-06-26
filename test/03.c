@@ -25,12 +25,12 @@ int main (int argc, char *argv[])
 	}
 
 	rc  = linearbuffers_output_start(encoder);
-	rc |= linearbuffers_output_1_start(encoder);
-	rc |= linearbuffers_output_1_s_set(encoder, 1);
-	rc |= linearbuffers_output_1_t_start(encoder);
-	rc |= linearbuffers_output_1_t_foo_set(encoder, 2);
-	rc |= linearbuffers_output_1_t_end(encoder);
-	rc |= linearbuffers_output_1_end(encoder);
+	rc |= linearbuffers_b_start(encoder);
+	rc |= linearbuffers_b_s_set(encoder, 1);
+	rc |= linearbuffers_a_start(encoder);
+	rc |= linearbuffers_a_foo_set(encoder, 2);
+	rc |= linearbuffers_b_t_set(encoder, linearbuffers_a_end(encoder));
+	rc |= linearbuffers_output_1_set(encoder, linearbuffers_b_end(encoder));
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
