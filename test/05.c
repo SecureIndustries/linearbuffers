@@ -41,7 +41,7 @@ int main (int argc, char *argv[])
 	rc |= linearbuffers_timeval_seconds_set(encoder, 2);
 	rc |= linearbuffers_timeval_useconds_set(encoder, 3);
 	rc |= linearbuffers_output_timeval_set(encoder, linearbuffers_timeval_end(encoder));
-	rc |= linearbuffers_output_data_set(encoder, data, sizeof(data) / sizeof(data[0]));
+	rc |= linearbuffers_output_data_set_values(encoder, data, sizeof(data) / sizeof(data[0]));
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");

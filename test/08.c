@@ -87,62 +87,65 @@ int main (int argc, char *argv[])
 	for (i = 0; i < sizeof(int8s) / sizeof(int8s[0]); i++) {
 		rc |= linearbuffers_output_int8s_push(encoder, int8s[i]);
 	}
-	rc |= linearbuffers_output_int8s_end(encoder);
+	rc |= linearbuffers_output_int8s_set(encoder, linearbuffers_output_int8s_end(encoder));
 
 	rc |= linearbuffers_output_int16s_start(encoder);
 	for (i = 0; i < sizeof(int16s) / sizeof(int16s[0]); i++) {
 		rc |= linearbuffers_output_int16s_push(encoder, int16s[i]);
 	}
-	rc |= linearbuffers_output_int16s_end(encoder);
+	rc |= linearbuffers_output_int16s_set(encoder, linearbuffers_output_int16s_end(encoder));
 
 	rc |= linearbuffers_output_int32s_start(encoder);
 	for (i = 0; i < sizeof(int32s) / sizeof(int32s[0]); i++) {
 		rc |= linearbuffers_output_int32s_push(encoder, int32s[i]);
 	}
-	rc |= linearbuffers_output_int32s_end(encoder);
+	rc |= linearbuffers_output_int32s_set(encoder, linearbuffers_output_int32s_end(encoder));
 
 	rc |= linearbuffers_output_int64s_start(encoder);
 	for (i = 0; i < sizeof(int64s) / sizeof(int64s[0]); i++) {
 		rc |= linearbuffers_output_int64s_push(encoder, int64s[i]);
 	}
-	rc |= linearbuffers_output_int64s_end(encoder);
+	rc |= linearbuffers_output_int64s_set(encoder, linearbuffers_output_int64s_end(encoder));
 
 	rc |= linearbuffers_output_uint8s_start(encoder);
 	for (i = 0; i < sizeof(uint8s) / sizeof(uint8s[0]); i++) {
 		rc |= linearbuffers_output_uint8s_push(encoder, uint8s[i]);
 	}
-	rc |= linearbuffers_output_uint8s_end(encoder);
+	rc |= linearbuffers_output_uint8s_set(encoder, linearbuffers_output_uint8s_end(encoder));
 
 	rc |= linearbuffers_output_uint16s_start(encoder);
 	for (i = 0; i < sizeof(uint16s) / sizeof(uint16s[0]); i++) {
 		rc |= linearbuffers_output_uint16s_push(encoder, uint16s[i]);
 	}
-	rc |= linearbuffers_output_uint16s_end(encoder);
-
+	rc |= linearbuffers_output_uint16s_set(encoder, linearbuffers_output_uint16s_end(encoder));
 
 	rc |= linearbuffers_output_uint32s_start(encoder);
 	for (i = 0; i < sizeof(uint32s) / sizeof(uint32s[0]); i++) {
 		rc |= linearbuffers_output_uint32s_push(encoder, uint32s[i]);
 	}
-	rc |= linearbuffers_output_uint32s_end(encoder);
+	rc |= linearbuffers_output_uint32s_set(encoder, linearbuffers_output_uint32s_end(encoder));
 
 	rc |= linearbuffers_output_uint64s_start(encoder);
 	for (i = 0; i < sizeof(uint64s) / sizeof(uint64s[0]); i++) {
 		rc |= linearbuffers_output_uint64s_push(encoder, uint64s[i]);
 	}
-	rc |= linearbuffers_output_uint64s_end(encoder);
+	rc |= linearbuffers_output_uint64s_set(encoder, linearbuffers_output_uint64s_end(encoder));
 
 	rc |= linearbuffers_output_strings_start(encoder);
 	for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
 		rc |= linearbuffers_output_strings_push(encoder, strings[i]);
 	}
-	rc |= linearbuffers_output_strings_end(encoder);
+	rc |= linearbuffers_output_strings_set(encoder, linearbuffers_output_strings_end(encoder));
 
 	rc |= linearbuffers_output_enums_start(encoder);
 	for (i = 0; i < sizeof(enums) / sizeof(enums[0]); i++) {
 		rc |= linearbuffers_output_enums_push(encoder, enums[i]);
 	}
-	rc |= linearbuffers_output_enums_end(encoder);
+	rc |= linearbuffers_output_enums_set(encoder, linearbuffers_output_enums_end(encoder));
+	if (rc != 0) {
+		fprintf(stderr, "can not encode output..\n");
+		goto bail;
+	}
 
 	rc |= linearbuffers_output_tables_start(encoder);
 	for (i = 0; i < ARRAY_COUNT; i++) {
@@ -159,7 +162,7 @@ int main (int argc, char *argv[])
 		rc |= linearbuffers_a_table_anum_set(encoder, enums[i]);
 		rc |= linearbuffers_output_tables_push(encoder, linearbuffers_a_table_end(encoder));
 	}
-	rc |= linearbuffers_output_tables_end(encoder);
+	rc |= linearbuffers_output_tables_set(encoder, linearbuffers_output_tables_end(encoder));
 
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {

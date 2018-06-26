@@ -82,16 +82,16 @@ int main (int argc, char *argv[])
 	}
 
 	rc  = linearbuffers_output_start(encoder);
-	rc |= linearbuffers_output_int8s_set(encoder, int8s, sizeof(int8s) / sizeof(int8s[0]));
-	rc |= linearbuffers_output_int16s_set(encoder, int16s, sizeof(int16s) / sizeof(int16s[0]));
-	rc |= linearbuffers_output_int32s_set(encoder, int32s, sizeof(int32s) / sizeof(int32s[0]));
-	rc |= linearbuffers_output_int64s_set(encoder, int64s, sizeof(int64s) / sizeof(int64s[0]));
-	rc |= linearbuffers_output_uint8s_set(encoder, uint8s, sizeof(uint8s) / sizeof(uint8s[0]));
-	rc |= linearbuffers_output_uint16s_set(encoder, uint16s, sizeof(uint16s) / sizeof(uint16s[0]));
-	rc |= linearbuffers_output_uint32s_set(encoder, uint32s, sizeof(uint32s) / sizeof(uint32s[0]));
-	rc |= linearbuffers_output_uint64s_set(encoder, uint64s, sizeof(uint64s) / sizeof(uint64s[0]));
-	rc |= linearbuffers_output_strings_set(encoder, (const char **) strings, sizeof(strings) / sizeof(strings[0]));
-	rc |= linearbuffers_output_enums_set(encoder, enums, sizeof(enums) / sizeof(enums[0]));
+	rc |= linearbuffers_output_int8s_set_values(encoder, int8s, sizeof(int8s) / sizeof(int8s[0]));
+	rc |= linearbuffers_output_int16s_set_values(encoder, int16s, sizeof(int16s) / sizeof(int16s[0]));
+	rc |= linearbuffers_output_int32s_set_values(encoder, int32s, sizeof(int32s) / sizeof(int32s[0]));
+	rc |= linearbuffers_output_int64s_set_values(encoder, int64s, sizeof(int64s) / sizeof(int64s[0]));
+	rc |= linearbuffers_output_uint8s_set_values(encoder, uint8s, sizeof(uint8s) / sizeof(uint8s[0]));
+	rc |= linearbuffers_output_uint16s_set_values(encoder, uint16s, sizeof(uint16s) / sizeof(uint16s[0]));
+	rc |= linearbuffers_output_uint32s_set_values(encoder, uint32s, sizeof(uint32s) / sizeof(uint32s[0]));
+	rc |= linearbuffers_output_uint64s_set_values(encoder, uint64s, sizeof(uint64s) / sizeof(uint64s[0]));
+	rc |= linearbuffers_output_strings_set_values(encoder, (const char **) strings, sizeof(strings) / sizeof(strings[0]));
+	rc |= linearbuffers_output_enums_set_values(encoder, enums, sizeof(enums) / sizeof(enums[0]));
 	rc |= linearbuffers_output_tables_start(encoder);
 	for (i = 0; i < ARRAY_COUNT; i++) {
 		rc |= linearbuffers_a_table_start(encoder);
@@ -107,7 +107,7 @@ int main (int argc, char *argv[])
 		rc |= linearbuffers_a_table_anum_set(encoder, enums[i]);
 		rc |= linearbuffers_output_tables_push(encoder, linearbuffers_a_table_end(encoder));
 	}
-	rc |= linearbuffers_output_tables_end(encoder);
+	rc |= linearbuffers_output_tables_set(encoder, linearbuffers_output_tables_end(encoder));
 	rc |= linearbuffers_output_end(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
@@ -280,9 +280,8 @@ int main (int argc, char *argv[])
 			goto bail;
 		}
 	}
-
 	if (linearbuffers_output_strings_get_count(output) != sizeof(strings) / sizeof(strings[0])) {
-		fprintf(stderr, "decoder failed: linearbuffers_output_strings_get_count\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_strings_get_count (%ld != %ld)\n", linearbuffers_output_strings_get_count(output), sizeof(strings) / sizeof(strings[0]));
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_strings_get_count(output); i++) {
@@ -291,7 +290,6 @@ int main (int argc, char *argv[])
 			goto bail;
 		}
 	}
-
 	if (linearbuffers_output_enums_get_count(output) != sizeof(enums) / sizeof(enums[0])) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_enums_get_count\n");
 		goto bail;

@@ -26,7 +26,7 @@
 #define DEFAULT_JSONIFY			0
 
 int schema_generate_pretty (struct schema *schema, FILE *fp);
-int schema_generate_c_encoder (struct schema *schema, FILE *fp);
+int schema_generate_c_encoder (struct schema *schema, FILE *fp, int decoder_use_memcpy);
 int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_memcpy);
 int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_memcpy);
 
@@ -166,7 +166,7 @@ int main (int argc, char *argv[])
 		}
 	}
 	if (option_encoder) {
-		rc = schema_generate_c_encoder(schema, output_file);
+		rc = schema_generate_c_encoder(schema, output_file, option_decoder_use_memcpy);
 		if (rc != 0) {
 			fprintf(stderr, "can not generate encoder file: %s\n", option_output);
 			goto bail;
