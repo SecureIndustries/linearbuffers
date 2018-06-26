@@ -8,8 +8,8 @@ table output_b {
 }
 
 table output {
-	1: output_a;
-	2: output_b;
+	1: output_a; /* c comment */
+	2: output_b; // cpp comment
 }
 
 root output;
