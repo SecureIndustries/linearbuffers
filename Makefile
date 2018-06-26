@@ -8,6 +8,9 @@ test_depends-y = \
 
 include Makefile.lib
 
+tests: test
+	@${Q}+${MAKE} -C test tests
+
 install: src test
 	install -d ${DESTDIR}/usr/local/bin
 	install -m 0755 dist/bin/linearbuffers-compiler ${DESTDIR}/usr/local/bin/linearbuffers-compiler

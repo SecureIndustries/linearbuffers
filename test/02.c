@@ -55,11 +55,11 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 
-	if (linearbuffers_output_1_foo_get(output) != 1) {
+	if (linearbuffers_output_a_foo_get(linearbuffers_output_1_get(output)) != 1) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_1_foo_get\n");
 		goto bail;
 	}
-	if (linearbuffers_output_2_bar_get(output) != 2) {
+	if (linearbuffers_output_b_bar_get(linearbuffers_output_2_get(output)) != 2) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_2_bar_get\n");
 		goto bail;
 	}

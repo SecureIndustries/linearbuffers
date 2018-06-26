@@ -55,15 +55,19 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_timeval_seconds_get(output) != 2) {
+	if (linearbuffers_timeval_seconds_get(linearbuffers_output_timeval_get(output)) != 2) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_data_get_count(output) != 0) {
+	if (linearbuffers_timeval_useconds_get(linearbuffers_output_timeval_get(output)) != 3) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}
-	if (linearbuffers_output_data_get_length(output) != 0) {
+	if (linearbuffers_uint8_vector_get_count(linearbuffers_output_data_get(output)) != 0) {
+		fprintf(stderr, "decoder failed\n");
+		goto bail;
+	}
+	if (linearbuffers_uint8_vector_get_length(linearbuffers_output_data_get(output)) != 0) {
 		fprintf(stderr, "decoder failed\n");
 		goto bail;
 	}

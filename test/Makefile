@@ -44,6 +44,18 @@ $(eval $(foreach T,${tests},$(eval $(call test-defaults,$T))))
 
 include ../Makefile.lib
 
+tests: all
+	${Q}echo "running tests";
+	${Q}for T in ${tests}; do \
+		printf "  $${T} ... "; \
+		./$${T} 2>/dev/null 1>/dev/null; \
+		if [ $$? != 0 ]; then \
+			echo "fail"; \
+		else \
+			echo "success"; \
+		fi \
+	done
+
 clean:
 	${Q}${RM} ??-encoder.h
 	${Q}${RM} ??-decoder.h
