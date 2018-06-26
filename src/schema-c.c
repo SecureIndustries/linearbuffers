@@ -635,12 +635,9 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 {
 	int rc;
 
-	struct namespace *namespace;
 	struct schema_enum *anum;
 	struct schema_table *table;
 	struct schema_table *root;
-
-	namespace = NULL;
 
 	if (schema == NULL) {
 		linearbuffers_errorf("schema is invalid");
@@ -683,17 +680,6 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 				continue;
 			}
 
-			namespace = namespace_create();
-			if (namespace == NULL) {
-				linearbuffers_errorf("can not create namespace");
-				goto bail;
-			}
-			rc = namespace_push(namespace, "%s_%s_", schema->namespace, table->name);
-			if (rc != 0) {
-				linearbuffers_errorf("can not build namespace");
-				goto bail;
-			}
-
 			fprintf(fp, "\n");
 			fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
 			fprintf(fp, "\n");
@@ -703,8 +689,6 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 				linearbuffers_errorf("can not generate decoder for table: %s", table->name);
 				goto bail;
 			}
-
-			namespace_destroy(namespace);
 		}
 
 		if (root == NULL) {
@@ -712,32 +696,18 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp)
 			goto bail;
 		}
 
-		namespace = namespace_create();
-		if (namespace == NULL) {
-			linearbuffers_errorf("can not create namespace");
-			goto bail;
-		}
-		rc = namespace_push(namespace, "%s_%s_", schema->namespace, root->name);
-		if (rc != 0) {
-			linearbuffers_errorf("can not build namespace");
-			goto bail;
-		}
 		rc = schema_generate_encoder_table(schema, root, UINT64_MAX, UINT64_MAX, 0, fp);
 		if (rc != 0) {
 			linearbuffers_errorf("can not generate encoder for table: %s", root->name);
 			goto bail;
 		}
-		namespace_destroy(namespace);
 
 		fprintf(fp, "\n");
 		fprintf(fp, "#endif\n");
 	}
 
 	return 0;
-bail:	if (namespace != NULL) {
-		namespace_destroy(namespace);
-	}
-	return -1;
+bail:	return -1;
 }
 
 static int schema_generate_decoder_vector (struct schema *schema, const char *type, int decoder_use_memcpy, FILE *fp)
