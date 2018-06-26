@@ -77,23 +77,16 @@ static int schema_generate_vector (struct schema *schema, const char *type, int 
 		fprintf(fp, "\n");
 		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t count;\n");
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    memcpy(&count, ((const void *) decoder), sizeof(count));\n");
+			fprintf(fp, "    uint64_t count;\n");
+			fprintf(fp, "    return *(uint64_t *) memcpy(&count, ((const void *) decoder), sizeof(count));\n");
 		} else {
-			fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder));\n");
+			fprintf(fp, "    return *(uint64_t *) (((const void *) decoder));\n");
 		}
-		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline uint64_t %s_%s_vector_get_length (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t count;\n");
-		if (decoder_use_memcpy) {
-			fprintf(fp, "    memcpy(&count, ((const void *) decoder), sizeof(count));\n");
-		} else {
-			fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder));\n");
-		}
-		fprintf(fp, "    return count * sizeof(%s_t);\n", type);
+		fprintf(fp, "    return %s_%s_vector_get_count(decoder) * sizeof(%s_t);\n", schema->namespace, type, type);
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline const %s_t * %s_%s_vector_get_values (const struct %s_%s_vector *decoder)\n", type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
@@ -109,23 +102,16 @@ static int schema_generate_vector (struct schema *schema, const char *type, int 
 		fprintf(fp, "\n");
 		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t count;\n");
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    memcpy(&count, ((const void *) decoder), sizeof(count));\n");
+			fprintf(fp, "    uint64_t count;\n");
+			fprintf(fp, "    return *(uint64_t *) memcpy(&count, ((const void *) decoder), sizeof(count));\n");
 		} else {
-			fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder));\n");
+			fprintf(fp, "    return *(uint64_t *) (((const void *) decoder));\n");
 		}
-		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline uint64_t %s_%s_vector_get_length (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t count;\n");
-		if (decoder_use_memcpy) {
-			fprintf(fp, "    memcpy(&count, ((const void *) decoder), sizeof(count));\n");
-		} else {
-			fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder));\n");
-		}
-		fprintf(fp, "    return count * sizeof(%s_%s_enum_t);\n", schema->namespace, type);
+		fprintf(fp, "    return %s_%s_vector_get_count(decoder) * sizeof(%s_%s_enum_t);\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline const %s_%s_enum_t * %s_%s_vector_get_values (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
@@ -141,17 +127,19 @@ static int schema_generate_vector (struct schema *schema, const char *type, int 
 		fprintf(fp, "\n");
 		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t count;\n");
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    memcpy(&count, ((const void *) decoder), sizeof(count));\n");
+			fprintf(fp, "    uint64_t count;\n");
+			fprintf(fp, "    return *(uint64_t *) memcpy(&count, ((const void *) decoder), sizeof(count));\n");
 		} else {
-			fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder));\n");
+			fprintf(fp, "    return *(uint64_t *) (((const void *) decoder));\n");
 		}
-		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline const char * %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
+		if (decoder_use_memcpy) {
+			fprintf(fp, "    uint64_t toffset;\n");
+		}
 		fprintf(fp, "    offset = 0;\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", sizeof(uint64_t));
@@ -168,17 +156,19 @@ static int schema_generate_vector (struct schema *schema, const char *type, int 
 		fprintf(fp, "\n");
 		fprintf(fp, "static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t count;\n");
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    memcpy(&count, ((const void *) decoder), sizeof(count));\n");
+			fprintf(fp, "    uint64_t count;\n");
+			fprintf(fp, "    return *(uint64_t *) memcpy(&count, ((const void *) decoder), sizeof(count));\n");
 		} else {
-			fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder));\n");
+			fprintf(fp, "    return *(uint64_t *) (((const void *) decoder));\n");
 		}
-		fprintf(fp, "    return count;\n");
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline const struct %s_%s * %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint64_t offset;\n");
+		if (decoder_use_memcpy) {
+			fprintf(fp, "    uint64_t toffset;\n");
+		}
 		fprintf(fp, "    offset = 0;\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", sizeof(uint64_t));
@@ -838,6 +828,9 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int decoder_use_
 	fprintf(fp, "\n");
 	fprintf(fp, "#include <stddef.h>\n");
 	fprintf(fp, "#include <stdint.h>\n");
+	if (decoder_use_memcpy) {
+		fprintf(fp, "#include <string.h>\n");
+	}
 	fprintf(fp, "#include <linearbuffers/encoder.h>\n");
 
 	if (!TAILQ_EMPTY(&schema->enums)) {
@@ -1003,41 +996,27 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			fprintf(fp, "{\n");
 			fprintf(fp, "    uint64_t offset;\n");
 			if (decoder_use_memcpy) {
+				fprintf(fp, "    uint64_t count;\n");
 				fprintf(fp, "    uint64_t toffset;\n");
 			}
-			fprintf(fp, "    uint64_t count;\n");
 			fprintf(fp, "    offset = 0;\n");
 			if (decoder_use_memcpy) {
 				fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-				fprintf(fp, "    memcpy(&count, ((const void *) decoder) + offset, sizeof(count));\n");
+				fprintf(fp, "    return *(uint64_t *) memcpy(&count, ((const void *) decoder) + offset, sizeof(count));\n");
 			} else {
 				fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-				fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder) + offset);\n");
+				fprintf(fp, "    return *(uint64_t *) (((const void *) decoder) + offset);\n");
 			}
-			fprintf(fp, "    return count;\n");
 			fprintf(fp, "}\n");
 
 			if (schema_type_is_scalar(table_field->type) ||
 			    schema_type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "static inline uint64_t %s%s_get_length (const struct %s_%s *decoder)", namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
 				fprintf(fp, "{\n");
-				fprintf(fp, "    uint64_t offset;\n");
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    uint64_t toffset;\n");
-				}
-				fprintf(fp, "    uint64_t count;\n");
-				fprintf(fp, "    offset = 0;\n");
-				if (decoder_use_memcpy) {
-					fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
-					fprintf(fp, "    memcpy(&count, ((const void *) decoder) + offset, sizeof(count));\n");
-				} else {
-					fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", ((table->nfields + 7) / 8) + table_field_s);
-					fprintf(fp, "    count = *(uint64_t *) (((const void *) decoder) + offset);\n");
-				}
 				if (schema_type_is_scalar(table_field->type)) {
-					fprintf(fp, "    return count * sizeof(%s_t);\n", table_field->type);
+					fprintf(fp, "    return %s%s_get_count(decoder) * sizeof(%s_t);\n", namespace_linearized(namespace), table_field->name, table_field->type);
 				} else {
-					fprintf(fp, "    return count * sizeof(%s_%s_enum_t);\n", schema->namespace, table_field->type);
+					fprintf(fp, "    return %s%s_get_count(decoder) * sizeof(%s_%s_enum_t);\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type);
 				}
 				fprintf(fp, "}\n");
 
@@ -1123,26 +1102,24 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				}
 			}
 			if (schema_type_is_scalar(table_field->type)) {
-				fprintf(fp, "    %s_t value;\n", table_field->type);
 			} else if (schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "    %s_%s_enum_t value;\n", schema->namespace, table_field->type);
 			} else {
 				fprintf(fp, "    offset = 0;\n");
 			}
 			if (schema_type_is_scalar(table_field->type)) {
 				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&value, ((const void *) decoder) + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
+					fprintf(fp, "    %s_t value;\n", table_field->type);
+					fprintf(fp, "    return *(%s_t *) memcpy(&value, ((const void *) decoder) + UINT64_C(%" PRIu64 "), sizeof(value));\n", table_field->type, ((table->nfields + 7) / 8) + table_field_s);
 				} else {
-					fprintf(fp, "    value = *(%s_t *) (((const void *) decoder) + UINT64_C(%" PRIu64 "));\n", table_field->type, ((table->nfields + 7) / 8) + table_field_s);
+					fprintf(fp, "    return *(%s_t *) (((const void *) decoder) + UINT64_C(%" PRIu64 "));\n", table_field->type, ((table->nfields + 7) / 8) + table_field_s);
 				}
-				fprintf(fp, "    return value;\n");
 			} else if (schema_type_is_enum(schema, table_field->type)) {
 				if (decoder_use_memcpy) {
-					fprintf(fp, "    memcpy(&value, ((const void *) decoder) + UINT64_C(%" PRIu64 "), sizeof(value));\n", ((table->nfields + 7) / 8) + table_field_s);
+					fprintf(fp, "    %s_%s_enum_t value;\n", schema->namespace, table_field->type);
+					fprintf(fp, "    return *(%s_%s_enum_t *) memcpy(&value, ((const void *) decoder) + UINT64_C(%" PRIu64 "), sizeof(value));\n", schema->namespace, table_field->type, ((table->nfields + 7) / 8) + table_field_s);
 				} else {
-					fprintf(fp, "    value = *(%s_%s_enum_t *) (((const void *) decoder) + UINT64_C(%" PRIu64 "));\n", schema->namespace, table_field->type, ((table->nfields + 7) / 8) + table_field_s);
+					fprintf(fp, "    return *(%s_%s_enum_t *) (((const void *) decoder) + UINT64_C(%" PRIu64 "));\n", schema->namespace, table_field->type, ((table->nfields + 7) / 8) + table_field_s);
 				}
-				fprintf(fp, "    return value;\n");
 			} else if (schema_type_is_string(table_field->type)) {
 				if (decoder_use_memcpy) {
 					fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", ((table->nfields + 7) / 8) + table_field_s);
