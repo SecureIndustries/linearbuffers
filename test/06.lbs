@@ -31,5 +31,3 @@ table output {
 	28: uint8;
 	29: uint8;
 }
-
-root output;

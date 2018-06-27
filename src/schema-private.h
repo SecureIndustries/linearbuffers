@@ -48,8 +48,6 @@ struct schema_table {
 struct schema {
 	char *namespace;
 	char *NAMESPACE;
-	char *root;
-	char *ROOT;
 	struct schema_enums enums;
 	struct schema_tables tables;
 	struct schema_attributes attributes;

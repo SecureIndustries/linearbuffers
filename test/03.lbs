@@ -11,5 +11,3 @@ table b {
 table output {
 	1: b;
 }
-
-root output;

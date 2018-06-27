@@ -108,7 +108,7 @@ int main (int argc, char *argv[])
 		rc |= linearbuffers_output_tables_push(encoder, linearbuffers_a_table_end(encoder));
 	}
 	rc |= linearbuffers_output_tables_set(encoder, linearbuffers_output_tables_end(encoder));
-	rc |= linearbuffers_output_end(encoder);
+	rc |= linearbuffers_output_finish(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
 		goto bail;

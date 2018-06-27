@@ -47,7 +47,7 @@ int main (int argc, char *argv[])
 
 	rc  = linearbuffers_output_start(encoder);
 	rc |= linearbuffers_output_0_set(encoder, 1);
-	rc |= linearbuffers_output_end(encoder);
+	rc |= linearbuffers_output_finish(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");
 		goto bail;

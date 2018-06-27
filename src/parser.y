@@ -18,7 +18,6 @@
 %token NAMESPACE
 %token ENUM
 %token TABLE
-%token ROOT
 %token BLOCK
 %token ENDBLOCK
 %token COLON
@@ -27,6 +26,8 @@
 %token EQUAL
 %token VECTOR
 %token ENDVECTOR
+%token OFFSET
+%token COUNT
 
 %start Program
 
@@ -53,7 +54,7 @@ Program:
 
 Schema:
     /* empty */
-    |    Namespace Enums Tables Root
+    |    Namespace Enums Tables
     ;
 
 Namespace:
@@ -63,18 +64,6 @@ Namespace:
                                                             rc = schema_set_namespace(schema_parser->schema, $2);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not set schema namespace\n");
-                                                                YYERROR;
-                                                            }
-                                                        }
-    ;
-
-Root:
-    /* empty */
-    |    ROOT STRING SEMICOLON                          {
-                                                            int rc;
-                                                            rc = schema_set_root(schema_parser->schema, $2);
-                                                            if (rc != 0) {
-                                                                fprintf(stderr, "can not set schema root\n");
                                                                 YYERROR;
                                                             }
                                                         }

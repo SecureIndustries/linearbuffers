@@ -691,27 +691,6 @@ int schema_add_enum (struct schema *schema, struct schema_enum *anum)
 bail:	return -1;
 }
 
-int schema_set_root (struct schema *schema, const char *name)
-{
-	if (schema == NULL) {
-		linearbuffers_errorf("schema is invalid");
-		goto bail;
-	}
-	if (schema->root != NULL) {
-		free(schema->root);
-		schema->root = NULL;
-	}
-	if (name != NULL) {
-		schema->root = strdup(name);
-		if (schema->root == NULL) {
-			linearbuffers_errorf("can not allocate memory");
-			goto bail;
-		}
-	}
-	return 0;
-bail:	return -1;
-}
-
 void schema_destroy (struct schema *schema)
 {
 	struct schema_enum *anum;
@@ -728,12 +707,6 @@ void schema_destroy (struct schema *schema)
 	}
 	if (schema->NAMESPACE != NULL) {
 		free(schema->NAMESPACE);
-	}
-	if (schema->root != NULL) {
-		free(schema->root);
-	}
-	if (schema->ROOT != NULL) {
-		free(schema->ROOT);
 	}
 	TAILQ_FOREACH_SAFE(anum, &schema->enums, list, nanum) {
 		TAILQ_REMOVE(&schema->enums, anum, list);
@@ -837,20 +810,6 @@ static int schema_check (struct schema *schema)
 		}
 	}
 
-	if (schema->root == NULL) {
-		linearbuffers_errorf("schema root is invalid");
-		goto bail;
-	}
-	TAILQ_FOREACH(table, &schema->tables, list) {
-		if (strcmp(schema->root, table->name) == 0) {
-			break;
-		}
-	}
-	if (table == NULL) {
-		linearbuffers_errorf("schema root is invalid");
-		goto bail;
-	}
-
 	return 0;
 bail:	return -1;
 }
@@ -895,15 +854,6 @@ static int schema_build (struct schema *schema)
 	}
 	for (i = 0; i < strlen(schema->NAMESPACE); i++) {
 		schema->NAMESPACE[i] = toupper(schema->NAMESPACE[i]);
-	}
-
-	schema->ROOT = strdup(schema->root);
-	if (schema->ROOT == NULL) {
-		linearbuffers_errorf("can not allocate memory");
-		goto bail;
-	}
-	for (i = 0; i < strlen(schema->ROOT); i++) {
-		schema->ROOT[i] = toupper(schema->ROOT[i]);
 	}
 
 	TAILQ_FOREACH(anum, &schema->enums, list) {

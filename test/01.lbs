@@ -19,5 +19,3 @@ table output {
 	string: string;
 	anum: a_enum;
 }
-
-root output;

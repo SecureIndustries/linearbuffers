@@ -18,5 +18,3 @@ table output {
 	timeval: timeval;
 	data   : [ uint8 ];
 }
-
-root output;

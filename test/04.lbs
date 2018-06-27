@@ -9,5 +9,3 @@ table output {
 	timeval: output_timeval;
 	data   : [ uint8 ];
 }
-
-root output;

@@ -31,5 +31,3 @@ table output {
 	tables  : [ a_table ];
 	enums   : [ a_enum ];
 }
-
-root output;
