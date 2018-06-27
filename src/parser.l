@@ -8,7 +8,6 @@
 
 blanks                  [ \t\n]+
 string                  [_.a-zA-Z0-9]+
-type                    [_a-zA-Z0-9]+
 
 %x c_comment
 %x cpp_comment
@@ -17,7 +16,7 @@ type                    [_a-zA-Z0-9]+
 
 {blanks}                { /* ignore */ }
 
-"namespace"             return(NAMESPACE);
+"option"                return(OPTION);
 "enum"                  return(ENUM);
 "table"                 return(TABLE);
 "{"                     return(BLOCK);

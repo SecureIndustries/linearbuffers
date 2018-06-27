@@ -15,7 +15,7 @@
 };
 
 %token <sval> STRING
-%token NAMESPACE
+%token OPTION
 %token ENUM
 %token TABLE
 %token BLOCK
@@ -54,24 +54,25 @@ Program:
 
 Schema:
     /* empty */
-    |    Namespace Enums Tables
+    |    Schema Option
+    |    Schema Enum
+    |    Schema Table
     ;
 
-Namespace:
-    /* empty */
-    |    NAMESPACE STRING SEMICOLON                     {
+Option:
+         OPTION STRING EQUAL STRING SEMICOLON           {
                                                             int rc;
-                                                            rc = schema_set_namespace(schema_parser->schema, $2);
-                                                            if (rc != 0) {
-                                                                fprintf(stderr, "can not set schema namespace\n");
+                                                            if (strcmp($2, "namespace") == 0) {
+                                                                rc = schema_set_namespace(schema_parser->schema, $4);
+                                                                if (rc != 0) {
+                                                                    fprintf(stderr, "can not set schema namespace\n");
+                                                                    YYERROR;
+                                                                }
+                                                            } else {
+                                                                fprintf(stderr, "unknown option: '%s' = '%s';\n", $2, $4);
                                                                 YYERROR;
                                                             }
                                                         }
-    ;
-
-Enums:
-    /* empty */
-    |    Enums Enum
     ;
 
 Enum:
@@ -176,11 +177,6 @@ EnumEntry:
                                                                 YYERROR;
                                                             }
                                                         }
-    ;
-
-Tables:
-    /* empty */
-    |    Tables Table
     ;
 
 Table:
