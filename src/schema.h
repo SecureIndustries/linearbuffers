@@ -44,6 +44,7 @@ struct schema_enum * schema_type_get_enum (struct schema *schema, const char *ty
 struct schema_table * schema_type_get_table (struct schema *schema, const char *type);
 int schema_inttype_size (const char *type);
 int schema_type_is_scalar (const char *type);
+int schema_type_is_float (const char *type);
 int schema_type_is_string (const char *type);
 int schema_type_is_enum (struct schema *schema, const char *type);
 int schema_type_is_table (struct schema *schema, const char *type);

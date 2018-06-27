@@ -54,6 +54,12 @@ int schema_inttype_size (const char *type)
 	if (strcmp(type, "uint64") == 0) {
 		return sizeof(uint64_t);
 	}
+	if (strcmp(type, "float") == 0) {
+		return sizeof(float);
+	}
+	if (strcmp(type, "double") == 0) {
+		return sizeof(double);
+	}
 	return 0;
 }
 
@@ -84,6 +90,20 @@ int schema_type_is_scalar (const char *type)
 		return 1;
 	}
 	if (strcmp(type, "uint64") == 0) {
+		return 1;
+	}
+	return 0;
+}
+
+int schema_type_is_float (const char *type)
+{
+	if (type == NULL) {
+		return 0;
+	}
+	if (strcmp(type, "float") == 0) {
+		return 1;
+	}
+	if (strcmp(type, "double") == 0) {
 		return 1;
 	}
 	return 0;
@@ -178,6 +198,10 @@ int schema_type_is_valid (struct schema *schema, const char *type)
 		return 0;
 	}
 	rc = schema_type_is_scalar(type);
+	if (rc == 1) {
+		return 1;
+	}
+	rc = schema_type_is_float(type);
 	if (rc == 1) {
 		return 1;
 	}
