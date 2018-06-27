@@ -30,6 +30,7 @@ struct pool_block {
 };
 
 struct pool {
+	const char *name;
 	uint64_t selements;
 	uint64_t nelements;
 	uint64_t uelements;
@@ -38,7 +39,7 @@ struct pool {
 	struct pool_block *blocks;
 };
 
-static int pool_init (struct pool *pool, const uint64_t selements, const uint64_t nelements);
+static int pool_init (struct pool *pool, const char *name, uint64_t selements, uint64_t nelements);
 static void pool_uninit (struct pool *pool);
 
 #if defined(POOL_ENABLE) && (POOL_ENABLE == 1)
@@ -63,15 +64,16 @@ static void pool_uninit (struct pool *pool)
 	memset(pool, 0, sizeof(struct pool));
 }
 
-static int pool_init (struct pool *p, const uint64_t selements, const uint64_t nelements)
+static int pool_init (struct pool *pool, const char *name, uint64_t selements, uint64_t nelements)
 {
-	memset(p, 0, sizeof(struct pool));
-	linearbuffers_debugf("init selements: %lu, nelements: %lu", selements, nelements);
-	p->selements = selements;
-	p->nelements = nelements;
-	p->felements = NULL;
-	p->cblock = NULL;
-	p->blocks = NULL;
+	memset(pool, 0, sizeof(struct pool));
+	linearbuffers_debugf("init name: %s, selements: %lu, nelements: %lu", name, selements, nelements);
+	pool->name = name;
+	pool->selements = selements;
+	pool->nelements = nelements;
+	pool->felements = NULL;
+	pool->cblock = NULL;
+	pool->blocks = NULL;
 	return 0;
 }
 
@@ -90,7 +92,7 @@ static void * pool_malloc (struct pool *pool)
 	    pool->cblock == NULL) {
 		struct pool_block *block;
 		struct pool_block *blocks;
-		linearbuffers_debugf("  creating new block");
+		linearbuffers_debugf("pool(%s): creating new block", pool->name);
 		block = malloc(sizeof(struct pool_block) + ((sizeof(struct pool_element) + pool->selements) * pool->nelements));
 		if (block == NULL) {
 			linearbuffers_errorf("can not allocate memory");
@@ -331,7 +333,7 @@ static int offset_table_init (struct pool *pool, struct offset_table *offset)
 	return 0;
 }
 
-static void entry_destroy (struct pool *epool, struct pool *ppool, struct entry *entry)
+static void entry_destroy (struct pool *epool, struct pool *ppool, struct pool *opool, struct entry *entry)
 {
 	if (entry == NULL) {
 		return;
@@ -339,7 +341,7 @@ static void entry_destroy (struct pool *epool, struct pool *ppool, struct entry 
 	if (entry->type == entry_type_table) {
 		present_table_uninit(ppool, &entry->u.table.present);
 	} else if (entry->type == entry_type_vector) {
-		offset_table_uninit(ppool, &entry->u.vector.offset);
+		offset_table_uninit(opool, &entry->u.vector.offset);
 	}
 	pool_free(epool, entry);
 }
@@ -367,9 +369,9 @@ __attribute__ ((__visibility__("default"))) struct linearbuffers_encoder * linea
 	}
 	memset(encoder, 0, sizeof(struct linearbuffers_encoder));
 	TAILQ_INIT(&encoder->stack);
-	pool_init(&encoder->pool.entry, sizeof(struct entry), 8);
-	pool_init(&encoder->pool.present, sizeof(struct present_buffer), 8);
-	pool_init(&encoder->pool.offset, sizeof(struct offset_buffer), 8);
+	pool_init(&encoder->pool.entry, "entry", sizeof(struct entry), 8);
+	pool_init(&encoder->pool.present, "present", sizeof(struct present_buffer), 8);
+	pool_init(&encoder->pool.offset, "offset", sizeof(struct offset_buffer), 8);
 	encoder->emitter.function = encoder_default_emitter;
 	encoder->emitter.context = encoder;
 	if (options != NULL) {
@@ -391,7 +393,7 @@ __attribute__ ((__visibility__("default"))) void linearbuffers_encoder_destroy (
 		return;
 	}
 	if (encoder->root != NULL) {
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, encoder->root);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, encoder->root);
 	}
 	if (encoder->output.buffer != NULL) {
 		free(encoder->output.buffer);
@@ -408,8 +410,10 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (str
 		linearbuffers_errorf("encoder is invalid");
 		goto bail;
 	}
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, encoder->root);
-	encoder->root = NULL;
+	if (encoder->root != NULL) {
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, encoder->root);
+		encoder->root = NULL;
+	}
 	encoder->emitter.offset = 0;
 	TAILQ_INIT(&encoder->stack);
 	encoder->output.length = 0;
@@ -441,6 +445,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
 	if (root) {
 		if (encoder->root != NULL) {
 			linearbuffers_errorf("logic error: root is invalid");
+			goto bail;
 		}
 	}
 	entry = pool_malloc(&encoder->pool.entry);
@@ -466,7 +471,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
 bail:	if (entry != NULL) {
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	}
 	return -1;
 }
@@ -741,7 +746,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end 
 	     present_bufferi += 1, present_bytes -= PRESENT_BUFFER_COUNT       , present_buffer = present_buffer->next) {
 		encoder->emitter.function(encoder->emitter.context, entry->offset + present_bufferi * PRESENT_BUFFER_COUNT, present_buffer->buffer, MIN(present_bytes, PRESENT_BUFFER_COUNT));
 	}
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		encoder->root = NULL;
 	}
@@ -772,7 +777,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_canc
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->offset - encoder->emitter.offset);
 	encoder->emitter.offset = entry->offset;
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		encoder->root = NULL;
 	}
@@ -815,7 +820,7 @@ bail:	return -1;
 		TAILQ_INSERT_TAIL(&encoder->stack, entry, stack); \
 		return 0; \
 	bail:	if (entry != NULL) { \
-			entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry); \
+			entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
 		} \
 		return -1; \
 	} \
@@ -849,7 +854,7 @@ bail:	return -1;
 		} \
 		encoder->emitter.function(encoder->emitter.context, entry->offset, &entry->u.vector.elements, sizeof(uint64_t)); \
 		TAILQ_REMOVE(&encoder->stack, entry, stack); \
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry); \
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
 		if (TAILQ_EMPTY(&encoder->stack)) { \
 			encoder->root = NULL; \
 		} \
@@ -884,7 +889,7 @@ bail:	return -1;
 		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->offset - encoder->emitter.offset); \
 		encoder->emitter.offset = entry->offset; \
 		TAILQ_REMOVE(&encoder->stack, entry, stack); \
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry); \
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
 		if (TAILQ_EMPTY(&encoder->stack)) { \
 			encoder->root = NULL; \
 		} \
@@ -966,7 +971,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
 bail:	if (entry != NULL) {
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	}
 	return -1;
 }
@@ -1015,7 +1020,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 		encoder->emitter.offset += MIN(offset_bytes, OFFSET_BUFFER_COUNT) * sizeof(uint64_t);
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		encoder->root = NULL;
 	}
@@ -1050,7 +1055,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_can
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->offset - encoder->emitter.offset);
 	encoder->emitter.offset = entry->offset;
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		encoder->root = NULL;
 	}
@@ -1124,7 +1129,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_sta
 	TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
 	return 0;
 bail:	if (entry != NULL) {
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	}
 	return -1;
 }
@@ -1173,7 +1178,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end
 		encoder->emitter.offset += MIN(offset_bytes, OFFSET_BUFFER_COUNT) * sizeof(uint64_t);
 	}
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		encoder->root = NULL;
 	}
@@ -1208,7 +1213,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_can
 	encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->offset - encoder->emitter.offset);
 	encoder->emitter.offset = entry->offset;
 	TAILQ_REMOVE(&encoder->stack, entry, stack);
-	entry_destroy(&encoder->pool.entry, &encoder->pool.present, entry);
+	entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
 	if (TAILQ_EMPTY(&encoder->stack)) {
 		encoder->root = NULL;
 	}
