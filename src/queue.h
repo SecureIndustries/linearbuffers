@@ -12,6 +12,13 @@
 		(var) = (next))
 #endif
 
+#if !defined(TAILQ_FOREACH_REVERSE_SAFE)
+#define	TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)	\
+	for ((var) = TAILQ_LAST((head), headname);			\
+	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
+	    (var) = (tvar))
+#endif
+
 #if !defined(TAILQ_FIRST)
 #define	TAILQ_FIRST(head) ((head)->tqh_first)
 #endif

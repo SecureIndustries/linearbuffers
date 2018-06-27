@@ -507,7 +507,7 @@ bail:	if (namespace != NULL) {
 	return NULL;
 }
 
-static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, int root, FILE *fp)
+static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, FILE *fp)
 {
 	uint64_t table_field_i;
 	uint64_t table_field_s;
@@ -550,7 +550,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 	fprintf(fp, "static inline int %s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name);
 	fprintf(fp, "{\n");
 	fprintf(fp, "    int rc;\n");
-	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, %s, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", (root) ? "1" : "0", table->nfields, table_field_s);
+	fprintf(fp, "    rc = linearbuffers_encoder_table_start(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "));\n", table->nfields, table_field_s);
 	fprintf(fp, "    return rc;\n");
 	fprintf(fp, "}\n");
 
@@ -972,7 +972,7 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int decoder_use_
 		fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
 		fprintf(fp, "\n");
 
-		rc = schema_generate_encoder_table(schema, table, 0, fp);
+		rc = schema_generate_encoder_table(schema, table, fp);
 		if (rc != 0) {
 			linearbuffers_errorf("can not generate decoder for table: %s", table->name);
 			goto bail;
@@ -986,7 +986,7 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int decoder_use_
 bail:	return -1;
 }
 
-static int schema_generate_decoder_table (struct schema *schema, struct schema_table *head, struct schema_table *table, struct namespace *namespace, int decoder_use_memcpy, FILE *fp)
+static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, int decoder_use_memcpy, FILE *fp)
 {
 	uint64_t table_field_i;
 	uint64_t table_field_s;
@@ -1006,10 +1006,10 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 	}
 
 	fprintf(fp, "\n");
-	fprintf(fp, "struct %s_%s;\n", schema->namespace, head->name);
+	fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
 	fprintf(fp, "\n");
 
-	fprintf(fp, "static inline const struct %s_%s * %s_%s_decode (const void *buffer, uint64_t length)\n", schema->namespace, head->name, schema->namespace, head->name);
+	fprintf(fp, "static inline const struct %s_%s * %s_%s_decode (const void *buffer, uint64_t length)\n", schema->namespace, table->name, schema->namespace, table->name);
 	fprintf(fp, "{\n");
 	fprintf(fp, "    (void) length;\n");
 	fprintf(fp, "    return buffer;\n");
@@ -1018,7 +1018,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 	table_field_i = 0;
 	table_field_s = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
-		fprintf(fp, "static inline int %s%s_present (const struct %s_%s *decoder)", namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+		fprintf(fp, "static inline int %s_%s_%s_present (const struct %s_%s *decoder)", schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 		fprintf(fp, "{\n");
 		fprintf(fp, "    uint8_t present;\n");
 		if (decoder_use_memcpy) {
@@ -1034,15 +1034,15 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 
 		if (table_field->vector) {
 			if (schema_type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s_vector * %s%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s_vector * %s_%s_%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_float(table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s_vector * %s%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s_vector * %s_%s_%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_string(table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s_vector * %s%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s_vector * %s_%s_%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s_vector * %s%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s_vector * %s_%s_%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_table(schema, table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s_vector * %s%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s_vector * %s_%s_%s_get (const struct %s_%s *decoder)", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			}
 			fprintf(fp, "{\n");
 			fprintf(fp, "    uint64_t offset;\n");
@@ -1058,7 +1058,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			fprintf(fp, "    return ((const void *) decoder) + offset;\n");
 			fprintf(fp, "}\n");
 
-			fprintf(fp, "static inline uint64_t %s%s_get_count (const struct %s_%s *decoder)", namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+			fprintf(fp, "static inline uint64_t %s_%s_%s_get_count (const struct %s_%s *decoder)", schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			fprintf(fp, "{\n");
 			fprintf(fp, "    uint64_t offset;\n");
 			if (decoder_use_memcpy) {
@@ -1078,23 +1078,23 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			if (schema_type_is_scalar(table_field->type) ||
 			    schema_type_is_float(table_field->type) ||
 			    schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline uint64_t %s%s_get_length (const struct %s_%s *decoder)", namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline uint64_t %s_%s_%s_get_length (const struct %s_%s *decoder)", schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 				fprintf(fp, "{\n");
 				if (schema_type_is_scalar(table_field->type)) {
-					fprintf(fp, "    return %s%s_get_count(decoder) * sizeof(%s_t);\n", namespace_linearized(namespace), table_field->name, table_field->type);
+					fprintf(fp, "    return %s_%s_%s_get_count(decoder) * sizeof(%s_t);\n", schema->namespace, table->name, table_field->name, table_field->type);
 				} else if (schema_type_is_float(table_field->type)) {
-					fprintf(fp, "    return %s%s_get_count(decoder) * sizeof(%s);\n", namespace_linearized(namespace), table_field->name, table_field->type);
+					fprintf(fp, "    return %s_%s_%s_get_count(decoder) * sizeof(%s);\n", schema->namespace, table->name, table_field->name, table_field->type);
 				} else {
-					fprintf(fp, "    return %s%s_get_count(decoder) * sizeof(%s_%s_enum_t);\n", namespace_linearized(namespace), table_field->name, schema->namespace, table_field->type);
+					fprintf(fp, "    return %s_%s_%s_get_count(decoder) * sizeof(%s_%s_enum_t);\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type);
 				}
 				fprintf(fp, "}\n");
 
 				if (schema_type_is_scalar(table_field->type)) {
-					fprintf(fp, "static inline const %s_t * %s%s_get_values (const struct %s_%s *decoder)", table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+					fprintf(fp, "static inline const %s_t * %s_%s_%s_get_values (const struct %s_%s *decoder)", table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 				} else if (schema_type_is_float(table_field->type)) {
-					fprintf(fp, "static inline const %s * %s%s_get_values (const struct %s_%s *decoder)", table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+					fprintf(fp, "static inline const %s * %s_%s_%s_get_values (const struct %s_%s *decoder)", table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 				} else if (schema_type_is_enum(schema, table_field->type)) {
-					fprintf(fp, "static inline const %s_%s_enum_t * %s%s_get_values (const struct %s_%s *decoder)", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+					fprintf(fp, "static inline const %s_%s_enum_t * %s_%s_%s_get_values (const struct %s_%s *decoder)", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 				}
 				fprintf(fp, "{\n");
 				fprintf(fp, "    uint64_t offset;\n");
@@ -1112,15 +1112,15 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			}
 
 			if (schema_type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline %s_t %s%s_get_at (const struct %s_%s *decoder", table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline %s_t %s_%s_%s_get_at (const struct %s_%s *decoder", table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_float(table_field->type)) {
-				fprintf(fp, "static inline %s %s%s_get_at (const struct %s_%s *decoder", table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline %s %s_%s_%s_get_at (const struct %s_%s *decoder", table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline %s_%s_enum_t %s%s_get_at (const struct %s_%s *decoder", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline %s_%s_enum_t %s_%s_%s_get_at (const struct %s_%s *decoder", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_string(table_field->type)) {
-				fprintf(fp, "static inline const char * %s%s_get_at (const struct %s_%s *decoder", namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const char * %s_%s_%s_get_at (const struct %s_%s *decoder", schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_table(schema, table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s * %s%s_get_at (const struct %s_%s *decoder", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s * %s_%s_%s_get_at (const struct %s_%s *decoder", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			}
 			fprintf(fp, ", uint64_t at)\n");
 			fprintf(fp, "{\n");
@@ -1158,15 +1158,15 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			fprintf(fp, "}\n");
 		} else {
 			if (schema_type_is_scalar(table_field->type)) {
-				fprintf(fp, "static inline %s_t %s%s_get (const struct %s_%s *decoder", table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline %s_t %s_%s_%s_get (const struct %s_%s *decoder", table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_float(table_field->type)) {
-				fprintf(fp, "static inline %s %s%s_get (const struct %s_%s *decoder", table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline %s %s_%s_%s_get (const struct %s_%s *decoder", table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_string(table_field->type)) {
-				fprintf(fp, "static inline const char * %s%s_get (const struct %s_%s *decoder", namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const char * %s_%s_%s_get (const struct %s_%s *decoder", schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else if (schema_type_is_enum(schema, table_field->type)) {
-				fprintf(fp, "static inline %s_%s_enum_t %s%s_get (const struct %s_%s *decoder", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline %s_%s_enum_t %s_%s_%s_get (const struct %s_%s *decoder", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			} else 	if (schema_type_is_table(schema, table_field->type)) {
-				fprintf(fp, "static inline const struct %s_%s * %s%s_get (const struct %s_%s *decoder", schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, schema->namespace, head->name);
+				fprintf(fp, "static inline const struct %s_%s * %s_%s_%s_get (const struct %s_%s *decoder", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
 			}
 			fprintf(fp, ")\n");
 			fprintf(fp, "{\n");
@@ -1247,12 +1247,8 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
 {
 	int rc;
 
-	struct namespace *namespace;
-
 	struct schema_enum *anum;
 	struct schema_table *table;
-
-	namespace = NULL;
 
 	if (schema == NULL) {
 		linearbuffers_errorf("schema is invalid");
@@ -1327,34 +1323,18 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
 		fprintf(fp, "#if !defined(%s_%s_DECODER_API)\n", schema->NAMESPACE, table->name);
 		fprintf(fp, "#define %s_%s_DECODER_API\n", schema->NAMESPACE, table->name);
 
-		namespace = namespace_create();
-		if (namespace == NULL) {
-			linearbuffers_errorf("can not create namespace");
-			goto bail;
-		}
-		rc = namespace_push(namespace, "%s_%s_", schema->namespace, table->name);
-		if (rc != 0) {
-			linearbuffers_errorf("can not build namespace");
-			goto bail;
-		}
-
-		rc = schema_generate_decoder_table(schema, table, table, namespace, decoder_use_memcpy, fp);
+		rc = schema_generate_decoder_table(schema, table, decoder_use_memcpy, fp);
 		if (rc != 0) {
 			linearbuffers_errorf("can not generate decoder for table: %s", table->name);
 			goto bail;
 		}
-
-		namespace_destroy(namespace);
 
 		fprintf(fp, "\n");
 		fprintf(fp, "#endif\n");
 	}
 
 	return 0;
-bail:	if (namespace != NULL) {
-		namespace_destroy(namespace);
-	}
-	return -1;
+bail:	return -1;
 }
 
 static int schema_generate_jsonify_table (struct schema *schema, struct schema_table *head, struct schema_table *table, struct namespace *namespace, struct element *element, FILE *fp)

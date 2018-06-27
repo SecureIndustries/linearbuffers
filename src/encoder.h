@@ -23,7 +23,7 @@ void linearbuffers_encoder_destroy (struct linearbuffers_encoder *encoder);
 
 int linearbuffers_encoder_reset (struct linearbuffers_encoder *encoder, struct linearbuffers_encoder_reset_options *options);
 
-int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, int root, uint64_t elements, uint64_t size);
+int linearbuffers_encoder_table_start (struct linearbuffers_encoder *encoder, uint64_t elements, uint64_t size);
 int linearbuffers_encoder_table_end (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_table_cancel (struct linearbuffers_encoder *encoder);
 
