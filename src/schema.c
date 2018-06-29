@@ -25,7 +25,91 @@
 #define MAX(a, b)	(((a) > (b)) ? (a) : (b))
 #endif
 
-int schema_inttype_size (const char *type)
+static const struct {
+	const char *name;
+	uint64_t value;
+	uint64_t size;
+} schema_count_types[] = {
+	[schema_count_type_default] = { "uint64", schema_count_type_uint64, sizeof(uint64_t) },
+	[schema_count_type_uint8]   = { "uint8" , schema_count_type_uint8 , sizeof(uint8_t)  },
+	[schema_count_type_uint16]  = { "uint16", schema_count_type_uint16, sizeof(uint16_t) },
+	[schema_count_type_uint32]  = { "uint32", schema_count_type_uint32, sizeof(uint32_t) },
+	[schema_count_type_uint64]  = { "uint64", schema_count_type_uint64, sizeof(uint64_t) }
+};
+
+const char * schema_count_type_name (uint32_t type)
+{
+	uint64_t i;
+	for (i = 0; i < sizeof(schema_count_types) / sizeof(schema_count_types[0]); i++) {
+		if (type == schema_count_types[i].value) {
+			return schema_count_types[i].name;
+		}
+	}
+	return "default";
+}
+
+uint32_t schema_count_type_value (const char *type)
+{
+	uint64_t i;
+	for (i = 0; i < sizeof(schema_count_types) / sizeof(schema_count_types[0]); i++) {
+		if (strcmp(type, schema_count_types[i].name) == 0) {
+			return schema_count_types[i].value;
+		}
+	}
+	return schema_count_type_default;
+}
+
+uint64_t schema_count_type_size (uint32_t type)
+{
+	if (type >= (sizeof(schema_count_types) / sizeof(schema_count_types[0]))) {
+		return -1;
+	}
+	return schema_count_types[type].size;
+}
+
+static const struct {
+	const char *name;
+	uint64_t value;
+	uint64_t size;
+} schema_offset_types[] = {
+	[schema_offset_type_default] = { "uint64", schema_offset_type_uint64, sizeof(uint64_t) },
+	[schema_offset_type_uint8]   = { "uint8" , schema_offset_type_uint8 , sizeof(uint8_t)  },
+	[schema_offset_type_uint16]  = { "uint16", schema_offset_type_uint16, sizeof(uint16_t) },
+	[schema_offset_type_uint32]  = { "uint32", schema_offset_type_uint32, sizeof(uint32_t) },
+	[schema_offset_type_uint64]  = { "uint64", schema_offset_type_uint64, sizeof(uint64_t) }
+};
+
+const char * schema_offset_type_name (uint32_t type)
+{
+	uint64_t i;
+	for (i = 0; i < sizeof(schema_offset_types) / sizeof(schema_offset_types[0]); i++) {
+		if (type == schema_offset_types[i].value) {
+			return schema_offset_types[i].name;
+		}
+	}
+	return "default";
+}
+
+uint32_t schema_offset_type_value (const char *type)
+{
+	uint64_t i;
+	for (i = 0; i < sizeof(schema_offset_types) / sizeof(schema_offset_types[0]); i++) {
+		if (strcmp(type, schema_offset_types[i].name) == 0) {
+			return schema_offset_types[i].value;
+		}
+	}
+	return schema_offset_type_default;
+}
+
+uint64_t schema_offset_type_size (uint32_t type)
+{
+	if (type >= (sizeof(schema_offset_types) / sizeof(schema_offset_types[0]))) {
+		return -1;
+	}
+	return schema_offset_types[type].size;
+}
+
+uint64_t schema_inttype_size (const char *type)
 {
 	if (type == NULL) {
 		return 0;
@@ -653,6 +737,58 @@ int schema_set_namespace (struct schema *schema, const char *name)
 bail:	return -1;
 }
 
+int schema_set_count_type (struct schema *schema, const char *type)
+{
+	if (schema == NULL) {
+		linearbuffers_errorf("schema is invalid");
+		goto bail;
+	}
+	if (type != NULL &&
+	    strcmp(type, "uint8") != 0 &&
+	    strcmp(type, "uint16") != 0 &&
+	    strcmp(type, "uint32") != 0 &&
+	    strcmp(type, "uint64") != 0) {
+		linearbuffers_errorf("type is invalid");
+		goto bail;
+	}
+	schema->count_type = schema_count_type_default;
+	if (type != NULL) {
+		schema->count_type = schema_count_type_value(type);
+		if (schema->count_type == schema_count_type_default) {
+			linearbuffers_errorf("type is invalid");
+			goto bail;
+		}
+	}
+	return 0;
+bail:	return -1;
+}
+
+int schema_set_offset_type (struct schema *schema, const char *type)
+{
+	if (schema == NULL) {
+		linearbuffers_errorf("schema is invalid");
+		goto bail;
+	}
+	if (type != NULL &&
+	    strcmp(type, "uint8") != 0 &&
+	    strcmp(type, "uint16") != 0 &&
+	    strcmp(type, "uint32") != 0 &&
+	    strcmp(type, "uint64") != 0) {
+		linearbuffers_errorf("type is invalid");
+		goto bail;
+	}
+	schema->offset_type = schema_offset_type_default;
+	if (type != NULL) {
+		schema->offset_type = schema_offset_type_value(type);
+		if (schema->offset_type == schema_offset_type_default) {
+			linearbuffers_errorf("type is invalid");
+			goto bail;
+		}
+	}
+	return 0;
+bail:	return -1;
+}
+
 int schema_add_table (struct schema *schema, struct schema_table *table)
 {
 	if (schema == NULL) {
@@ -831,6 +967,13 @@ static int schema_build (struct schema *schema)
 	if (rc != 0) {
 		linearbuffers_errorf("schema scheck failed");
 		goto bail;
+	}
+
+	if (schema->count_type == schema_count_type_default) {
+		schema->count_type = schema_count_type_uint32;
+	}
+	if (schema->offset_type == schema_offset_type_default) {
+		schema->offset_type = schema_count_type_uint32;
 	}
 
 	if (schema->namespace == NULL) {

@@ -6,6 +6,22 @@ struct schema_table_field;
 struct schema_table;
 struct schema;
 
+enum {
+	schema_count_type_default,
+	schema_count_type_uint8,
+	schema_count_type_uint16,
+	schema_count_type_uint32,
+	schema_count_type_uint64
+};
+
+enum {
+	schema_offset_type_default,
+	schema_offset_type_uint8,
+	schema_offset_type_uint16,
+	schema_offset_type_uint32,
+	schema_offset_type_uint64
+};
+
 void schema_attribute_destroy (struct schema_attribute *attribute);
 struct schema_attribute * schema_attribute_create (void);
 
@@ -32,6 +48,8 @@ void schema_table_destroy (struct schema_table *table);
 struct schema_table * schema_table_create (void);
 
 int schema_set_namespace (struct schema *schema, const char *name);
+int schema_set_count_type (struct schema *schema, const char *type);
+int schema_set_offset_type (struct schema *schema, const char *type);
 int schema_add_enum (struct schema *schema, struct schema_enum *anum);
 int schema_add_table (struct schema *schema, struct schema_table *table);
 void schema_destroy (struct schema *schema);
@@ -41,7 +59,8 @@ struct schema * schema_parse_file (const char *filename);
 
 struct schema_enum * schema_type_get_enum (struct schema *schema, const char *type);
 struct schema_table * schema_type_get_table (struct schema *schema, const char *type);
-int schema_inttype_size (const char *type);
+
+uint64_t schema_inttype_size (const char *type);
 int schema_type_is_scalar (const char *type);
 int schema_type_is_float (const char *type);
 int schema_type_is_string (const char *type);
@@ -49,3 +68,11 @@ int schema_type_is_enum (struct schema *schema, const char *type);
 int schema_type_is_table (struct schema *schema, const char *type);
 int schema_type_is_valid (struct schema *schema, const char *type);
 int schema_value_is_scalar (const char *value);
+
+const char * schema_count_type_name (uint32_t type);
+uint32_t schema_count_type_value (const char *type);
+uint64_t schema_count_type_size (uint32_t type);
+
+const char * schema_offset_type_name (uint32_t type);
+uint32_t schema_offset_type_value (const char *type);
+uint64_t schema_offset_type_size (uint32_t type);

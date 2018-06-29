@@ -125,25 +125,25 @@ int main (int argc, char *argv[])
 
 	output = linearbuffers_output_decode(linearized_buffer, linearized_length);
 	if (output == NULL) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_decode\n");
 		goto bail;
 	}
 
 	if (linearbuffers_output_int8s_get_count(output) != sizeof(int8s) / sizeof(int8s[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_output_int8s_get_length(output) != sizeof(int8s)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_output_int8s_get_values(output), int8s, sizeof(int8s))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_values\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_output_int8s_get_count(output); i++) {
 		if (int8s[i] != linearbuffers_output_int8s_get_at(output, i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_output_int8s_get_at\n");
 			goto bail;
 		}
 	}

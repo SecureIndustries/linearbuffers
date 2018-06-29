@@ -1,6 +1,7 @@
 %{
 
 #include <stdio.h>
+#include <stdint.h>
 
 #include "schema.h"
 #include "parser.h"
@@ -66,6 +67,18 @@ Option:
                                                                 rc = schema_set_namespace(schema_parser->schema, $4);
                                                                 if (rc != 0) {
                                                                     fprintf(stderr, "can not set schema namespace\n");
+                                                                    YYERROR;
+                                                                }
+                                                            } else if (strcmp($2, "count_type") == 0) {
+                                                                rc = schema_set_count_type(schema_parser->schema, $4);
+                                                                if (rc != 0) {
+                                                                    fprintf(stderr, "can not set schema count_type\n");
+                                                                    YYERROR;
+                                                                }
+                                                            } else if (strcmp($2, "offset_type") == 0) {
+                                                                rc = schema_set_offset_type(schema_parser->schema, $4);
+                                                                if (rc != 0) {
+                                                                    fprintf(stderr, "can not set schema offset_type\n");
                                                                     YYERROR;
                                                                 }
                                                             } else {

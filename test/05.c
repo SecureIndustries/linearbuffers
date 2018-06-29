@@ -59,40 +59,40 @@ int main (int argc, char *argv[])
 
 	output = linearbuffers_output_decode(linearized_buffer, linearized_length);
 	if (output == NULL) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_decode\n");
 		goto bail;
 	}
 	if (linearbuffers_output_type_get(output) != linearbuffers_type_type_3) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_type_get\n");
 		goto bail;
 	}
 	if (linearbuffers_output_length_get(output) != 1) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_output_length_get\n");
 		goto bail;
 	}
 	if (linearbuffers_timeval_seconds_get(linearbuffers_output_timeval_get(output)) != 2) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_timeval_seconds_get\n");
 		goto bail;
 	}
 	if (linearbuffers_timeval_useconds_get(linearbuffers_output_timeval_get(output)) != 3) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_timeval_useconds_get\n");
 		goto bail;
 	}
 	if (linearbuffers_uint8_vector_get_count(linearbuffers_output_data_get(output)) != sizeof(data) / sizeof(data[0])) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_uint8_vector_get_count\n");
 		goto bail;
 	}
 	if (linearbuffers_uint8_vector_get_length(linearbuffers_output_data_get(output)) != sizeof(data)) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_uint8_vector_get_length\n");
 		goto bail;
 	}
 	if (memcmp(linearbuffers_uint8_vector_get_values(linearbuffers_output_data_get(output)), data, sizeof(data))) {
-		fprintf(stderr, "decoder failed\n");
+		fprintf(stderr, "decoder failed: linearbuffers_uint8_vector_get_values\n");
 		goto bail;
 	}
 	for (i = 0; i < linearbuffers_uint8_vector_get_count(linearbuffers_output_data_get(output)); i++) {
 		if (data[i] != linearbuffers_uint8_vector_get_at(linearbuffers_output_data_get(output), i)) {
-			fprintf(stderr, "decoder failed\n");
+			fprintf(stderr, "decoder failed: linearbuffers_uint8_vector_get_at\n");
 			goto bail;
 		}
 	}

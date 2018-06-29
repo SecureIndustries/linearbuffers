@@ -47,6 +47,8 @@ struct schema_table {
 
 struct schema {
 	char *namespace;
+	uint32_t count_type;
+	uint32_t offset_type;
 	char *NAMESPACE;
 	struct schema_enums enums;
 	struct schema_tables tables;
