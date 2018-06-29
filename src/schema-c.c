@@ -161,17 +161,17 @@ static int schema_generate_vector (struct schema *schema, const char *type, int 
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline const char * %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t offset;\n");
+		fprintf(fp, "    %s_t offset;\n", schema_offset_type_name(schema->offset_type));
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    uint64_t toffset;\n");
+			fprintf(fp, "    %s_t toffset;\n", schema_offset_type_name(schema->offset_type));
 		}
 		fprintf(fp, "    offset = 0;\n");
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", schema_count_type_size(schema->count_type));
-			fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
+			fprintf(fp, "    offset += *(%s_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type));
+			fprintf(fp, "    offset += *(%s_t *) memcpy(&toffset, ((const void *) decoder) + offset + (sizeof(offset) * at), sizeof(offset));\n", schema_offset_type_name(schema->offset_type));
 		} else {
-			fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", schema_count_type_size(schema->count_type));
-			fprintf(fp, "    offset += ((uint64_t *) (((const void *) decoder) + offset))[at];\n");
+			fprintf(fp, "    offset += *(%s_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type));
+			fprintf(fp, "    offset += ((%s_t *) (((const void *) decoder) + offset))[at];\n", schema_offset_type_name(schema->offset_type));
 		}
 			fprintf(fp, "    return (const char *) (((const void *) decoder) + offset);\n");
 		fprintf(fp, "}\n");
@@ -190,17 +190,17 @@ static int schema_generate_vector (struct schema *schema, const char *type, int 
 		fprintf(fp, "}\n");
 		fprintf(fp, "static inline const struct %s_%s * %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
-		fprintf(fp, "    uint64_t offset;\n");
+		fprintf(fp, "    %s_t offset;\n", schema_offset_type_name(schema->offset_type));
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    uint64_t toffset;\n");
+			fprintf(fp, "    %s_t toffset;\n", schema_offset_type_name(schema->offset_type));
 		}
 		fprintf(fp, "    offset = 0;\n");
 		if (decoder_use_memcpy) {
-			fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", schema_count_type_size(schema->count_type));
-			fprintf(fp, "    offset += *(uint64_t *) memcpy(&toffset, ((const void *) decoder) + offset + (sizeof(uint64_t) * at), sizeof(offset));\n");
+			fprintf(fp, "    offset += *(%s_t *) memcpy(&toffset, ((const void *) decoder) + offset + UINT64_C(%" PRIu64 "), sizeof(offset));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type));
+			fprintf(fp, "    offset += *(%s_t *) memcpy(&toffset, ((const void *) decoder) + offset + (sizeof(offset) * at), sizeof(offset));\n", schema_offset_type_name(schema->offset_type));
 		} else {
-			fprintf(fp, "    offset += *(uint64_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", schema_count_type_size(schema->count_type));
-			fprintf(fp, "    offset += ((uint64_t *) (((const void *) decoder) + offset))[at];\n");
+			fprintf(fp, "    offset += *(%s_t *) (((const void *) decoder) + offset + UINT64_C(%" PRIu64 "));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type));
+			fprintf(fp, "    offset += ((%s_t *) (((const void *) decoder) + offset))[at];\n", schema_offset_type_name(schema->offset_type));
 		}
 			fprintf(fp, "    return (const struct %s_%s *) (((const void *) decoder) + offset);\n", schema->namespace, type);
 		fprintf(fp, "}\n");
@@ -577,7 +577,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, linearbuffers_encoder_count_type_%s);\n", table_field->type, schema_count_type_name(schema->count_type));
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, linearbuffers_encoder_count_type_%s, linearbuffers_encoder_offset_type_%s);\n", table_field->type, schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type));
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", schema->namespace, table->name, table_field->name, table_field->type, table_field->type);
@@ -621,7 +621,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, linearbuffers_encoder_count_type_%s);\n", table_field->type, schema_count_type_name(schema->count_type));
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, linearbuffers_encoder_count_type_%s, linearbuffers_encoder_offset_type_%s);\n", table_field->type, schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type));
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, %s value_%s)\n", schema->namespace, table->name, table_field->name, table_field->type, table_field->type);
@@ -665,7 +665,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, linearbuffers_encoder_count_type_%s);\n", schema_type_get_enum(schema, table_field->type)->type, schema_count_type_name(schema->count_type));
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_%s(encoder, linearbuffers_encoder_count_type_%s, linearbuffers_encoder_offset_type_%s);\n", schema_type_get_enum(schema, table_field->type)->type, schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type));
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, %s_%s_enum_t value_%s)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name);
@@ -696,7 +696,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "    int rc;\n");
 				fprintf(fp, "    uint64_t i;\n");
 				fprintf(fp, "    uint64_t value;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_string(encoder, linearbuffers_encoder_count_type_%s);\n", schema_count_type_name(schema->count_type));
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_string(encoder, linearbuffers_encoder_count_type_%s, linearbuffers_encoder_offset_type_%s);\n", schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type));
 				fprintf(fp, "    if (rc != 0) {\n");
 				fprintf(fp, "        return rc;\n");
 				fprintf(fp, "    }\n");
@@ -728,7 +728,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_string(encoder, linearbuffers_encoder_count_type_%s);\n", schema_count_type_name(schema->count_type));
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_string(encoder, linearbuffers_encoder_count_type_%s, linearbuffers_encoder_offset_type_%s);\n", schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type));
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, const char *value_%s)\n", schema->namespace, table->name, table_field->name, table_field->type);
@@ -766,7 +766,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "static inline int %s_%s_%s_start (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
 				fprintf(fp, "    int rc;\n");
-				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_table(encoder, linearbuffers_encoder_count_type_%s);\n", schema_count_type_name(schema->count_type));
+				fprintf(fp, "    rc = linearbuffers_encoder_vector_start_table(encoder, linearbuffers_encoder_count_type_%s, linearbuffers_encoder_offset_type_%s);\n", schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type));
 				fprintf(fp, "    return rc;\n");
 				fprintf(fp, "}\n");
 				fprintf(fp, "static inline int %s_%s_%s_push (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->type);
