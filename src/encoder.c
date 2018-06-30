@@ -360,9 +360,9 @@ static const struct {
 	[linearbuffers_encoder_offset_type_uint64]  = { "uint64", linearbuffers_encoder_offset_type_uint64, sizeof(uint64_t), encoder_uint64_emitter, offset_table_push_64, offset_table_emit_64 },
 };
 
-static int offset_table_push (struct offset_table *offset, uint64_t value, struct pool *pool)
+static int offset_table_push (struct offset_table *table, uint64_t value, struct pool *pool)
 {
-	return offset->push(offset, value, pool);
+	return table->push(table, value, pool);
 }
 
 static uint64_t offset_table_emit (struct offset_table *table, int (*function) (void *context, uint64_t offset, const void *buffer, int64_t length), void *context, uint64_t offset, uint64_t diff)
@@ -370,33 +370,33 @@ static uint64_t offset_table_emit (struct offset_table *table, int (*function) (
 	return table->emit(table, function, context, offset, diff);
 }
 
-static void offset_table_uninit (struct pool *pool, struct offset_table *offset)
+static void offset_table_uninit (struct pool *pool, struct offset_table *table)
 {
 	struct offset_buffer *buffer;
 	struct offset_buffer *nbuffer;
-	for (buffer = offset->buffers; buffer && ((nbuffer = buffer->next), 1); buffer = nbuffer) {
+	for (buffer = table->buffers; buffer && ((nbuffer = buffer->next), 1); buffer = nbuffer) {
 		pool_free(pool, buffer);
 	}
-	memset(offset, 0, sizeof(struct offset_table));
+	memset(table, 0, sizeof(struct offset_table));
 }
 
-static int offset_table_init (struct pool *pool, struct offset_table *offset, enum linearbuffers_encoder_offset_type type)
+static int offset_table_init (struct pool *pool, struct offset_table *table, enum linearbuffers_encoder_offset_type type)
 {
 	(void) pool;
-	memset(offset, 0, sizeof(struct offset_table));
-	offset->push = linearbuffers_encoder_offset_types[type].offset_table_push;
-	offset->emit = linearbuffers_encoder_offset_types[type].offset_table_emit;
+	memset(table, 0, sizeof(struct offset_table));
+	table->push = linearbuffers_encoder_offset_types[type].offset_table_push;
+	table->emit = linearbuffers_encoder_offset_types[type].offset_table_emit;
 	return 0;
 }
 
-static int present_table_mark (struct present_table *present, uint64_t element)
+static int present_table_mark (struct present_table *table, uint64_t element)
 {
 	uint64_t byte;
 	uint64_t buffer;
 	struct present_buffer *present_buffer;
 	byte = element / 8;
 	buffer = byte / PRESENT_BUFFER_COUNT;
-	present_buffer = present->buffers;
+	present_buffer = table->buffers;
 	while (buffer--) {
 		present_buffer = present_buffer->next;
 	}
@@ -404,24 +404,24 @@ static int present_table_mark (struct present_table *present, uint64_t element)
 	return 0;
 }
 
-static void present_table_uninit (struct pool *pool, struct present_table *present)
+static void present_table_uninit (struct pool *pool, struct present_table *table)
 {
 	struct present_buffer *buffer;
 	struct present_buffer *nbuffer;
-	for (buffer = present->buffers; buffer && ((nbuffer = buffer->next), 1); buffer = nbuffer) {
+	for (buffer = table->buffers; buffer && ((nbuffer = buffer->next), 1); buffer = nbuffer) {
 		pool_free(pool, buffer);
 	}
-	memset(present, 0, sizeof(struct present_table));
+	memset(table, 0, sizeof(struct present_table));
 }
 
-static int present_table_init (struct pool *pool, struct present_table *present, uint64_t elements)
+static int present_table_init (struct pool *pool, struct present_table *table, uint64_t elements)
 {
 	uint64_t buffers;
 	struct present_buffer *present_buffer;
 	struct present_buffer *present_buffers;
-	memset(present, 0, sizeof(struct present_table));
-	present->bytes = sizeof(uint8_t) * ((elements + 7) / 8);
-	buffers = (present->bytes + PRESENT_BUFFER_COUNT - 1) / PRESENT_BUFFER_COUNT;
+	memset(table, 0, sizeof(struct present_table));
+	table->bytes = sizeof(uint8_t) * ((elements + 7) / 8);
+	buffers = (table->bytes + PRESENT_BUFFER_COUNT - 1) / PRESENT_BUFFER_COUNT;
 	while (buffers--) {
 		present_buffer = pool_malloc(pool);
 		if (present_buffer == NULL) {
@@ -429,12 +429,12 @@ static int present_table_init (struct pool *pool, struct present_table *present,
 			goto bail;
 		}
 		memset(present_buffer->buffer, 0, PRESENT_BUFFER_COUNT);
-		present_buffers = present->buffers;
-		present->buffers = present_buffer;
-		present->buffers->next = present_buffers;
+		present_buffers = table->buffers;
+		table->buffers = present_buffer;
+		table->buffers->next = present_buffers;
 	}
 	return 0;
-bail:	present_table_uninit(pool, present);
+bail:	present_table_uninit(pool, table);
 	return -1;
 }
 
@@ -646,8 +646,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_canc
 bail:	return -1;
 }
 
-#define linearbuffers_encoder_table_set_type_t(__type__) \
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, __type__ ## _t value) \
+#define linearbuffers_encoder_table_set_type(__type__, __type_t__) \
+	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, __type_t__ value) \
 	{ \
 		struct entry *parent; \
 		if (encoder == NULL) { \
@@ -672,54 +672,23 @@ bail:	return -1;
 			goto bail; \
 		} \
 		present_table_mark(&parent->u.table.present, element); \
-		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, &value, sizeof(__type__ ## _t)); \
+		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, &value, sizeof(__type_t__)); \
 		return 0; \
 	bail:	return -1; \
 	}
 
-#define linearbuffers_encoder_table_set_type(__type__) \
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, __type__ value) \
-	{ \
-		struct entry *parent; \
-		if (encoder == NULL) { \
-			linearbuffers_errorf("encoder is invalid"); \
-			goto bail; \
-		} \
-		if (TAILQ_EMPTY(&encoder->stack)) { \
-			linearbuffers_errorf("logic error: stack is empty"); \
-			goto bail; \
-		} \
-		parent = TAILQ_LAST(&encoder->stack, entries); \
-		if (parent == NULL) { \
-			linearbuffers_errorf("logic error: parent is invalid"); \
-			goto bail; \
-		} \
-		if (parent->type != entry_type_table) { \
-			linearbuffers_errorf("logic error: parent is invalid"); \
-			goto bail; \
-		} \
-		if (element >= parent->u.table.elements) { \
-			linearbuffers_errorf("logic error: element is invalid"); \
-			goto bail; \
-		} \
-		present_table_mark(&parent->u.table.present, element); \
-		encoder->emitter.function(encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, &value, sizeof(__type__)); \
-		return 0; \
-	bail:	return -1; \
-	}
+linearbuffers_encoder_table_set_type(int8, int8_t);
+linearbuffers_encoder_table_set_type(int16, int16_t);
+linearbuffers_encoder_table_set_type(int32, int32_t);
+linearbuffers_encoder_table_set_type(int64, int64_t);
 
-linearbuffers_encoder_table_set_type_t(int8);
-linearbuffers_encoder_table_set_type_t(int16);
-linearbuffers_encoder_table_set_type_t(int32);
-linearbuffers_encoder_table_set_type_t(int64);
+linearbuffers_encoder_table_set_type(uint8, uint8_t);
+linearbuffers_encoder_table_set_type(uint16, uint16_t);
+linearbuffers_encoder_table_set_type(uint32, uint32_t);
+linearbuffers_encoder_table_set_type(uint64, uint64_t);
 
-linearbuffers_encoder_table_set_type_t(uint8);
-linearbuffers_encoder_table_set_type_t(uint16);
-linearbuffers_encoder_table_set_type_t(uint32);
-linearbuffers_encoder_table_set_type_t(uint64);
-
-linearbuffers_encoder_table_set_type(float);
-linearbuffers_encoder_table_set_type(double);
+linearbuffers_encoder_table_set_type(float, float);
+linearbuffers_encoder_table_set_type(double, double);
 
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_string (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, const char *value)
 {
@@ -871,8 +840,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_
 bail:	return -1;
 }
 
-#define linearbuffers_encoder_table_set_vector_type_t(__type__) \
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const __type__ ## _t *value, uint64_t count) \
+#define linearbuffers_encoder_table_set_vector_type(__type__, __type_t__) \
+	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const __type_t__ *value, uint64_t count) \
 	{ \
 		uint64_t eoffset; \
 		struct entry *parent; \
@@ -902,63 +871,26 @@ bail:	return -1;
 		parent->offset_emitter(encoder->emitter.function, encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, eoffset); \
 		linearbuffers_encoder_count_types[count_type].emitter(encoder->emitter.function, encoder->emitter.context, encoder->emitter.offset, count); \
 		encoder->emitter.offset += linearbuffers_encoder_count_types[count_type].size; \
-		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, count * sizeof(__type__ ## _t)); \
-		encoder->emitter.offset += count * sizeof(__type__ ## _t); \
+		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, count * sizeof(__type_t__)); \
+		encoder->emitter.offset += count * sizeof(__type_t__); \
 		return 0; \
 	bail:	return -1; \
 	}
 
-#define linearbuffers_encoder_table_set_vector_type(__type__) \
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_vector_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const __type__ *value, uint64_t count) \
-	{ \
-		uint64_t eoffset; \
-		struct entry *parent; \
-		if (encoder == NULL) { \
-			linearbuffers_errorf("encoder is invalid"); \
-			goto bail; \
-		} \
-		if (TAILQ_EMPTY(&encoder->stack)) { \
-			linearbuffers_errorf("logic error: stack is empty"); \
-			goto bail; \
-		} \
-		parent = TAILQ_LAST(&encoder->stack, entries); \
-		if (parent == NULL) { \
-			linearbuffers_errorf("logic error: parent is invalid"); \
-			goto bail; \
-		} \
-		if (parent->type != entry_type_table) { \
-			linearbuffers_errorf("logic error: parent is invalid"); \
-			goto bail; \
-		} \
-		if (element >= parent->u.table.elements) { \
-			linearbuffers_errorf("logic error: element is invalid"); \
-			goto bail; \
-		} \
-		present_table_mark(&parent->u.table.present, element); \
-		eoffset = encoder->emitter.offset - parent->offset; \
-		parent->offset_emitter(encoder->emitter.function, encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, eoffset); \
-		linearbuffers_encoder_count_types[count_type].emitter(encoder->emitter.function, encoder->emitter.context, encoder->emitter.offset, count); \
-		encoder->emitter.offset += linearbuffers_encoder_count_types[count_type].size; \
-		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, count * sizeof(__type__)); \
-		encoder->emitter.offset += count * sizeof(__type__); \
-		return 0; \
-	bail:	return -1; \
-	}
+linearbuffers_encoder_table_set_vector_type(int8, int8_t);
+linearbuffers_encoder_table_set_vector_type(int16, int16_t);
+linearbuffers_encoder_table_set_vector_type(int32, int32_t);
+linearbuffers_encoder_table_set_vector_type(int64, int64_t);
 
-linearbuffers_encoder_table_set_vector_type_t(int8);
-linearbuffers_encoder_table_set_vector_type_t(int16);
-linearbuffers_encoder_table_set_vector_type_t(int32);
-linearbuffers_encoder_table_set_vector_type_t(int64);
+linearbuffers_encoder_table_set_vector_type(uint8, uint8_t);
+linearbuffers_encoder_table_set_vector_type(uint16, uint16_t);
+linearbuffers_encoder_table_set_vector_type(uint32, uint32_t);
+linearbuffers_encoder_table_set_vector_type(uint64, uint64_t);
 
-linearbuffers_encoder_table_set_vector_type_t(uint8);
-linearbuffers_encoder_table_set_vector_type_t(uint16);
-linearbuffers_encoder_table_set_vector_type_t(uint32);
-linearbuffers_encoder_table_set_vector_type_t(uint64);
+linearbuffers_encoder_table_set_vector_type(float, float);
+linearbuffers_encoder_table_set_vector_type(double, double);
 
-linearbuffers_encoder_table_set_vector_type(float);
-linearbuffers_encoder_table_set_vector_type(double);
-
-#define linearbuffers_encoder_vector_start_scalar_type_t(__type__) \
+#define linearbuffers_encoder_vector_start_scalar_type(__type__, __type_t__) \
 	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_start_ ## __type__ (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type) \
 	{ \
 		int rc; \
@@ -1068,7 +1000,7 @@ linearbuffers_encoder_table_set_vector_type(double);
 	bail:	return -1; \
 	} \
 	\
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_push_ ## __type__ (struct linearbuffers_encoder *encoder, __type__ ## _t value) \
+	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_push_ ## __type__ (struct linearbuffers_encoder *encoder, __type_t__ value) \
 	{ \
 		struct entry *entry; \
 		if (encoder == NULL) { \
@@ -1093,164 +1025,24 @@ linearbuffers_encoder_table_set_vector_type(double);
 			goto bail; \
 		} \
 		entry->u.vector.elements += 1; \
-		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &value, sizeof(__type__ ## _t)); \
-		encoder->emitter.offset += sizeof(__type__ ## _t); \
+		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &value, sizeof(__type_t__)); \
+		encoder->emitter.offset += sizeof(__type_t__); \
 		return 0; \
 	bail:	return -1; \
 	}
 
-#define linearbuffers_encoder_vector_start_scalar_type(__type__) \
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_start_ ## __type__ (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type) \
-	{ \
-		int rc; \
-		struct entry *entry; \
-		entry = NULL; \
-		if (encoder == NULL) { \
-			linearbuffers_errorf("encoder is invalid"); \
-			goto bail; \
-		} \
-		if (TAILQ_EMPTY(&encoder->stack)) { \
-			linearbuffers_errorf("logic error: stack is empty"); \
-			goto bail; \
-		} \
-		entry = pool_malloc(&encoder->pool.entry); \
-		if (entry == NULL) { \
-			linearbuffers_errorf("can not allocate memory"); \
-			goto bail; \
-		} \
-		memset(entry, 0, sizeof(struct entry)); \
-		TAILQ_INIT(&entry->childs); \
-		entry->type = entry_type_vector; \
-		entry->u.vector.type = vector_type_ ## __type__; \
-		entry->u.vector.elements = 0; \
-		entry->count_size = linearbuffers_encoder_count_types[count_type].size; \
-		entry->count_emitter = linearbuffers_encoder_count_types[count_type].emitter; \
-		entry->offset_size = linearbuffers_encoder_offset_types[offset_type].size; \
-		entry->offset_emitter = linearbuffers_encoder_offset_types[offset_type].emitter; \
-		rc = offset_table_init(&encoder->pool.offset, &entry->u.vector.offset, offset_type); \
-		if (rc != 0) { \
-			linearbuffers_errorf("can not init table present"); \
-			goto bail; \
-		} \
-		entry->offset = encoder->emitter.offset; \
-		encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, entry->count_size); \
-		encoder->emitter.offset += entry->count_size; \
-		TAILQ_INSERT_TAIL(&encoder->stack, entry, stack); \
-		return 0; \
-	bail:	if (entry != NULL) { \
-			entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
-		} \
-		return -1; \
-	} \
-	\
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_end_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t *offset) \
-	{ \
-		struct entry *entry; \
-		if (encoder == NULL) { \
-			linearbuffers_errorf("encoder is invalid"); \
-			goto bail; \
-		} \
-		if (TAILQ_EMPTY(&encoder->stack)) { \
-			linearbuffers_errorf("logic error: stack is empty"); \
-			goto bail; \
-		} \
-		entry = TAILQ_LAST(&encoder->stack, entries); \
-		if (entry == NULL) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (entry->type != entry_type_vector) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (entry->u.vector.type != vector_type_ ## __type__) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (offset != NULL) { \
-			*offset = entry->offset; \
-		} \
-		entry->count_emitter(encoder->emitter.function, encoder->emitter.context, entry->offset, entry->u.vector.elements); \
-		TAILQ_REMOVE(&encoder->stack, entry, stack); \
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
-		return 0; \
-	bail:	return -1; \
-	} \
-	\
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_cancel_ ## __type__ (struct linearbuffers_encoder *encoder) \
-	{ \
-		struct entry *entry; \
-		if (encoder == NULL) { \
-			linearbuffers_errorf("encoder is invalid"); \
-			goto bail; \
-		} \
-		if (TAILQ_EMPTY(&encoder->stack)) { \
-			linearbuffers_errorf("logic error: stack is empty"); \
-			goto bail; \
-		} \
-		entry = TAILQ_LAST(&encoder->stack, entries); \
-		if (entry == NULL) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (entry->type != entry_type_vector) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (entry->u.vector.type != vector_type_ ## __type__) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, NULL, entry->offset - encoder->emitter.offset); \
-		encoder->emitter.offset = entry->offset; \
-		TAILQ_REMOVE(&encoder->stack, entry, stack); \
-		entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
-		return 0; \
-	bail:	return -1; \
-	} \
-	\
-	__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_push_ ## __type__ (struct linearbuffers_encoder *encoder, __type__ value) \
-	{ \
-		struct entry *entry; \
-		if (encoder == NULL) { \
-			linearbuffers_errorf("encoder is invalid"); \
-			goto bail; \
-		} \
-		if (TAILQ_EMPTY(&encoder->stack)) { \
-			linearbuffers_errorf("logic error: stack is empty"); \
-			goto bail; \
-		} \
-		entry = TAILQ_LAST(&encoder->stack, entries); \
-		if (entry == NULL) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (entry->type != entry_type_vector) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		if (entry->u.vector.type != vector_type_ ## __type__) { \
-			linearbuffers_errorf("logic error: entry is invalid"); \
-			goto bail; \
-		} \
-		entry->u.vector.elements += 1; \
-		encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &value, sizeof(__type__)); \
-		encoder->emitter.offset += sizeof(__type__); \
-		return 0; \
-	bail:	return -1; \
-	}
+linearbuffers_encoder_vector_start_scalar_type(int8, int8_t);
+linearbuffers_encoder_vector_start_scalar_type(int16, int16_t);
+linearbuffers_encoder_vector_start_scalar_type(int32, int32_t);
+linearbuffers_encoder_vector_start_scalar_type(int64, int64_t);
 
-linearbuffers_encoder_vector_start_scalar_type_t(int8);
-linearbuffers_encoder_vector_start_scalar_type_t(int16);
-linearbuffers_encoder_vector_start_scalar_type_t(int32);
-linearbuffers_encoder_vector_start_scalar_type_t(int64);
-linearbuffers_encoder_vector_start_scalar_type_t(uint8);
-linearbuffers_encoder_vector_start_scalar_type_t(uint16);
-linearbuffers_encoder_vector_start_scalar_type_t(uint32);
-linearbuffers_encoder_vector_start_scalar_type_t(uint64);
+linearbuffers_encoder_vector_start_scalar_type(uint8, uint8_t);
+linearbuffers_encoder_vector_start_scalar_type(uint16, uint16_t);
+linearbuffers_encoder_vector_start_scalar_type(uint32, uint32_t);
+linearbuffers_encoder_vector_start_scalar_type(uint64, uint64_t);
 
-linearbuffers_encoder_vector_start_scalar_type(float);
-linearbuffers_encoder_vector_start_scalar_type(double);
+linearbuffers_encoder_vector_start_scalar_type(float, float);
+linearbuffers_encoder_vector_start_scalar_type(double, double);
 
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_vector_start_string (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type)
 {
