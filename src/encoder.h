@@ -1,4 +1,8 @@
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #if !defined(LINEARBUFFERS_ENCODER_H)
 #define LINEARBUFFERS_ENCODER_H
 
@@ -136,4 +140,8 @@ int linearbuffers_encoder_vector_push_table (struct linearbuffers_encoder *encod
 
 const void * linearbuffers_encoder_linearized (struct linearbuffers_encoder *encoder, uint64_t *length);
 
+#endif
+
+#if defined(__cplusplus)
+}
 #endif
