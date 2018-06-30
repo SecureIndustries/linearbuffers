@@ -872,7 +872,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_cre
 	length = strlen(value) + 1;
 	rc = encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, length);
 	if (rc != 0) {
-		linearbuffers_errorf("can not emit table element");
+		linearbuffers_errorf("can not emit element");
 		goto bail;
 	}
 	encoder->emitter.offset += length;
@@ -901,12 +901,12 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_ncr
 	}
 	rc = encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, value, n);
 	if (rc != 0) {
-		linearbuffers_errorf("can not emit table element");
+		linearbuffers_errorf("can not emit element");
 		goto bail;
 	}
 	rc = encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &_null, 1);
 	if (rc != 0) {
-		linearbuffers_errorf("can not emit table element");
+		linearbuffers_errorf("can not emit element");
 		goto bail;
 	}
 	encoder->emitter.offset += n + 1;
