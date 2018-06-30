@@ -154,7 +154,7 @@ int main (int argc, char *argv[])
 		rc |= linearbuffers_a_table_uint16_set(encoder, uint16s[i]);
 		rc |= linearbuffers_a_table_uint32_set(encoder, uint32s[i]);
 		rc |= linearbuffers_a_table_uint64_set(encoder, uint64s[i]);
-		rc |= linearbuffers_a_table_string_set(encoder, strings[i]);
+		rc |= linearbuffers_a_table_string_set(encoder, linearbuffers_string_create(encoder, strings[i]));
 		rc |= linearbuffers_a_table_anum_set(encoder, enums[i]);
 		if (i % 2) {
 			rc |= linearbuffers_a_table_cancel(encoder);

@@ -103,7 +103,7 @@ int main (int argc, char *argv[])
 		rc |= linearbuffers_a_table_uint16_set(encoder, uint16s[i]);
 		rc |= linearbuffers_a_table_uint32_set(encoder, uint32s[i]);
 		rc |= linearbuffers_a_table_uint64_set(encoder, uint64s[i]);
-		rc |= linearbuffers_a_table_string_set(encoder, strings[i]);
+		rc |= linearbuffers_a_table_string_create(encoder, strings[i]);
 		rc |= linearbuffers_a_table_anum_set(encoder, enums[i]);
 		rc |= linearbuffers_output_tables_push(encoder, linearbuffers_a_table_end(encoder));
 	}

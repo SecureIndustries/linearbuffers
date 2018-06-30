@@ -880,7 +880,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_cre
 bail:	return -1;
 }
 
-__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_ncreate (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value, uint64_t n)
+__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_ncreate (struct linearbuffers_encoder *encoder, uint64_t *offset, uint64_t n, const char *value)
 {
 	const char _null = 0;
 	int rc;
