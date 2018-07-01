@@ -27,6 +27,8 @@ table output {
 	uint16s : [ uint16 ];
 	uint32s : [ uint32 ];
 	uint64s : [ uint64 ];
+	floats  : [ float ];
+	doubles : [ double ];
 	strings : [ string ];
 	tables  : [ a_table ];
 	enums   : [ a_enum ];

@@ -30,7 +30,7 @@ int main (int argc, char *argv[])
 	rc |= linearbuffers_output_timeval_seconds_set(encoder, 2);
 	rc |= linearbuffers_output_timeval_useconds_set(encoder, 3);
 	rc |= linearbuffers_output_timeval_set(encoder, linearbuffers_output_timeval_end(encoder));
-	rc |= linearbuffers_output_data_set_values(encoder, NULL, 0);
+	rc |= linearbuffers_output_data_create(encoder, NULL, 0);
 	rc |= linearbuffers_output_finish(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");

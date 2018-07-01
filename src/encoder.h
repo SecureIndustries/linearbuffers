@@ -65,73 +65,70 @@ int linearbuffers_encoder_table_set_vector (struct linearbuffers_encoder *encode
 int linearbuffers_encoder_string_create (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value);
 int linearbuffers_encoder_string_ncreate (struct linearbuffers_encoder *encoder, uint64_t *offset, uint64_t n, const char *value);
 
-int linearbuffers_encoder_table_set_vector_int8_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const int8_t *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_int16_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const int16_t *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_int32_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const int32_t *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_int64_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const int64_t *value, uint64_t count);
-
-int linearbuffers_encoder_table_set_vector_uint8_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const uint8_t *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_uint16_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const uint16_t *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_uint32_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const uint32_t *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_uint64_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const uint64_t *value, uint64_t count);
-
-int linearbuffers_encoder_table_set_vector_float_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const float *value, uint64_t count);
-int linearbuffers_encoder_table_set_vector_double_values (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, enum linearbuffers_encoder_count_type count_type, const double *value, uint64_t count);
-
 int linearbuffers_encoder_vector_start_int8 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_int8 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_int8 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_int8 (struct linearbuffers_encoder *encoder, int8_t value);
+int linearbuffers_encoder_vector_create_int8 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const int8_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_int16 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_int16 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_int16 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_int16 (struct linearbuffers_encoder *encoder, int16_t value);
+int linearbuffers_encoder_vector_create_int16 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const int16_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_int32 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_int32 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_int32 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_int32 (struct linearbuffers_encoder *encoder, int32_t value);
+int linearbuffers_encoder_vector_create_int32 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const int32_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_int64 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_int64 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_int64 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_int64 (struct linearbuffers_encoder *encoder, int64_t value);
+int linearbuffers_encoder_vector_create_int64 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const int64_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_uint8 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_uint8 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_uint8 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_uint8 (struct linearbuffers_encoder *encoder, uint8_t value);
+int linearbuffers_encoder_vector_create_uint8 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const uint8_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_uint16 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_uint16 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_uint16 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_uint16 (struct linearbuffers_encoder *encoder, uint16_t value);
+int linearbuffers_encoder_vector_create_uint16 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const uint16_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_uint32 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_uint32 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_uint32 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_uint32 (struct linearbuffers_encoder *encoder, uint32_t value);
+int linearbuffers_encoder_vector_create_uint32 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const uint32_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_uint64 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_uint64 (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_uint64 (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_uint64 (struct linearbuffers_encoder *encoder, uint64_t value);
+int linearbuffers_encoder_vector_create_uint64 (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const uint64_t *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_float (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_float (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_float (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_float (struct linearbuffers_encoder *encoder, float value);
+int linearbuffers_encoder_vector_create_float (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const float *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_double (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_double (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_double (struct linearbuffers_encoder *encoder);
 int linearbuffers_encoder_vector_push_double (struct linearbuffers_encoder *encoder, double value);
+int linearbuffers_encoder_vector_create_double (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type, uint64_t *offset, const double *value, uint64_t count);
 
 int linearbuffers_encoder_vector_start_string (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_string (struct linearbuffers_encoder *encoder, uint64_t *offset);
 int linearbuffers_encoder_vector_cancel_string (struct linearbuffers_encoder *encoder);
-int linearbuffers_encoder_vector_push_string (struct linearbuffers_encoder *encoder, const char *value);
+int linearbuffers_encoder_vector_push_string (struct linearbuffers_encoder *encoder, uint64_t value);
 
 int linearbuffers_encoder_vector_start_table (struct linearbuffers_encoder *encoder, enum linearbuffers_encoder_count_type count_type, enum linearbuffers_encoder_offset_type offset_type);
 int linearbuffers_encoder_vector_end_table (struct linearbuffers_encoder *encoder, uint64_t *offset);
