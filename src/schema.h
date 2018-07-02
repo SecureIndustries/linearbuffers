@@ -39,6 +39,7 @@ struct schema_enum * schema_enum_create (void);
 int schema_table_field_set_name (struct schema_table_field *field, const char *name);
 int schema_table_field_set_type (struct schema_table_field *field, const char *type);
 int schema_table_field_set_vector (struct schema_table_field *field, int vector);
+int schema_table_field_set_list (struct schema_table_field *field, int list);
 void schema_table_field_destroy (struct schema_table_field *field);
 struct schema_table_field * schema_table_field_create (void);
 

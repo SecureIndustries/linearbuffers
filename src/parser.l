@@ -25,8 +25,8 @@ string                  [_.a-zA-Z0-9]+
 ";"                     return(SEMICOLON);
 ","                     return(COMMA);
 "="                     return(EQUAL);
-"["                     return(VECTOR);
-"]"                     return(ENDVECTOR);
+"["                     return(BRACKET);
+"]"                     return(ENDBRACKET);
 
 {string}                {
                             yylval.sval = strdup(yytext);

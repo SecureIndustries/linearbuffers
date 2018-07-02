@@ -545,7 +545,18 @@ int schema_table_field_set_vector (struct schema_table_field *field, int vector)
 		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
-	field->vector = !!vector;
+	field->vector = (vector) ? 1 : 0;
+	return 0;
+bail:	return -1;
+}
+
+int schema_table_field_set_list (struct schema_table_field *field, int list)
+{
+	if (field == NULL) {
+		linearbuffers_errorf("field is invalid");
+		goto bail;
+	}
+	field->vector = (list) ? 2 : 0;
 	return 0;
 bail:	return -1;
 }

@@ -1,5 +1,5 @@
 
-$(eval tests = $(sort $(subst .lbs,,$(wildcard ??.lbs))))
+$(eval tests = $(sort $(subst .c,,$(wildcard ??.c))))
 
 target-y = \
 	${tests}

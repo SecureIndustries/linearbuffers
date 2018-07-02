@@ -25,8 +25,8 @@
 %token SEMICOLON
 %token COMMA
 %token EQUAL
-%token VECTOR
-%token ENDVECTOR
+%token BRACKET
+%token ENDBRACKET
 %token OFFSET
 %token COUNT
 
@@ -247,7 +247,7 @@ TableField:
                                                             }
                                                         }
 
-    |    STRING COLON VECTOR STRING ENDVECTOR SEMICOLON {
+    |    STRING COLON BRACKET STRING ENDBRACKET SEMICOLON {
                                                             int rc;
                                                             schema_parser->schema_table_field = schema_table_field_create();
                                                             if (schema_parser->schema_table_field == NULL) {
@@ -275,6 +275,7 @@ TableField:
                                                                 YYERROR;
                                                             }
                                                         }
+
     ;
 %%
 
