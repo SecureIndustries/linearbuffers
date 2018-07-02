@@ -92,7 +92,7 @@ int main (int argc, char *argv[])
 	rc |= linearbuffers_output_uint64s_create(encoder, uint64s, sizeof(uint64s) / sizeof(uint64s[0]));
 	rc |= linearbuffers_output_strings_create(encoder, (const char **) strings, sizeof(strings) / sizeof(strings[0]));
 	rc |= linearbuffers_output_enums_create(encoder, enums, sizeof(enums) / sizeof(enums[0]));
-	rc |= linearbuffers_a_table_vector_start(encoder);
+	rc |= linearbuffers_output_tables_start(encoder);
 	for (i = 0; i < ARRAY_COUNT; i++) {
 		rc |= linearbuffers_a_table_start(encoder);
 		rc |= linearbuffers_a_table_int8_set(encoder, int8s[i]);
@@ -105,9 +105,9 @@ int main (int argc, char *argv[])
 		rc |= linearbuffers_a_table_uint64_set(encoder, uint64s[i]);
 		rc |= linearbuffers_a_table_string_create(encoder, strings[i]);
 		rc |= linearbuffers_a_table_anum_set(encoder, enums[i]);
-		rc |= linearbuffers_a_table_vector_push(encoder, linearbuffers_a_table_end(encoder));
+		rc |= linearbuffers_output_tables_push(encoder, linearbuffers_a_table_end(encoder));
 	}
-	rc |= linearbuffers_output_tables_set(encoder, linearbuffers_a_table_vector_end(encoder));
+	rc |= linearbuffers_output_tables_end(encoder);
 	rc |= linearbuffers_output_finish(encoder);
 	if (rc != 0) {
 		fprintf(stderr, "can not encode output\n");

@@ -29,7 +29,7 @@ table output {
 	uint64s : [ uint64 ];
 	floats  : [ float ];
 	doubles : [ double ];
+	enums   : [ a_enum ];
 	strings : [ string ];
 	tables  : [ a_table ];
-	enums   : [ a_enum ];
 }
