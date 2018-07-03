@@ -22,9 +22,6 @@ enum {
 	schema_offset_type_uint64
 };
 
-void schema_attribute_destroy (struct schema_attribute *attribute);
-struct schema_attribute * schema_attribute_create (void);
-
 int schema_enum_field_set_name (struct schema_enum_field *field, const char *name);
 int schema_enum_field_set_value (struct schema_enum_field *field, const char *value);
 void schema_enum_field_destroy (struct schema_enum_field *field);
@@ -39,7 +36,8 @@ struct schema_enum * schema_enum_create (void);
 int schema_table_field_set_name (struct schema_table_field *field, const char *name);
 int schema_table_field_set_type (struct schema_table_field *field, const char *type);
 int schema_table_field_set_vector (struct schema_table_field *field, int vector);
-int schema_table_field_set_list (struct schema_table_field *field, int list);
+int schema_table_field_set_value (struct schema_table_field *field, const char *value);
+int schema_table_field_add_attribute (struct schema_table_field *field, const char *name, const char *value);
 void schema_table_field_destroy (struct schema_table_field *field);
 struct schema_table_field * schema_table_field_create (void);
 

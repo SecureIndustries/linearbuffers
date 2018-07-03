@@ -322,7 +322,7 @@ int schema_value_is_scalar (const char *value)
 	return 1;
 }
 
-void schema_attribute_destroy (struct schema_attribute *attribute)
+static void schema_attribute_destroy (struct schema_attribute *attribute)
 {
 	if (attribute == NULL) {
 		return;
@@ -336,15 +336,32 @@ void schema_attribute_destroy (struct schema_attribute *attribute)
 	free(attribute);
 }
 
-struct schema_attribute * schema_attribute_create (void)
+static struct schema_attribute * schema_attribute_create (const char *name, const char *value)
 {
 	struct schema_attribute *attribute;
+	attribute = NULL;
+	if (name == NULL) {
+		linearbuffers_errorf("name is invalid");
+		goto bail;
+	}
 	attribute = malloc(sizeof(struct schema_attribute));
 	if (attribute == NULL) {
 		linearbuffers_errorf("can not allocate memory");
 		goto bail;
 	}
 	memset(attribute, 0, sizeof(struct schema_attribute));
+	attribute->name = strdup(name);
+	if (attribute->name == NULL) {
+		linearbuffers_errorf("can not allocate memory");
+		goto bail;
+	}
+	if (value != NULL) {
+		attribute->value = strdup(value);
+		if (attribute->value == NULL) {
+			linearbuffers_errorf("can not allocate memory");
+			goto bail;
+		}
+	}
 	return attribute;
 bail:	if (attribute != NULL) {
 		schema_attribute_destroy(attribute);
@@ -550,13 +567,23 @@ int schema_table_field_set_vector (struct schema_table_field *field, int vector)
 bail:	return -1;
 }
 
-int schema_table_field_set_list (struct schema_table_field *field, int list)
+int schema_table_field_set_value (struct schema_table_field *field, const char *value)
 {
 	if (field == NULL) {
 		linearbuffers_errorf("field is invalid");
 		goto bail;
 	}
-	field->vector = (list) ? 2 : 0;
+	if (field->value != NULL) {
+		free(field->value);
+		field->value = NULL;
+	}
+	if (value != NULL) {
+		field->value = strdup(value);
+		if (field->value == NULL) {
+			linearbuffers_errorf("can not allocate memory");
+			goto bail;
+		}
+	}
 	return 0;
 bail:	return -1;
 }
@@ -603,6 +630,27 @@ int schema_table_field_set_name (struct schema_table_field *field, const char *n
 bail:	return -1;
 }
 
+int schema_table_field_add_attribute (struct schema_table_field *field, const char *name, const char *value)
+{
+	struct schema_attribute *attribute;
+	attribute = NULL;
+	if (field == NULL) {
+		linearbuffers_errorf("field is invalid");
+		goto bail;
+	}
+	attribute = schema_attribute_create(name, value);
+	if (attribute == NULL) {
+		linearbuffers_errorf("can not create attribute");
+		goto bail;
+	}
+	TAILQ_INSERT_TAIL(&field->attributes, attribute, list);
+	return 0;
+bail:	if (attribute != NULL) {
+		schema_attribute_destroy(attribute);
+	}
+	return -1;
+}
+
 void schema_table_field_destroy (struct schema_table_field *field)
 {
 	struct schema_attribute *attribute;
@@ -615,6 +663,9 @@ void schema_table_field_destroy (struct schema_table_field *field)
 	}
 	if (field->type != NULL) {
 		free(field->type);
+	}
+	if (field->value != NULL) {
+		free(field->value);
 	}
 	TAILQ_FOREACH_SAFE(attribute, &field->attributes, list, nattribute) {
 		TAILQ_REMOVE(&field->attributes, attribute, list);
@@ -1080,36 +1131,19 @@ static int schema_build (struct schema *schema)
 	}
 
 	TAILQ_FOREACH(anum, &schema->enums, list) {
-		if (strncmp(anum->type, "int", 3) == 0) {
-			int64_t pvalue;
-			pvalue = 0;
-			TAILQ_FOREACH(anum_field, &anum->fields, list) {
-				if (anum_field->value == NULL) {
-					rc = asprintf(&anum_field->value, "INT64_C(%" PRIi64 ")", pvalue);
-					if (rc < 0) {
-						linearbuffers_errorf("can not set schema enum field value");
-						goto bail;
-					}
-				} else {
-					pvalue = strtoll(anum_field->value, NULL, 0);
+		int64_t pvalue;
+		pvalue = 0;
+		TAILQ_FOREACH(anum_field, &anum->fields, list) {
+			if (anum_field->value == NULL) {
+				rc = asprintf(&anum_field->value, "%s_C(%" PRIi64 ")", anum->TYPE, pvalue);
+				if (rc < 0) {
+					linearbuffers_errorf("can not set schema enum field value");
+					goto bail;
 				}
-				pvalue += 1;
+			} else {
+				pvalue = strtoll(anum_field->value, NULL, 0);
 			}
-		} else {
-			uint64_t pvalue;
-			pvalue = 0;
-			TAILQ_FOREACH(anum_field, &anum->fields, list) {
-				if (anum_field->value == NULL) {
-					rc = asprintf(&anum_field->value, "UINT64_C(%" PRIu64 ")", pvalue);
-					if (rc < 0) {
-						linearbuffers_errorf("can not set schema enum field value");
-						goto bail;
-					}
-				} else {
-					pvalue = strtoull(anum_field->value, NULL, 0);
-				}
-				pvalue += 1;
-			}
+			pvalue += 1;
 		}
 	}
 
@@ -1198,6 +1232,7 @@ struct schema * schema_parse_file (const char *filename)
 	yy_switch_to_buffer(bs);
 	rc = yyparse(&schema_parser);
 	yy_delete_buffer(bs);
+	yylex_destroy();
 
 	if (rc != 0) {
 		linearbuffers_errorf("can not parse file: %s", filename);

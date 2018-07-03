@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_uint64_get\n");
 		goto bail;
 	}
-	if (strcmp(linearbuffers_output_string_get(output), "1234567890") != 0) {
+	if (strcmp(linearbuffers_output_string_get_value(output), "1234567890") != 0) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_string_get\n");
 		goto bail;
 	}

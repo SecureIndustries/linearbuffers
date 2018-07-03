@@ -7,7 +7,7 @@
 %}
 
 blanks                  [ \t\n]+
-string                  [_.a-zA-Z0-9]+
+string                  [-_.a-zA-Z0-9]+
 
 %x c_comment
 %x cpp_comment
@@ -27,6 +27,8 @@ string                  [_.a-zA-Z0-9]+
 "="                     return(EQUAL);
 "["                     return(BRACKET);
 "]"                     return(ENDBRACKET);
+"("                     return(PARENTHESIS);
+")"                     return(ENDPARENTHESIS);
 
 {string}                {
                             yylval.sval = strdup(yytext);

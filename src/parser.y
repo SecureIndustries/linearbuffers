@@ -27,8 +27,8 @@
 %token EQUAL
 %token BRACKET
 %token ENDBRACKET
-%token OFFSET
-%token COUNT
+%token PARENTHESIS;
+%token ENDPARENTHESIS;
 
 %start Program
 
@@ -85,6 +85,7 @@ Option:
                                                                 fprintf(stderr, "unknown option: '%s' = '%s';\n", $2, $4);
                                                                 YYERROR;
                                                             }
+                                                            free($2);
                                                         }
     ;
 
@@ -101,6 +102,7 @@ Enum:
                                                                 fprintf(stderr, "can not set schema enum name\n");
                                                                 YYERROR;
                                                             }
+                                                            free($2);
                                                         }
             EnumEntries
         ENDBLOCK                                        {
@@ -129,6 +131,7 @@ Enum:
                                                                 fprintf(stderr, "can not set schema enum name\n");
                                                                 YYERROR;
                                                             }
+                                                            free($2);
                                                         }
             EnumEntries
         ENDBLOCK                                        {
@@ -143,7 +146,7 @@ Enum:
     ;
 
 EnumEntries:
-        EnumEntry
+         EnumEntry
     |    EnumEntries COMMA EnumEntry
     ;
 
@@ -165,6 +168,7 @@ EnumEntry:
                                                                 fprintf(stderr, "can not add schema enum field\n");
                                                                 YYERROR;
                                                             }
+                                                            free($1);
                                                         }
     
     |    STRING EQUAL STRING                            {
@@ -189,6 +193,8 @@ EnumEntry:
                                                                 fprintf(stderr, "can not add schema enum field\n");
                                                                 YYERROR;
                                                             }
+                                                            free($1);
+                                                            free($3);
                                                         }
     ;
 
@@ -205,6 +211,7 @@ Table:
                                                                 fprintf(stderr, "can not set schema table name\n");
                                                                 YYERROR;
                                                             }
+                                                            free($2);
                                                         }
             TableFields
         ENDBLOCK                                        {
@@ -223,7 +230,7 @@ TableFields:
     ;
 
 TableField:
-        STRING COLON STRING SEMICOLON                   {
+        STRING COLON STRING                             {
                                                             int rc;
                                                             schema_parser->schema_table_field = schema_table_field_create();
                                                             if (schema_parser->schema_table_field == NULL) {
@@ -240,14 +247,60 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field type\n");
                                                                 YYERROR;
                                                             }
+                                                            free($1);
+                                                            free($3);
+                                                        }
+            Attributes
+        SEMICOLON                                       {
+                                                            int rc;
                                                             rc = schema_table_add_field(schema_parser->schema_table, schema_parser->schema_table_field);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not add schema table field\n");
                                                                 YYERROR;
                                                             }
+                                                            schema_parser->schema_table_field = NULL;
                                                         }
 
-    |    STRING COLON BRACKET STRING ENDBRACKET SEMICOLON {
+    |   STRING COLON STRING EQUAL STRING
+                                                        {
+                                                            int rc;
+                                                            schema_parser->schema_table_field = schema_table_field_create();
+                                                            if (schema_parser->schema_table_field == NULL) {
+                                                                fprintf(stderr, "can not create schema table field\n");
+                                                                YYERROR;
+                                                            }
+                                                            rc = schema_table_field_set_name(schema_parser->schema_table_field, $1);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not set schema table field name\n");
+                                                                YYERROR;
+                                                            }
+                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, $3);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not set schema table field type\n");
+                                                                YYERROR;
+                                                            }
+                                                            rc = schema_table_field_set_value(schema_parser->schema_table_field, $5);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not set schema table field type\n");
+                                                                YYERROR;
+                                                            }
+                                                            free($1);
+                                                            free($3);
+                                                            free($5);
+                                                        }
+            Attributes
+        SEMICOLON                                       {
+                                                            int rc;
+                                                            rc = schema_table_add_field(schema_parser->schema_table, schema_parser->schema_table_field);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not add schema table field\n");
+                                                                YYERROR;
+                                                            }
+                                                            schema_parser->schema_table_field = NULL;
+                                                        }
+
+    |    STRING COLON BRACKET STRING ENDBRACKET
+                                                        {
                                                             int rc;
                                                             schema_parser->schema_table_field = schema_table_field_create();
                                                             if (schema_parser->schema_table_field == NULL) {
@@ -269,14 +322,59 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field vector\n");
                                                                 YYERROR;
                                                             }
+                                                            free($1);
+                                                            free($4);
+                                                        }
+            Attributes
+        SEMICOLON                                       {
+                                                            int rc;
                                                             rc = schema_table_add_field(schema_parser->schema_table, schema_parser->schema_table_field);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not add schema table field\n");
                                                                 YYERROR;
                                                             }
+                                                            schema_parser->schema_table_field = NULL;
                                                         }
 
     ;
+
+Attributes:
+    /* empty */
+    |    PARENTHESIS AttributeEntries ENDPARENTHESIS
+    ;
+
+AttributeEntries:
+         AttributeEntry
+    |    AttributeEntries COMMA AttributeEntry
+    ;
+
+AttributeEntry:
+         STRING                                         {
+                                                            int rc;
+                                                            if (schema_parser->schema_table_field != NULL) {
+                                                                rc = schema_table_field_add_attribute(schema_parser->schema_table_field, $1, "true");
+                                                                if (rc != 0) {
+                                                                    fprintf(stderr, "can not add schema table field attribute\n");
+                                                                    YYERROR;
+                                                                }
+                                                            }
+                                                            free($1);
+                                                        }
+
+    |    STRING EQUAL STRING                            {
+                                                            int rc;
+                                                            if (schema_parser->schema_table_field != NULL) {
+                                                                rc = schema_table_field_add_attribute(schema_parser->schema_table_field, $1, $3);
+                                                                if (rc != 0) {
+                                                                    fprintf(stderr, "can not add schema table field attribute\n");
+                                                                    YYERROR;
+                                                                }
+                                                            }
+                                                            free($1);
+                                                            free($3);
+                                                        }
+    ;
+
 %%
 
 int yyerror (struct schema_parser *schema_parser, char *s)

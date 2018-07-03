@@ -29,7 +29,7 @@ int main (int argc, char *argv[])
 	uint32_t uint32s[ARRAY_COUNT];
 	uint64_t uint64s[ARRAY_COUNT];
 
-	linearbuffers_a_enum_enum_t enums[ARRAY_COUNT];
+	linearbuffers_a_enum_t enums[ARRAY_COUNT];
 
 	char *strings[ARRAY_COUNT];
 
@@ -365,7 +365,7 @@ int main (int argc, char *argv[])
 			fprintf(stderr, "decoder failed: linearbuffers_a_table_uint64_get\n");
 			goto bail;
 		}
-		if (strcmp(linearbuffers_a_table_string_get(linearbuffers_a_table), strings[i]) != 0) {
+		if (strcmp(linearbuffers_string_value(linearbuffers_a_table_string_get(linearbuffers_a_table)), strings[i]) != 0) {
 			fprintf(stderr, "decoder failed: linearbuffers_a_table_string_get\n");
 			goto bail;
 		}

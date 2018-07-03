@@ -32,6 +32,7 @@ struct schema_table_field {
 	TAILQ_ENTRY(schema_table_field) list;
 	char *name;
 	char *type;
+	char *value;
 	int vector;
 	struct schema_attributes attributes;
 };

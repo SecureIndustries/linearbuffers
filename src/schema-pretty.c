@@ -16,6 +16,8 @@ int schema_generate_pretty (struct schema *schema, FILE *fp)
 	struct schema_table *table;
 	struct schema_table_field *table_field;
 
+	struct schema_attribute *attribute;
+
 	if (schema == NULL) {
 		linearbuffers_errorf("schema is invalid");
 		goto bail;
@@ -60,6 +62,20 @@ int schema_generate_pretty (struct schema *schema, FILE *fp)
 				fprintf(fp, "\t%s: %s", table_field->name, table_field->type);
 			} else {
 				fprintf(fp, "\t%s: [ %s ]", table_field->name, table_field->type);
+			}
+			if (table_field->value != NULL) {
+				fprintf(fp, " = %s", table_field->value);
+			}
+			if (!TAILQ_EMPTY(&table_field->attributes)) {
+				fprintf(fp, " (");
+				TAILQ_FOREACH(attribute, &table_field->attributes, list) {
+					fprintf(fp, "%s%s", (TAILQ_FIRST(&table_field->attributes) == attribute) ? " " : ", ", attribute->name);
+					if (attribute->value != NULL) {
+						fprintf(fp, " = %s", attribute->value);
+					}
+
+				}
+				fprintf(fp, " )");
 			}
 			fprintf(fp, ";\n");
 		}
