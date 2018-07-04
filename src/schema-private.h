@@ -33,7 +33,7 @@ struct schema_table_field {
 	char *name;
 	char *type;
 	char *value;
-	int vector;
+	uint32_t container;
 	struct schema_attributes attributes;
 };
 

@@ -242,7 +242,7 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field name\n");
                                                                 YYERROR;
                                                             }
-                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, $3);
+                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, schema_container_type_none, $3);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not set schema table field type\n");
                                                                 YYERROR;
@@ -274,7 +274,7 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field name\n");
                                                                 YYERROR;
                                                             }
-                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, $3);
+                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, schema_container_type_none, $3);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not set schema table field type\n");
                                                                 YYERROR;
@@ -312,14 +312,9 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field name\n");
                                                                 YYERROR;
                                                             }
-                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, $4);
+                                                            rc = schema_table_field_set_type(schema_parser->schema_table_field, schema_container_type_vector, $4);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not set schema table field type\n");
-                                                                YYERROR;
-                                                            }
-                                                            rc = schema_table_field_set_vector(schema_parser->schema_table_field, 1);
-                                                            if (rc != 0) {
-                                                                fprintf(stderr, "can not set schema table field vector\n");
                                                                 YYERROR;
                                                             }
                                                             free($1);

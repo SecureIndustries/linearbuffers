@@ -720,7 +720,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 
 	table_field_s = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
-		if (table_field->vector) {
+		if (table_field->container == schema_container_type_vector) {
 			table_field_s += schema_offset_type_size(schema->offset_type);
 		} else if (schema_type_is_scalar(table_field->type)) {
 			table_field_s += schema_inttype_size(table_field->type);
@@ -763,7 +763,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 		}
 		namespace_push(attribute_string, " )) static inline");
 
-		if (table_field->vector) {
+		if (table_field->container == schema_container_type_vector) {
 			if (schema_type_is_scalar(table_field->type)) {
 				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const struct %s_%s_vector *value)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->type);
 				fprintf(fp, "{\n");
@@ -1013,7 +1013,7 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 			}
 		}
 		table_field_i += 1;
-		if (table_field->vector) {
+		if (table_field->container == schema_container_type_vector) {
 			table_field_s += schema_offset_type_size(schema->offset_type);
 		} else if (schema_type_is_scalar(table_field->type)) {
 			table_field_s += schema_inttype_size(table_field->type);
@@ -1258,7 +1258,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    return 1;\n");
 		fprintf(fp, "}\n");
 
-		if (table_field->vector) {
+		if (table_field->container == schema_container_type_vector) {
 			fprintf(fp, "%s ", namespace_linearized(attribute_string));
 			if (schema_type_is_scalar(table_field->type)) {
 				fprintf(fp, "const struct %s_%s_vector * %s_%s_%s_get (const struct %s_%s *decoder)\n", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name, schema->namespace, table->name);
@@ -1458,7 +1458,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 			}
 		}
 		table_field_i += 1;
-		if (table_field->vector) {
+		if (table_field->container == schema_container_type_vector) {
 			table_field_s += schema_offset_type_size(schema->offset_type);
 		} else if (schema_type_is_scalar(table_field->type)) {
 			table_field_s += schema_inttype_size(table_field->type);
@@ -1647,7 +1647,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 	table_field_i = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		fprintf(fp, "%sif (%s_%s_%s_present(%s)) {\n", prefix, schema->namespace, table->name, table_field->name, namespace_linearized(namespace));
-		if (table_field->vector) {
+		if (table_field->container == schema_container_type_vector) {
 			fprintf(fp, "%s    uint64_t at_%" PRIu64 ";\n", prefix, element->nentries);
 			fprintf(fp, "%s    uint64_t count;\n", prefix);
 			if (schema_type_is_scalar(table_field->type)) {

@@ -556,17 +556,6 @@ bail:	if (anum != NULL) {
 	return NULL;
 }
 
-int schema_table_field_set_vector (struct schema_table_field *field, int vector)
-{
-	if (field == NULL) {
-		linearbuffers_errorf("field is invalid");
-		goto bail;
-	}
-	field->vector = (vector) ? 1 : 0;
-	return 0;
-bail:	return -1;
-}
-
 int schema_table_field_set_value (struct schema_table_field *field, const char *value)
 {
 	if (field == NULL) {
@@ -588,7 +577,7 @@ int schema_table_field_set_value (struct schema_table_field *field, const char *
 bail:	return -1;
 }
 
-int schema_table_field_set_type (struct schema_table_field *field, const char *type)
+int schema_table_field_set_type (struct schema_table_field *field, uint32_t container, const char *type)
 {
 	if (field == NULL) {
 		linearbuffers_errorf("field is invalid");
@@ -605,6 +594,7 @@ int schema_table_field_set_type (struct schema_table_field *field, const char *t
 			goto bail;
 		}
 	}
+	field->container = container;
 	return 0;
 bail:	return -1;
 }

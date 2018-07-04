@@ -58,7 +58,7 @@ int schema_generate_pretty (struct schema *schema, FILE *fp)
 		fprintf(fp, "\n");
 		fprintf(fp, "table %s {\n", table->name);
 		TAILQ_FOREACH(table_field, &table->fields, list) {
-			if (table_field->vector == 0)  {
+			if (table_field->container == schema_container_type_none)  {
 				fprintf(fp, "\t%s: %s", table_field->name, table_field->type);
 			} else {
 				fprintf(fp, "\t%s: [ %s ]", table_field->name, table_field->type);
