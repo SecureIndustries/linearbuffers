@@ -1643,7 +1643,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    if (rc < 0) {\n");
 		fprintf(fp, "        goto bail;\n");
 		fprintf(fp, "    }\n");
-                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n");
+                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n");
                 fprintf(fp, "        rc = emitter(context, \"\\n\");\n");
                 fprintf(fp, "        if (rc < 0) {\n");
                 fprintf(fp, "            goto bail;\n");
@@ -1680,7 +1680,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 			fprintf(fp, "%s    if (rc < 0) {\n", prefix);
 			fprintf(fp, "%s        goto bail;\n", prefix);
 			fprintf(fp, "%s    }\n", prefix);
-                        fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                        fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                         fprintf(fp, "%s        rc = emitter(context, \"\\n\");\n", prefix);
                         fprintf(fp, "%s        if (rc < 0) {\n", prefix);
                         fprintf(fp, "%s            goto bail;\n", prefix);
@@ -1707,7 +1707,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s            if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s                goto bail;\n", prefix);
@@ -1725,7 +1725,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s            if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s                goto bail;\n", prefix);
@@ -1743,7 +1743,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s            if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s                goto bail;\n", prefix);
@@ -1757,7 +1757,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s            if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s                goto bail;\n", prefix);
@@ -1771,7 +1771,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s            if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s                goto bail;\n", prefix);
@@ -1796,7 +1796,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s            if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s                goto bail;\n", prefix);
@@ -1877,7 +1877,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s        goto bail;\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
-                                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                                 fprintf(fp, "%s        rc = emitter(context, \"\\n\");\n", prefix);
                                 fprintf(fp, "%s        if (rc < 0) {\n", prefix);
                                 fprintf(fp, "%s            goto bail;\n", prefix);
@@ -1919,7 +1919,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
                         fprintf(fp, "%s        } while (0);\n", prefix);
                         fprintf(fp, "%s    }\n", prefix);
 		}
-                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n", prefix);
                 fprintf(fp, "%s        rc = emitter(context, \"\\n\");\n", prefix);
                 fprintf(fp, "%s        if (rc < 0) {\n", prefix);
                 fprintf(fp, "%s            goto bail;\n", prefix);
@@ -1934,7 +1934,7 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    if (rc != 0) {\n");
 		fprintf(fp, "        goto bail;\n");
 		fprintf(fp, "    }\n");
-                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n");
+                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n");
                 fprintf(fp, "        rc = emitter(context, \"\\n\");\n");
                 fprintf(fp, "        if (rc < 0) {\n");
                 fprintf(fp, "            goto bail;\n");
@@ -1989,11 +1989,14 @@ int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE)\n");
                 fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE    0x00000001\n");
                 fprintf(fp, "#endif\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE     0x00000002\n");
+                fprintf(fp, "#endif\n");
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
-                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA    0x00000002\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA    0x00000004\n");
                 fprintf(fp, "#endif\n");
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY)\n");
-                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY          (LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY          (LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
                 fprintf(fp, "#endif\n");
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_DEFAULT)\n");
                 fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_DEFAULT         LINEARBUFFERS_JSONIFY_FLAG_PRETTY\n");
