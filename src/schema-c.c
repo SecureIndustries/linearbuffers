@@ -1598,7 +1598,8 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 	uint64_t prefix_count;
 
 	uint64_t table_field_i;
-	struct schema_table_field *table_field;
+        struct schema_table_field *table_field;
+        struct schema_table_field *ntable_field;
 
 	struct element_entry *element_entry;
 
@@ -1615,8 +1616,19 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 		goto bail;
 	}
 
-	if (TAILQ_EMPTY(&element->entries)) {
-		fprintf(fp, "__attribute__((unused)) static inline int %s_jsonify (const void *buffer, uint64_t length, int (*emitter) (void *context, const char *format, ...), void *context)\n", namespace_linearized(namespace));
+        prefix_count = element->nentries + 1;
+        TAILQ_FOREACH(element_entry, &element->entries, list) {
+                if (element_entry->vector) {
+                        prefix_count += 1;
+                }
+        }
+
+        prefix = malloc((prefix_count * 4) + 1);
+        memset(prefix, ' ', prefix_count * 4);
+        prefix[prefix_count * 4] = '\0';
+
+        if (TAILQ_EMPTY(&element->entries)) {
+		fprintf(fp, "__attribute__((unused)) static inline int %s_jsonify (const void *buffer, uint64_t length, unsigned int flags, int (*emitter) (void *context, const char *format, ...), void *context)\n", namespace_linearized(namespace));
 		fprintf(fp, "{\n");
 		fprintf(fp, "    int rc;\n");
 		fprintf(fp, "    const struct %s *%s;\n", namespace_linearized(namespace), namespace_linearized(namespace));
@@ -1627,29 +1639,24 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 		fprintf(fp, "    if (emitter == NULL) {\n");
 		fprintf(fp, "        goto bail;\n");
 		fprintf(fp, "    }\n");
-		fprintf(fp, "    rc = emitter(context, \"{\\n\");\n");
+		fprintf(fp, "    rc = emitter(context, \"{\");\n");
 		fprintf(fp, "    if (rc < 0) {\n");
 		fprintf(fp, "        goto bail;\n");
 		fprintf(fp, "    }\n");
+                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n");
+                fprintf(fp, "        rc = emitter(context, \"\\n\");\n");
+                fprintf(fp, "        if (rc < 0) {\n");
+                fprintf(fp, "            goto bail;\n");
+                fprintf(fp, "        }\n");
+                fprintf(fp, "    }\n");
 	}
-
-	prefix_count = element->nentries + 1;
-	TAILQ_FOREACH(element_entry, &element->entries, list) {
-		if (element_entry->vector) {
-			prefix_count += 1;
-		}
-	}
-
-	prefix = malloc((prefix_count * 4) + 1);
-	memset(prefix, ' ', prefix_count * 4);
-	prefix[prefix_count * 4] = '\0';
 
 	table_field_i = 0;
 	TAILQ_FOREACH(table_field, &table->fields, list) {
 		fprintf(fp, "%sif (%s_%s_%s_present(%s)) {\n", prefix, schema->namespace, table->name, table_field->name, namespace_linearized(namespace));
 		if (table_field->container == schema_container_type_vector) {
 			fprintf(fp, "%s    uint64_t at_%" PRIu64 ";\n", prefix, element->nentries);
-			fprintf(fp, "%s    uint64_t count;\n", prefix);
+                        fprintf(fp, "%s    uint64_t count;\n", prefix);
 			if (schema_type_is_scalar(table_field->type)) {
 				fprintf(fp, "%s    const struct %s_%s_vector *%s_%s;\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name);
 			} else if (schema_type_is_float(table_field->type)) {
@@ -1663,79 +1670,113 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 			}
 			fprintf(fp, "%s    %s_%s = %s_%s_%s_get(%s);\n", prefix, namespace_linearized(namespace), table_field->name, schema->namespace, table->name, table_field->name, namespace_linearized(namespace));
 			fprintf(fp, "%s    count = %s_%s_vector_get_count(%s_%s);\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name);
-			fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": [\\n\");\n", prefix, prefix, table_field->name);
+                        fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                        fprintf(fp, "%s        rc = emitter(context, \"%s\");\n", prefix, prefix);
+                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                        fprintf(fp, "%s            goto bail;\n", prefix);
+                        fprintf(fp, "%s        }\n", prefix);
+                        fprintf(fp, "%s    }\n", prefix);
+                        fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\": [\");\n", prefix, table_field->name);
 			fprintf(fp, "%s    if (rc < 0) {\n", prefix);
 			fprintf(fp, "%s        goto bail;\n", prefix);
 			fprintf(fp, "%s    }\n", prefix);
-			fprintf(fp, "%s    for (at_%" PRIu64 " = 0; at_%" PRIu64 " < count; at_%" PRIu64 "++) {\n", prefix, element->nentries, element->nentries, element->nentries);
+                        fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                        fprintf(fp, "%s        rc = emitter(context, \"\\n\");\n", prefix);
+                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                        fprintf(fp, "%s            goto bail;\n", prefix);
+                        fprintf(fp, "%s        }\n", prefix);
+                        fprintf(fp, "%s    }\n", prefix);
+
+                        fprintf(fp, "%s    for (at_%" PRIu64 " = 0; at_%" PRIu64 " < count; at_%" PRIu64 "++) {\n", prefix, element->nentries, element->nentries, element->nentries);
+
+			fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                        fprintf(fp, "%s        rc = emitter(context, \"%s    \");\n", prefix, prefix);
+                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                        fprintf(fp, "%s            goto bail;\n", prefix);
+                        fprintf(fp, "%s        }\n", prefix);
+                        fprintf(fp, "%s    }\n", prefix);
 
 			if (schema_type_is_scalar(table_field->type)) {
 				fprintf(fp, "%s        %s_t value;\n", prefix, table_field->type);
 				fprintf(fp, "%s        value = %s_%s_vector_get_at(%s_%s, at_%" PRIu64 ");\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, element->nentries);
 				if (strncmp(table_field->type, "int", 3) == 0) {
-					fprintf(fp, "%s        rc = emitter(context, \"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+					fprintf(fp, "%s        rc = emitter(context, \"%%\" PRIi64 \"%%s\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				} else {
-					fprintf(fp, "%s        rc = emitter(context, \"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+					fprintf(fp, "%s        rc = emitter(context, \"%%\" PRIu64 \"%%s\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				}
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-				fprintf(fp, "%s    }\n", prefix);
-				fprintf(fp, "%s    rc = emitter(context, \"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
-				fprintf(fp, "%s        goto bail;\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                goto bail;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
 			} else if (schema_type_is_float(table_field->type)) {
 				fprintf(fp, "%s        %s value;\n", prefix, table_field->type);
 				fprintf(fp, "%s        value = %s_%s_vector_get_at(%s_%s, at_%" PRIu64 ");\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, element->nentries);
 				if (strncmp(table_field->type, "int", 3) == 0) {
-					fprintf(fp, "%s        rc = emitter(context, \"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+					fprintf(fp, "%s        rc = emitter(context, \"%%\" PRIi64 \"%%s\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				} else {
-					fprintf(fp, "%s        rc = emitter(context, \"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+					fprintf(fp, "%s        rc = emitter(context, \"%%\" PRIu64 \"%%s\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				}
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-				fprintf(fp, "%s    }\n", prefix);
-				fprintf(fp, "%s    rc = emitter(context, \"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
-				fprintf(fp, "%s        goto bail;\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                goto bail;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
 			} else if (schema_type_is_enum(schema, table_field->type)) {
 				fprintf(fp, "%s        %s_%s_t value;\n", prefix, schema->namespace, table_field->type);
 				fprintf(fp, "%s        value = %s_%s_vector_get_at(%s_%s, at_%" PRIu64 ");\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, element->nentries);
 				if (strncmp(schema_type_get_enum(schema, table_field->type)->type, "int", 3) == 0) {
-					fprintf(fp, "%s        rc = emitter(context, \"%s    %%\" PRIi64 \"%%s\\n\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+					fprintf(fp, "%s        rc = emitter(context, \"%%\" PRIi64 \"%%s\", (int64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				} else {
-					fprintf(fp, "%s        rc = emitter(context, \"%s    %%\" PRIu64 \"%%s\\n\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+					fprintf(fp, "%s        rc = emitter(context, \"%%\" PRIu64 \"%%s\", (uint64_t) value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				}
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-				fprintf(fp, "%s    }\n", prefix);
-				fprintf(fp, "%s    rc = emitter(context, \"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
-				fprintf(fp, "%s        goto bail;\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                goto bail;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
 			} else if (schema_type_is_string(table_field->type)) {
 				fprintf(fp, "%s        const char *value;\n", prefix);
 				fprintf(fp, "%s        value = %s_%s_vector_get_at(%s_%s, at_%" PRIu64 ");\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, element->nentries);
-				fprintf(fp, "%s        rc = emitter(context, \"%s    \\\"%%s\\\"%%s\\n\", value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+				fprintf(fp, "%s        rc = emitter(context, \"\\\"%%s\\\"%%s\", value, ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-				fprintf(fp, "%s    }\n", prefix);
-				fprintf(fp, "%s    rc = emitter(context, \"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
-				fprintf(fp, "%s        goto bail;\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                goto bail;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
 			} else if (schema_type_is_table(schema, table_field->type)) {
 				fprintf(fp, "%s        const struct %s_%s *%s_%s_%s;\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, table_field->type);
 				fprintf(fp, "%s        %s_%s_%s = %s_%s_vector_get_at(%s_%s, at_%" PRIu64 ");\n", prefix, namespace_linearized(namespace), table_field->name, table_field->type, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name, element->nentries);
-				fprintf(fp, "%s        rc = emitter(context, \"%s    {\\n\");\n", prefix, prefix);
+				fprintf(fp, "%s        rc = emitter(context, \"{\");\n", prefix);
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                goto bail;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
 				namespace_push(namespace, "_%s_%s", table_field->name, table_field->type);
 				element_push(element, table, table_field_i, 0, 1);
 				rc = schema_generate_jsonify_table(schema, head, schema_type_get_table(schema, table_field->type), namespace, element, fp);
@@ -1745,19 +1786,37 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				}
 				element_pop(element);
 				namespace_pop(namespace);
-				fprintf(fp, "%s        rc = emitter(context, \"%s    }%%s\\n\", ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, prefix, element->nentries);
+	                        fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+	                        fprintf(fp, "%s            rc = emitter(context, \"%s    \");\n", prefix, prefix);
+	                        fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+	                        fprintf(fp, "%s                goto bail;\n", prefix);
+	                        fprintf(fp, "%s            }\n", prefix);
+	                        fprintf(fp, "%s        }\n", prefix);
+				fprintf(fp, "%s        rc = emitter(context, \"}%%s\", ((at_%" PRIu64 " + 1) == count) ? \"\" : \",\");\n", prefix, element->nentries);
 				fprintf(fp, "%s        if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s            goto bail;\n", prefix);
 				fprintf(fp, "%s        }\n", prefix);
-				fprintf(fp, "%s    }\n", prefix);
-				fprintf(fp, "%s    rc = emitter(context, \"%s]%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
-				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
-				fprintf(fp, "%s        goto bail;\n", prefix);
+                                fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s            rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                goto bail;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
 			} else {
 				linearbuffers_errorf("type is invalid: %s", table_field->type);
 				goto bail;
 			}
+                        fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                        fprintf(fp, "%s        rc = emitter(context, \"%s\");\n", prefix, prefix);
+                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                        fprintf(fp, "%s            goto bail;\n", prefix);
+                        fprintf(fp, "%s        }\n", prefix);
+                        fprintf(fp, "%s    }\n", prefix);
+                        fprintf(fp, "%s    rc = emitter(context, \"]\");\n", prefix);
+                        fprintf(fp, "%s    if (rc < 0) {\n", prefix);
+                        fprintf(fp, "%s        goto bail;\n", prefix);
+                        fprintf(fp, "%s    }\n", prefix);
 		} else {
 			if (schema_type_is_scalar(table_field->type) ||
 			    schema_type_is_float(table_field->type) ||
@@ -1776,22 +1835,28 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 					fprintf(fp, "%s    const char *value;\n", prefix);
 					fprintf(fp, "%s    value = %s_%s_%s_get_value(%s);\n", prefix, schema->namespace, table->name, table_field->name, namespace_linearized(namespace));
 				}
+				fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+	                        fprintf(fp, "%s        rc = emitter(context, \"%s\");\n", prefix, prefix);
+	                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+	                        fprintf(fp, "%s            goto bail;\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
+                                fprintf(fp, "%s    }\n", prefix);
 				if (schema_type_is_scalar(table_field->type)) {
 					if (strncmp(table_field->type, "int", 3) == 0) {
-						fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":%%\" PRIi64 \"\", (int64_t) value);\n", prefix, table_field->name);
 					} else {
-						fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":%%\" PRIu64 \"\", (uint64_t) value);\n", prefix, table_field->name);
 					}
 				} else if (schema_type_is_float(table_field->type)) {
-					fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": %%f%s\\n\", value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":%%f\", value);\n", prefix, table_field->name);
 				} else if (schema_type_is_enum(schema, table_field->type)) {
 					if (strncmp(schema_type_get_enum(schema, table_field->type)->type, "int", 3) == 0) {
-						fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": %%\" PRIi64 \"%s\\n\", (int64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":%%\" PRIi64 \"\", (int64_t) value);\n", prefix, table_field->name);
 					} else {
-						fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": %%\" PRIu64 \"%s\\n\", (uint64_t) value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+						fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":%%\" PRIu64 \"\", (uint64_t) value);\n", prefix, table_field->name);
 					}
 				} else if (schema_type_is_string(table_field->type)) {
-					fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": \\\"%%s\\\"%s\\n\", value);\n", prefix, prefix, table_field->name, ((table_field_i + 1) == table->nfields) ? "" : ",");
+					fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":\\\"%%s\\\"\", value);\n", prefix, table_field->name);
 				}
 				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s        goto bail;\n", prefix);
@@ -1802,10 +1867,22 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				fprintf(fp, "%s    const struct %s_%s *%s_%s;\n", prefix, schema->namespace, table_field->type, namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "%s    (void) %s_%s;\n", prefix, namespace_linearized(namespace), table_field->name);
 				fprintf(fp, "%s    %s_%s = %s_%s_%s_get(%s);\n", prefix, namespace_linearized(namespace), table_field->name, schema->namespace, table->name, table_field->name, namespace_linearized(namespace));
-				fprintf(fp, "%s    rc = emitter(context, \"%s\\\"%s\\\": {\\n\");\n", prefix, prefix, table_field->name);
+                                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+	                        fprintf(fp, "%s        rc = emitter(context, \"%s\");\n", prefix, prefix);
+	                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+	                        fprintf(fp, "%s            goto bail;\n", prefix);
+	                        fprintf(fp, "%s        }\n", prefix);
+                                fprintf(fp, "%s    }\n", prefix);
+				fprintf(fp, "%s    rc = emitter(context, \"\\\"%s\\\":{\");\n", prefix, table_field->name);
 				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s        goto bail;\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
+                                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        rc = emitter(context, \"\\n\");\n", prefix);
+                                fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s            goto bail;\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
+                                fprintf(fp, "%s    }\n", prefix);
 				namespace_push(namespace, "_%s", table_field->name);
 				element_push(element, table, table_field_i, 0, 0);
 				rc = schema_generate_jsonify_table(schema, head, schema_type_get_table(schema, table_field->type), namespace, element, fp);
@@ -1815,21 +1892,54 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 				}
 				element_pop(element);
 				namespace_pop(namespace);
-				fprintf(fp, "%s    rc = emitter(context, \"%s}%s\\n\");\n", prefix, prefix, ((table_field_i + 1) == table->nfields) ? "" : ",");
+                                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                                fprintf(fp, "%s        rc = emitter(context, \"%s\");\n", prefix, prefix);
+                                fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s            goto bail;\n", prefix);
+                                fprintf(fp, "%s        }\n", prefix);
+                                fprintf(fp, "%s    }\n", prefix);
+				fprintf(fp, "%s    rc = emitter(context, \"}\");\n", prefix);
 				fprintf(fp, "%s    if (rc < 0) {\n", prefix);
 				fprintf(fp, "%s        goto bail;\n", prefix);
 				fprintf(fp, "%s    }\n", prefix);
 			}
 		}
+		if (table_field->list.tqe_next != NULL) {
+	                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA) {\n", prefix);
+                        fprintf(fp, "%s        do {\n", prefix);
+                        for (ntable_field = table_field->list.tqe_next; ntable_field; ntable_field = ntable_field->list.tqe_next) {
+                                fprintf(fp, "%s            if (%s_%s_%s_present(%s)) {\n", prefix, schema->namespace, table->name, ntable_field->name, namespace_linearized(namespace));
+                                fprintf(fp, "%s                rc = emitter(context, \"%s\");\n", prefix, ",");
+                                fprintf(fp, "%s                if (rc < 0) {\n", prefix);
+                                fprintf(fp, "%s                    goto bail;\n", prefix);
+                                fprintf(fp, "%s                }\n", prefix);
+                                fprintf(fp, "%s                break;\n", prefix);
+                                fprintf(fp, "%s            }\n", prefix);
+                        }
+                        fprintf(fp, "%s        } while (0);\n", prefix);
+                        fprintf(fp, "%s    }\n", prefix);
+		}
+                fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                fprintf(fp, "%s        rc = emitter(context, \"\\n\");\n", prefix);
+                fprintf(fp, "%s        if (rc < 0) {\n", prefix);
+                fprintf(fp, "%s            goto bail;\n", prefix);
+                fprintf(fp, "%s        }\n", prefix);
+                fprintf(fp, "%s    }\n", prefix);
 		fprintf(fp, "%s}\n", prefix);
 		table_field_i += 1;
 	}
 
 	if (TAILQ_EMPTY(&element->entries)) {
-		fprintf(fp, "    rc = emitter(context, \"}\\n\");\n");
+		fprintf(fp, "    rc = emitter(context, \"}\");\n");
 		fprintf(fp, "    if (rc != 0) {\n");
 		fprintf(fp, "        goto bail;\n");
 		fprintf(fp, "    }\n");
+                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n");
+                fprintf(fp, "        rc = emitter(context, \"\\n\");\n");
+                fprintf(fp, "        if (rc < 0) {\n");
+                fprintf(fp, "            goto bail;\n");
+                fprintf(fp, "        }\n");
+                fprintf(fp, "    }\n");
 		fprintf(fp, "    return rc;\n");
 		fprintf(fp, "bail:\n");
 		fprintf(fp, "    return -1;\n");
@@ -1876,6 +1986,22 @@ int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_
 		fprintf(fp, "#if !defined(%s_%s_JSONIFY_API)\n", schema->NAMESPACE, table->name);
 		fprintf(fp, "#define %s_%s_JSONIFY_API\n", schema->NAMESPACE, table->name);
 		fprintf(fp, "\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE    0x00000001\n");
+                fprintf(fp, "#endif\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA    0x00000002\n");
+                fprintf(fp, "#endif\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY          (LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
+                fprintf(fp, "#endif\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_DEFAULT)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_DEFAULT         LINEARBUFFERS_JSONIFY_FLAG_PRETTY\n");
+                fprintf(fp, "#endif\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_NONE)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_NONE            0\n");
+                fprintf(fp, "#endif\n");
+                fprintf(fp, "\n");
 
 		namespace = namespace_create();
 		if (namespace == NULL) {

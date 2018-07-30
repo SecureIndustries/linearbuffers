@@ -5,6 +5,13 @@
  * Tail queue missing functions.
  */
 
+#if !defined(TAILQ_FOREACH_FROM)
+#define TAILQ_FOREACH_FROM(var, head, field)                         \
+        for ((var) = (from);                                         \
+             (var);                                                  \
+             (var) = ((var)->field.tqe_next))
+#endif
+
 #if !defined(TAILQ_FOREACH_SAFE)
 #define	TAILQ_FOREACH_SAFE(var, head, field, next)		\
 	for ((var) = ((head)->tqh_first);			\
