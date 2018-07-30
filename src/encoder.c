@@ -830,7 +830,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_ncr
 		linearbuffers_errorf("can not emit element");
 		goto bail;
 	}
-	rc = encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, &_null, 1);
+	rc = encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset + n, &_null, 1);
 	if (rc != 0) {
 		linearbuffers_errorf("can not emit element");
 		goto bail;
