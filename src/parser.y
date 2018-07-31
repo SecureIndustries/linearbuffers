@@ -312,7 +312,6 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field type\n");
                                                                 YYERROR;
                                                             }
-                                                                fprintf(stderr, "can not set schema table field type: '%s' = '%s'\n", $1, $5);
                                                             rc = schema_table_field_set_value(schema_parser->schema_table_field, $5);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not set schema table field type\n");
