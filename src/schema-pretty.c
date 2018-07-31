@@ -56,7 +56,11 @@ int schema_generate_pretty (struct schema *schema, FILE *fp)
 
 	TAILQ_FOREACH(table, &schema->tables, list) {
 		fprintf(fp, "\n");
-		fprintf(fp, "table %s {\n", table->name);
+		if (table->type == schema_container_type_struct) {
+                        fprintf(fp, "struct %s {\n", table->name);
+		} else {
+		        fprintf(fp, "table %s {\n", table->name);
+		}
 		TAILQ_FOREACH(table_field, &table->fields, list) {
 			if (table_field->container == schema_container_type_none)  {
 				fprintf(fp, "\t%s: %s", table_field->name, table_field->type);
@@ -64,7 +68,11 @@ int schema_generate_pretty (struct schema *schema, FILE *fp)
 				fprintf(fp, "\t%s: [ %s ]", table_field->name, table_field->type);
 			}
 			if (table_field->value != NULL) {
-				fprintf(fp, " = %s", table_field->value);
+			        if (schema_type_is_string(table_field->type)) {
+			                fprintf(fp, " = \"%s\"", table_field->value);
+			        } else {
+			                fprintf(fp, " = %s", table_field->value);
+			        }
 			}
 			if (!TAILQ_EMPTY(&table_field->attributes)) {
 				fprintf(fp, " (");

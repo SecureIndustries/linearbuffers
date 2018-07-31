@@ -62,6 +62,10 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_old_64_get\n");
 		goto bail;
 	}
+        if (linearbuffers_output_old_anum_get(output_old) != linearbuffers_anum_a) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_old_anum_get\n");
+                goto bail;
+        }
 
 	linearbuffers_output_new_jsonify(linearized_buffer, linearized_length, LINEARBUFFERS_JSONIFY_FLAG_DEFAULT, (int (*) (void *context, const char *fmt, ...)) fprintf, stderr);
 
@@ -86,6 +90,10 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_new_int64_get\n");
 		goto bail;
 	}
+        if (linearbuffers_output_new_anum_get(output_new) != linearbuffers_anum_a) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_anum_get\n");
+                goto bail;
+        }
 	if (linearbuffers_output_new_uint8_get(output_new) != 8) {
 		fprintf(stderr, "decoder failed: linearbuffers_output_new_uint8_get (%d != 8)\n", linearbuffers_output_new_uint8_get(output_new));
 		goto bail;
@@ -102,6 +110,10 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_new_uint64_get\n");
 		goto bail;
 	}
+        if (strcmp(linearbuffers_output_new_string_get_value(output_new), "string string") != 0) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_string_get_value\n");
+                goto bail;
+        }
 
 	linearbuffers_encoder_destroy(encoder);
 

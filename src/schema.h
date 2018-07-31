@@ -24,7 +24,8 @@ enum {
 
 enum {
 	schema_container_type_none,
-	schema_container_type_vector
+        schema_container_type_vector,
+        schema_container_type_struct
 };
 
 int schema_enum_field_set_name (struct schema_enum_field *field, const char *name);
@@ -45,6 +46,7 @@ int schema_table_field_add_attribute (struct schema_table_field *field, const ch
 void schema_table_field_destroy (struct schema_table_field *field);
 struct schema_table_field * schema_table_field_create (void);
 
+int schema_table_set_type (struct schema_table *table, uint32_t container);
 int schema_table_set_name (struct schema_table *table, const char *name);
 int schema_table_add_field (struct schema_table *table, struct schema_table_field *field);
 void schema_table_destroy (struct schema_table *table);

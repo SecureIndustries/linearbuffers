@@ -1,7 +1,5 @@
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
 #include "12-encoder.h"
 #include "12-decoder.h"
@@ -11,22 +9,15 @@ int main (int argc, char *argv[])
 {
         int rc;
 
-        size_t i;
-        uint8_t data[10];
-
         uint64_t linearized_length;
-        const char *linearized_buffer;
+        const uint8_t *linearized_buffer;
 
         struct linearbuffers_encoder *encoder;
-        const struct linearbuffers_output *output;
+        const struct linearbuffers_output_old *output_old;
+        const struct linearbuffers_output_new *output_new;
 
         (void) argc;
         (void) argv;
-
-        srand(time(NULL));
-        for (i = 0; i < sizeof(data) / sizeof(data[0]); i++) {
-                data[i] = rand();
-        }
 
         encoder = linearbuffers_encoder_create(NULL);
         if (encoder == NULL) {
@@ -34,14 +25,13 @@ int main (int argc, char *argv[])
                 goto bail;
         }
 
-        rc  = linearbuffers_output_start(encoder);
-        rc |= linearbuffers_timeval_start(encoder);
-        rc |= linearbuffers_timeval_seconds_set(encoder, 2);
-        rc |= linearbuffers_timeval_useconds_set(encoder, 3);
-        rc |= linearbuffers_output_timeval_set(encoder, linearbuffers_timeval_end(encoder));
-        rc |= linearbuffers_output_length_set(encoder, sizeof(data) / sizeof(data[0]));
-        rc |= linearbuffers_output_data_set(encoder, (uintptr_t) data);
-        rc |= linearbuffers_output_finish(encoder);
+        rc  = linearbuffers_output_old_start(encoder);
+        rc |= linearbuffers_output_old_8_set(encoder, -1);
+        rc |= linearbuffers_output_old_16_set(encoder, -2);
+        rc |= linearbuffers_output_old_32_set(encoder, -3);
+        rc |= linearbuffers_output_old_64_set(encoder, -4);
+        rc |= linearbuffers_output_old_anum_set(encoder, linearbuffers_anum_b);
+        rc |= linearbuffers_output_old_finish(encoder);
         if (rc != 0) {
                 fprintf(stderr, "can not encode output\n");
                 goto bail;
@@ -54,34 +44,80 @@ int main (int argc, char *argv[])
         }
         fprintf(stderr, "linearized: %p, length: %ld\n", linearized_buffer, linearized_length);
 
-        linearbuffers_output_jsonify(linearized_buffer, linearized_length, LINEARBUFFERS_JSONIFY_FLAG_DEFAULT, (int (*) (void *context, const char *fmt, ...)) fprintf, stderr);
+        linearbuffers_output_old_jsonify(linearized_buffer, linearized_length, LINEARBUFFERS_JSONIFY_FLAG_DEFAULT, (int (*) (void *context, const char *fmt, ...)) fprintf, stderr);
 
-        output = linearbuffers_output_decode(linearized_buffer, linearized_length);
-        if (output == NULL) {
+        output_old = linearbuffers_output_old_decode(linearized_buffer, linearized_length);
+        if (output_old == NULL) {
                 fprintf(stderr, "decoder failed: linearbuffers_output_decode\n");
                 goto bail;
         }
-        if (linearbuffers_timeval_seconds_get(linearbuffers_output_timeval_get(output)) != 2) {
-                fprintf(stderr, "decoder failed: linearbuffers_timeval_seconds_get\n");
+        if (linearbuffers_output_old_8_get(output_old) != -1) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_old_8_get\n");
                 goto bail;
         }
-        if (linearbuffers_timeval_useconds_get(linearbuffers_output_timeval_get(output)) != 3) {
-                fprintf(stderr, "decoder failed: linearbuffers_timeval_useconds_get\n");
+        if (linearbuffers_output_old_16_get(output_old) != -2) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_old_16_get\n");
                 goto bail;
         }
-        if (linearbuffers_output_length_get(output) != sizeof(data) / sizeof(data[0])) {
-                fprintf(stderr, "decoder failed: linearbuffers_output_length_get\n");
+        if (linearbuffers_output_old_32_get(output_old) != -3) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_old_32_get\n");
                 goto bail;
         }
-        if ((uint8_t *) linearbuffers_output_data_get(output) != data) {
-                fprintf(stderr, "decoder linearbuffers_output_data_get: linearbuffers_output_length_get\n");
+        if (linearbuffers_output_old_64_get(output_old) != -4) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_old_64_get\n");
                 goto bail;
         }
-        for (i = 0; i < linearbuffers_output_length_get(output); i++) {
-                if (data[i] != ((uint8_t *) linearbuffers_output_data_get(output))[i]) {
-                        fprintf(stderr, "decoder failed: linearbuffers_uint8_vector_get_at\n");
-                        goto bail;
-                }
+        if (linearbuffers_output_old_anum_get(output_old) != linearbuffers_anum_b) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_old_anum_get\n");
+                goto bail;
+        }
+
+        linearbuffers_output_new_jsonify(linearized_buffer, linearized_length, LINEARBUFFERS_JSONIFY_FLAG_DEFAULT, (int (*) (void *context, const char *fmt, ...)) fprintf, stderr);
+
+        output_new = linearbuffers_output_new_decode(linearized_buffer, linearized_length);
+        if (output_new == NULL) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_decode\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_int8_get(output_new) != -1) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_int8_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_int16_get(output_new) != -2) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_int16_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_int32_get(output_new) != -3) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_int32_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_int64_get(output_new) != -4) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_int64_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_anum_get(output_new) != linearbuffers_anum_b) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_anum_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_uint8_get(output_new) != 8) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_uint8_get (%d != 8)\n", linearbuffers_output_new_uint8_get(output_new));
+                goto bail;
+        }
+        if (linearbuffers_output_new_uint16_get(output_new) != 16) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_uint16_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_uint32_get(output_new) != 32) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_uint32_get\n");
+                goto bail;
+        }
+        if (linearbuffers_output_new_uint64_get(output_new) != 64) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_uint64_get\n");
+                goto bail;
+        }
+        if (strcmp(linearbuffers_output_new_string_get_value(output_new), "string string") != 0) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_new_string_get_value\n");
+                goto bail;
         }
 
         linearbuffers_encoder_destroy(encoder);

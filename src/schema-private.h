@@ -41,6 +41,7 @@ TAILQ_HEAD(schema_tables, schema_table);
 struct schema_table {
 	TAILQ_ENTRY(schema_table) list;
 	char *name;
+	uint32_t type;
 	uint64_t nfields;
 	struct schema_table_fields fields;
 	struct schema_attributes attributes;

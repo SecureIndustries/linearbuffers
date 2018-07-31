@@ -681,6 +681,17 @@ bail:	if (field != NULL) {
 	return NULL;
 }
 
+int schema_table_set_type (struct schema_table *table, uint32_t container)
+{
+        if (table == NULL) {
+                linearbuffers_errorf("table is invalid");
+                goto bail;
+        }
+        table->type = container;
+        return 0;
+bail:   return -1;
+}
+
 int schema_table_set_name (struct schema_table *table, const char *name)
 {
 	if (table == NULL) {

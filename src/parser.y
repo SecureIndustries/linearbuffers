@@ -19,6 +19,7 @@
 %token OPTION
 %token ENUM
 %token TABLE
+%token STRUCT
 %token BLOCK
 %token ENDBLOCK
 %token COLON
@@ -57,6 +58,7 @@ Schema:
     /* empty */
     |    Schema Option
     |    Schema Enum
+    |    Schema Struct
     |    Schema Table
     ;
 
@@ -198,6 +200,37 @@ EnumEntry:
                                                         }
     ;
 
+Struct:
+        STRUCT STRING BLOCK                             {
+                                                            int rc;
+                                                            schema_parser->schema_table = schema_table_create();
+                                                            if (schema_parser->schema_table == NULL) {
+                                                                fprintf(stderr, "can not create schema table\n");
+                                                                YYERROR;
+                                                            }
+                                                            rc = schema_table_set_name(schema_parser->schema_table, $2);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not set schema table name\n");
+                                                                YYERROR;
+                                                            }
+                                                            rc = schema_table_set_type(schema_parser->schema_table, schema_container_type_struct);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not set schema table type\n");
+                                                                YYERROR;
+                                                            }
+                                                            free($2);
+                                                        }
+            TableFields
+        ENDBLOCK                                        {
+                                                            int rc;
+                                                            rc = schema_add_table(schema_parser->schema, schema_parser->schema_table);
+                                                            if (rc != 0) {
+                                                                fprintf(stderr, "can not add schema table\n");
+                                                                YYERROR;
+                                                            }
+                                                        }
+    ;
+
 Table:
         TABLE STRING BLOCK                              {
                                                             int rc;
@@ -279,6 +312,7 @@ TableField:
                                                                 fprintf(stderr, "can not set schema table field type\n");
                                                                 YYERROR;
                                                             }
+                                                                fprintf(stderr, "can not set schema table field type: '%s' = '%s'\n", $1, $5);
                                                             rc = schema_table_field_set_value(schema_parser->schema_table_field, $5);
                                                             if (rc != 0) {
                                                                 fprintf(stderr, "can not set schema table field type\n");

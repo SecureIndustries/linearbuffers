@@ -8,17 +8,30 @@
 
 blanks                  [ \t\n]+
 string                  [-_.a-zA-Z0-9]+
+text                    \"[^"\n]*["\n]
 
 %x c_comment
 %x cpp_comment
 
 %%
 
+{text}                  {
+                            yylval.sval = strdup(yytext+1);
+                            if (yylval.sval[yyleng-2] != '"') {
+                                fprintf(stderr, "improperly terminated string\n");
+                            } else {
+                                yylval.sval[yyleng-2] = 0;
+                                fprintf(stderr, "found '%s'\n", yylval.sval);
+                                return(STRING);
+                            }
+                        }
+
 {blanks}                { /* ignore */ }
 
 "option"                return(OPTION);
 "enum"                  return(ENUM);
 "table"                 return(TABLE);
+"struct"                return(STRUCT);
 "{"                     return(BLOCK);
 "}"                     return(ENDBLOCK);
 ":"                     return(COLON);

@@ -22,4 +22,5 @@ table output_new {
 	uint16: uint16 = 16;
 	uint32: uint32 = 32;
 	uint64: uint64 = 64;
+	string: string = "string string";
 }

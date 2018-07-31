@@ -1376,6 +1376,12 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
 				} else {
 					fprintf(fp, "        return 0;\n");
 				}
+                        } else if (schema_type_is_string(table_field->type)) {
+                                if (table_field->value != NULL) {
+                                        fprintf(fp, "        return (const struct %s_%s *) \"%s\";\n", schema->namespace, table_field->type, table_field->value);
+                                } else {
+                                        fprintf(fp, "        return NULL;\n");
+                                }
 			} else {
 				fprintf(fp, "        return NULL;\n");
 			}
@@ -1931,10 +1937,10 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 
 	if (TAILQ_EMPTY(&element->entries)) {
 		fprintf(fp, "    rc = emitter(context, \"}\");\n");
-		fprintf(fp, "    if (rc != 0) {\n");
+		fprintf(fp, "    if (rc < 0) {\n");
 		fprintf(fp, "        goto bail;\n");
 		fprintf(fp, "    }\n");
-                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE) {\n");
+                fprintf(fp, "    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_ENDLINE) {\n");
                 fprintf(fp, "        rc = emitter(context, \"\\n\");\n");
                 fprintf(fp, "        if (rc < 0) {\n");
                 fprintf(fp, "            goto bail;\n");
@@ -1995,8 +2001,11 @@ int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
                 fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA    0x00000004\n");
                 fprintf(fp, "#endif\n");
+                fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY_ENDLINE)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY_ENDLINE  0x00000008\n");
+                fprintf(fp, "#endif\n");
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_PRETTY)\n");
-                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY          (LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA)\n");
+                fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_PRETTY          (LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_LINE | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_COMMA | LINEARBUFFERS_JSONIFY_FLAG_PRETTY_ENDLINE)\n");
                 fprintf(fp, "#endif\n");
                 fprintf(fp, "#if !defined(LINEARBUFFERS_JSONIFY_FLAG_DEFAULT)\n");
                 fprintf(fp, "#define LINEARBUFFERS_JSONIFY_FLAG_DEFAULT         LINEARBUFFERS_JSONIFY_FLAG_PRETTY\n");
