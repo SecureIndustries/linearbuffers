@@ -1,0 +1,11 @@
+
+table timeval {
+	seconds: uint64;
+	useconds: uint64;
+}
+
+table output {
+	timeval: timeval;
+	length : uint64;
+	data   : uint64;
+}
