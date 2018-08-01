@@ -1946,11 +1946,75 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
                 fprintf(fp, "            goto bail;\n");
                 fprintf(fp, "        }\n");
                 fprintf(fp, "    }\n");
-		fprintf(fp, "    return rc;\n");
+		fprintf(fp, "    return 0;\n");
 		fprintf(fp, "bail:\n");
 		fprintf(fp, "    return -1;\n");
 		fprintf(fp, "}\n");
 	}
+
+        if (TAILQ_EMPTY(&element->entries)) {
+                fprintf(fp, "\n");
+                fprintf(fp, "struct %s_jsonify_string_emitter_param {\n", namespace_linearized(namespace));
+                fprintf(fp, "    char *beg;\n");
+                fprintf(fp, "    int off;\n");
+                fprintf(fp, "    int len;\n");
+                fprintf(fp, "};\n");
+                fprintf(fp, "\n");
+                fprintf(fp, "__attribute__((unused)) static inline int %s_jsonify_string_emitter (struct %s_jsonify_string_emitter_param *param, const char *fmt, ...)\n", namespace_linearized(namespace), namespace_linearized(namespace));
+                fprintf(fp, "{\n");
+                fprintf(fp, "    int rc;\n");
+                fprintf(fp, "    va_list ap;\n");
+                fprintf(fp, "    va_start(ap, fmt);\n");
+                fprintf(fp, "    rc = vsnprintf(param->beg + param->off, 0, fmt, ap);\n");
+                fprintf(fp, "    va_end(ap);\n");
+                fprintf(fp, "    if (rc < 0) {\n");
+                fprintf(fp, "        goto bail;\n");
+                fprintf(fp, "    }\n");
+                fprintf(fp, "    if (rc >= param->len - param->off) {\n");
+                fprintf(fp, "        char *tmp;\n");
+                fprintf(fp, "        tmp = realloc(param->beg, param->off + rc + 1);\n");
+                fprintf(fp, "        if (tmp == NULL) {\n");
+                fprintf(fp, "            tmp = malloc(param->off + rc + 1);\n");
+                fprintf(fp, "            if (tmp == NULL) {\n");
+                fprintf(fp, "                goto bail;\n");
+                fprintf(fp, "            }\n");
+                fprintf(fp, "            if (param->beg != NULL) {\n");
+                fprintf(fp, "                memcpy(tmp, param->beg, param->off);\n");
+                fprintf(fp, "                free(param->beg);\n");
+                fprintf(fp, "            }\n");
+                fprintf(fp, "        }\n");
+                fprintf(fp, "        param->beg = tmp;\n");
+                fprintf(fp, "        param->len = param->off + rc + 1;\n");
+                fprintf(fp, "    }\n");
+                fprintf(fp, "    va_start(ap, fmt);\n");
+                fprintf(fp, "    rc = vsnprintf(param->beg + param->off, param->len - param->off, fmt, ap);\n");
+                fprintf(fp, "    va_end(ap);\n");
+                fprintf(fp, "    if (rc < 0) {\n");
+                fprintf(fp, "        goto bail;\n");
+                fprintf(fp, "    }\n");
+                fprintf(fp, "    param->off += rc;\n");
+                fprintf(fp, "    return 0;\n");
+                fprintf(fp, "bail:\n");
+                fprintf(fp, "    return -1;\n");
+                fprintf(fp, "}\n");
+                fprintf(fp, "\n");
+                fprintf(fp, "__attribute__((unused)) static inline char * %s_jsonify_string (const void *buffer, uint64_t length, unsigned int flags)\n", namespace_linearized(namespace));
+                fprintf(fp, "{\n");
+                fprintf(fp, "    int rc;\n");
+                fprintf(fp, "    struct %s_jsonify_string_emitter_param param;\n", namespace_linearized(namespace));
+                fprintf(fp, "    memset(&param, 0, sizeof(param));\n");
+                fprintf(fp, "    rc = %s_jsonify(buffer, length, flags, (int (*) (void *context, const char *format, ...)) %s_jsonify_string_emitter, &param);\n", namespace_linearized(namespace), namespace_linearized(namespace));
+                fprintf(fp, "    if (rc != 0) {\n");
+                fprintf(fp, "        goto bail;\n");
+                fprintf(fp, "    }\n");
+                fprintf(fp, "    return param.beg;\n");
+                fprintf(fp, "bail:\n");
+                fprintf(fp, "    if (param.beg != NULL) {\n");
+                fprintf(fp, "        free(param.beg);\n");
+                fprintf(fp, "    }\n");
+                fprintf(fp, "    return NULL;\n");
+                fprintf(fp, "}\n");
+        }
 
 	free(prefix);
 	return 0;
@@ -1985,6 +2049,8 @@ int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_
 	}
 
 	fprintf(fp, "\n");
+        fprintf(fp, "#include <stdlib.h>\n");
+        fprintf(fp, "#include <stdarg.h>\n");
 	fprintf(fp, "#include <inttypes.h>\n");
 
 	TAILQ_FOREACH(table, &schema->tables, list) {
