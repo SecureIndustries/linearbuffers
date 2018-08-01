@@ -21,7 +21,6 @@ text                    \"[^"\n]*["\n]
                                 fprintf(stderr, "improperly terminated string\n");
                             } else {
                                 yylval.sval[yyleng-2] = 0;
-                                fprintf(stderr, "found '%s'\n", yylval.sval);
                                 return(STRING);
                             }
                         }
