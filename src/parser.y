@@ -9,6 +9,7 @@
 %}
 
 %parse-param { struct schema_parser *schema_parser }
+%error-verbose
 
 %union
 {
@@ -408,6 +409,6 @@ AttributeEntry:
 int yyerror (struct schema_parser *schema_parser, char *s)
 {
     (void) schema_parser;
-    printf("yyerror : %s\n",s);
+    printf("yyerror : %s\n", s);
     return 0;  
 }
