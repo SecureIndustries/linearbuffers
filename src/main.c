@@ -50,11 +50,11 @@ static void print_help (const char *name)
 	fprintf(stdout, "options:\n");
 	fprintf(stdout, "  -s, --schema : schema file (default: %s)\n", (DEFAULT_SCHEMA == NULL) ? "(null)" : DEFAULT_SCHEMA);
 	fprintf(stdout, "  -o, --output : output file (default: %s)\n", (DEFAULT_OUTPUT == NULL) ? "(null)" : DEFAULT_OUTPUT);
-	fprintf(stdout, "  -p, --pretty : generate pretty (default: %d)\n", DEFAULT_PRETTY);
-	fprintf(stdout, "  -e, --encoder: generate encoder (default: %d)\n", DEFAULT_ENCODER);
-	fprintf(stdout, "  -d, --decoder: generate decoder (default: %d)\n", DEFAULT_DECODER);
-	fprintf(stdout, "  -m, --decoder-use-memcpy: decoding using memcpy, rather than casting (default: %d)\n", DEFAULT_DECODER_USE_MEMCPY);
-	fprintf(stdout, "  -j, --jsonify: generate jsonify (default: %d)\n", DEFAULT_JSONIFY);
+	fprintf(stdout, "  -p, --pretty : generate pretty (values: { 0, 1 }, default: %d)\n", DEFAULT_PRETTY);
+	fprintf(stdout, "  -e, --encoder: generate encoder (values: { 0, 1 }, default: %d)\n", DEFAULT_ENCODER);
+	fprintf(stdout, "  -d, --decoder: generate decoder (values: { 0, 1 }, default: %d)\n", DEFAULT_DECODER);
+	fprintf(stdout, "  -m, --decoder-use-memcpy: decode using memcpy, rather than casting (values: { 0, 1 }, default: %d)\n", DEFAULT_DECODER_USE_MEMCPY);
+	fprintf(stdout, "  -j, --jsonify: generate jsonify (values: { 0, 1 }, default: %d)\n", DEFAULT_JSONIFY);
 	fprintf(stdout, "  -h, --help   : this text\n");
 }
 
@@ -103,19 +103,79 @@ int main (int argc, char *argv[])
 				option_output = optarg;
 				break;
 			case OPTION_PRETTY:
-				option_pretty = !!atoi(optarg);
+			        if (strcasecmp(optarg, "t") == 0 ||
+			            strcasecmp(optarg, "true") == 0 ||
+			            strcasecmp(optarg, "y") == 0 ||
+			            strcasecmp(optarg, "yes") == 0) {
+			                option_pretty = 1;
+			        } else if (strcasecmp(optarg, "f") == 0 ||
+                                           strcasecmp(optarg, "false") == 0 ||
+                                           strcasecmp(optarg, "n") == 0 ||
+                                           strcasecmp(optarg, "no") == 0) {
+                                        option_pretty = 0;
+                                } else {
+                                        option_pretty = !!atoi(optarg);
+                                }
 				break;
 			case OPTION_ENCODER:
-				option_encoder = !!atoi(optarg);
+                                if (strcasecmp(optarg, "t") == 0 ||
+                                    strcasecmp(optarg, "true") == 0 ||
+                                    strcasecmp(optarg, "y") == 0 ||
+                                    strcasecmp(optarg, "yes") == 0) {
+                                        option_pretty = 1;
+                                } else if (strcasecmp(optarg, "f") == 0 ||
+                                           strcasecmp(optarg, "false") == 0 ||
+                                           strcasecmp(optarg, "n") == 0 ||
+                                           strcasecmp(optarg, "no") == 0) {
+                                        option_pretty = 0;
+                                } else {
+                                        option_encoder = !!atoi(optarg);
+                                }
 				break;
 			case OPTION_DECODER:
-				option_decoder = !!atoi(optarg);
+                                if (strcasecmp(optarg, "t") == 0 ||
+                                    strcasecmp(optarg, "true") == 0 ||
+                                    strcasecmp(optarg, "y") == 0 ||
+                                    strcasecmp(optarg, "yes") == 0) {
+                                        option_pretty = 1;
+                                } else if (strcasecmp(optarg, "f") == 0 ||
+                                           strcasecmp(optarg, "false") == 0 ||
+                                           strcasecmp(optarg, "n") == 0 ||
+                                           strcasecmp(optarg, "no") == 0) {
+                                        option_pretty = 0;
+                                } else {
+                                        option_decoder = !!atoi(optarg);
+                                }
 				break;
 			case OPTION_DECODER_USE_MEMCPY:
-				option_decoder_use_memcpy = !!atoi(optarg);
+                                if (strcasecmp(optarg, "t") == 0 ||
+                                    strcasecmp(optarg, "true") == 0 ||
+                                    strcasecmp(optarg, "y") == 0 ||
+                                    strcasecmp(optarg, "yes") == 0) {
+                                        option_pretty = 1;
+                                } else if (strcasecmp(optarg, "f") == 0 ||
+                                           strcasecmp(optarg, "false") == 0 ||
+                                           strcasecmp(optarg, "n") == 0 ||
+                                           strcasecmp(optarg, "no") == 0) {
+                                        option_pretty = 0;
+                                } else {
+                                        option_decoder_use_memcpy = !!atoi(optarg);
+                                }
 				break;
 			case OPTION_JSONIFY:
-				option_jsonify = !!atoi(optarg);
+                                if (strcasecmp(optarg, "t") == 0 ||
+                                    strcasecmp(optarg, "true") == 0 ||
+                                    strcasecmp(optarg, "y") == 0 ||
+                                    strcasecmp(optarg, "yes") == 0) {
+                                        option_pretty = 1;
+                                } else if (strcasecmp(optarg, "f") == 0 ||
+                                           strcasecmp(optarg, "false") == 0 ||
+                                           strcasecmp(optarg, "n") == 0 ||
+                                           strcasecmp(optarg, "no") == 0) {
+                                        option_pretty = 0;
+                                } else {
+                                        option_jsonify = !!atoi(optarg);
+                                }
 				break;
 		}
 	}
