@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #include "parser.lex.h"
 

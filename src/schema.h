@@ -1,4 +1,6 @@
 
+#include <stdint.h>
+
 struct schema_attribute;
 struct schema_enum_field;
 struct schema_enum;
