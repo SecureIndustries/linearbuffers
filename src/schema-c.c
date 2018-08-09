@@ -77,6 +77,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "__attribute__((unused)) static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+		fprintf(fp, "    if (decoder == NULL) {\n");
+		fprintf(fp, "        return 0;\n");
+		fprintf(fp, "    }\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    %s_t count;\n", schema_count_type_name(schema->count_type));
 			fprintf(fp, "    return *(%s_t *) memcpy(&count, ((const uint8_t *) decoder), sizeof(count));\n", schema_count_type_name(schema->count_type));
@@ -90,6 +93,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "}\n");
 		fprintf(fp, "__attribute__((unused)) static inline const %s_t * %s_%s_vector_get_values (const struct %s_%s_vector *decoder)\n", type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return NULL;\n");
+                fprintf(fp, "    }\n");
 		fprintf(fp, "    return (const %s_t *) (((const uint8_t *) decoder) + UINT64_C(%" PRIu64 "));\n", type, schema_count_type_size(schema->count_type));
 		fprintf(fp, "}\n");
 		fprintf(fp, "__attribute__((unused)) static inline %s_t %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", type, schema->namespace, type, schema->namespace, type);
@@ -102,6 +108,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "__attribute__((unused)) static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return 0;\n");
+                fprintf(fp, "    }\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    %s_t count;\n", schema_count_type_name(schema->count_type));
 			fprintf(fp, "    return *(%s_t *) memcpy(&count, ((const uint8_t *) decoder), sizeof(count));\n", schema_count_type_name(schema->count_type));
@@ -115,6 +124,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "}\n");
 		fprintf(fp, "__attribute__((unused)) static inline const %s * %s_%s_vector_get_values (const struct %s_%s_vector *decoder)\n", type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return NULL;\n");
+                fprintf(fp, "    }\n");
 		fprintf(fp, "    return (const %s *) (((const uint8_t *) decoder) + UINT64_C(%" PRIu64 "));\n", type, schema_count_type_size(schema->count_type));
 		fprintf(fp, "}\n");
 		fprintf(fp, "__attribute__((unused)) static inline %s %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", type, schema->namespace, type, schema->namespace, type);
@@ -127,6 +139,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "__attribute__((unused)) static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return 0;\n");
+                fprintf(fp, "    }\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    %s_t count;\n", schema_count_type_name(schema->count_type));
 			fprintf(fp, "    return *(%s_t *) memcpy(&count, ((const uint8_t *) decoder), sizeof(count));\n", schema_count_type_name(schema->count_type));
@@ -140,6 +155,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "}\n");
 		fprintf(fp, "__attribute__((unused)) static inline const %s_%s_t * %s_%s_vector_get_values (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return NULL;\n");
+                fprintf(fp, "    }\n");
 		fprintf(fp, "    return (const %s_%s_t *) (((const uint8_t *) decoder) + UINT64_C(%" PRIu64 "));\n", schema->namespace, type, schema_count_type_size(schema->count_type));
 		fprintf(fp, "}\n");
 		fprintf(fp, "__attribute__((unused)) static inline %s_%s_t %s_%s_vector_get_at (const struct %s_%s_vector *decoder, uint64_t at)\n", schema->namespace, type, schema->namespace, type, schema->namespace, type);
@@ -152,6 +170,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "__attribute__((unused)) static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return 0;\n");
+                fprintf(fp, "    }\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    %s_t count;\n", schema_count_type_name(schema->count_type));
 			fprintf(fp, "    return *(%s_t *) memcpy(&count, ((const uint8_t *) decoder), sizeof(count));\n", schema_count_type_name(schema->count_type));
@@ -180,6 +201,9 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
 		fprintf(fp, "\n");
 		fprintf(fp, "__attribute__((unused)) static inline uint64_t %s_%s_vector_get_count (const struct %s_%s_vector *decoder)\n", schema->namespace, type, schema->namespace, type);
 		fprintf(fp, "{\n");
+                fprintf(fp, "    if (decoder == NULL) {\n");
+                fprintf(fp, "        return 0;\n");
+                fprintf(fp, "    }\n");
 		if (decoder_use_memcpy) {
 			fprintf(fp, "    %s_t count;\n", schema_count_type_name(schema->count_type));
 			fprintf(fp, "    return *(%s_t *) memcpy(&count, ((const uint8_t *) decoder), sizeof(count));\n", schema_count_type_name(schema->count_type));
@@ -782,14 +806,9 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    return %s_%s_vector_start(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
-				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "__attribute__((unused)) static inline const struct %s_%s_vector * %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
-				fprintf(fp, "    const struct %s_%s_vector *vector;\n", schema->namespace, table_field->type);
-				fprintf(fp, "    vector = %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
-				fprintf(fp, "    if (vector == NULL) {\n");
-				fprintf(fp, "        return -1;\n");
-				fprintf(fp, "    }\n");
-				fprintf(fp, "    return %s_%s_%s_set(encoder, vector);\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "    return %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
 				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
@@ -817,14 +836,9 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    return %s_%s_vector_start(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
-				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "__attribute__((unused)) static inline const struct %s_%s_vector * %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
-				fprintf(fp, "    const struct %s_%s_vector *vector;\n", schema->namespace, table_field->type);
-				fprintf(fp, "    vector = %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
-				fprintf(fp, "    if (vector == NULL) {\n");
-				fprintf(fp, "        return -1;\n");
-				fprintf(fp, "    }\n");
-				fprintf(fp, "    return %s_%s_%s_set(encoder, vector);\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "    return %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
 				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
@@ -852,14 +866,9 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    return %s_%s_vector_start(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
-				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "__attribute__((unused)) static inline const struct %s_%s_vector * %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
-				fprintf(fp, "    const struct %s_%s_vector *vector;\n", schema->namespace, table_field->type);
-				fprintf(fp, "    vector = %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
-				fprintf(fp, "    if (vector == NULL) {\n");
-				fprintf(fp, "        return -1;\n");
-				fprintf(fp, "    }\n");
-				fprintf(fp, "    return %s_%s_%s_set(encoder, vector);\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "    return %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
 				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
@@ -904,14 +913,9 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    return %s_%s_vector_start(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
-				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "__attribute__((unused)) static inline const struct %s_%s_vector * %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
-				fprintf(fp, "    const struct %s_%s_vector *vector;\n", schema->namespace, table_field->type);
-				fprintf(fp, "    vector = %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
-				fprintf(fp, "    if (vector == NULL) {\n");
-				fprintf(fp, "        return -1;\n");
-				fprintf(fp, "    }\n");
-				fprintf(fp, "    return %s_%s_%s_set(encoder, vector);\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "    return %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
 				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
@@ -938,14 +942,9 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
 				fprintf(fp, "{\n");
 				fprintf(fp, "    return %s_%s_vector_start(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
-				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "__attribute__((unused)) static inline const struct %s_%s_vector * %s_%s_%s_end (struct linearbuffers_encoder *encoder)\n", schema->namespace, table_field->type, schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
-				fprintf(fp, "    const struct %s_%s_vector *vector;\n", schema->namespace, table_field->type);
-				fprintf(fp, "    vector = %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
-				fprintf(fp, "    if (vector == NULL) {\n");
-				fprintf(fp, "        return -1;\n");
-				fprintf(fp, "    }\n");
-				fprintf(fp, "    return %s_%s_%s_set(encoder, vector);\n", schema->namespace, table->name, table_field->name);
+				fprintf(fp, "    return %s_%s_vector_end(encoder);\n", schema->namespace, table_field->type);
 				fprintf(fp, "}\n");
 				fprintf(fp, "__attribute__((unused)) static inline int %s_%s_%s_cancel (struct linearbuffers_encoder *encoder)\n", schema->namespace, table->name, table_field->name);
 				fprintf(fp, "{\n");
@@ -2050,6 +2049,7 @@ int schema_generate_c_jsonify (struct schema *schema, FILE *fp, int decoder_use_
 	}
 
 	fprintf(fp, "\n");
+        fprintf(fp, "#include <stdio.h>\n");
         fprintf(fp, "#include <stdlib.h>\n");
         fprintf(fp, "#include <stdarg.h>\n");
 	fprintf(fp, "#include <inttypes.h>\n");
