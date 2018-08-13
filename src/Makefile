@@ -79,11 +79,11 @@ parser.lex.h: parser.l
 
 parser.tab.c: parser.y
 	${Q}echo "  BISON      ${CURDIR}/$@"
-	${Q}bison -Wno-conflicts-rr -d $<
+	${Q}bison -d $<
 
 parser.tab.h: parser.y
 	${Q}echo "  BISON      ${CURDIR}/$@"
-	${Q}bison -Wno-conflicts-rr -d $<
+	${Q}bison -d $<
 
 clean:
 	${Q}${RM} parser.lex.c
