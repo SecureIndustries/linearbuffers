@@ -1207,6 +1207,11 @@ bail:	if (fp) {
 
 int yyparse (struct schema_parser *schema_parser);
 
+int yywrap (void)
+{
+        return 1;
+}
+
 struct schema * schema_parse_file (const char *filename)
 {
 	int rc;

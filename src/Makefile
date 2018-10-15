@@ -29,9 +29,6 @@ linearbuffers-compiler_parser.lex.c_cflags-y = \
 linearbuffers-compiler_parser.tab.c_cflags-y = \
 	-Wno-implicit-function-declaration
 
-linearbuffers-compiler_ldflags-y = \
-	-lfl
-
 liblinearbuffers-encoder.o_files-y = \
 	debug.c \
 	encoder.c
