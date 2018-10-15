@@ -18,7 +18,7 @@ static int emitter_function (void *context, uint64_t offset, const void *buffer,
 	} else {
 		emitter_param->length = (emitter_param->length > offset + length) ? emitter_param->length : offset + length;
 	}
-	fprintf(stderr, "offset: 0x%08lx, length: %08ld, buffer: %p\n", offset, length, buffer);
+	fprintf(stderr, "offset: 0x%08llx, length: %08lld, buffer: %p\n", offset, length, buffer);
 	return 0;
 }
 
@@ -53,7 +53,7 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 
-	fprintf(stderr, "linearized length: %ld\n", emitter_param.length);
+	fprintf(stderr, "linearized length: %lld\n", emitter_param.length);
 
 	linearbuffers_encoder_destroy(encoder);
 

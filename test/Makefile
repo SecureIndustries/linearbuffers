@@ -20,9 +20,7 @@ define test-defaults
         ../dist/lib
 
     $1_ldflags-y = \
-    	-Wl,-Bstatic \
-        -llinearbuffers-encoder \
-		-Wl,-Bdynamic
+        ../dist/lib/liblinearbuffers-encoder.a
 
 	$1_depends-y = \
 		../dist/lib/liblinearbuffers-encoder.a

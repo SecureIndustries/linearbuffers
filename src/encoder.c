@@ -67,7 +67,7 @@ static void pool_uninit (struct pool *pool)
 static int pool_init (struct pool *pool, const char *name, uint64_t selements, uint64_t nelements)
 {
 	memset(pool, 0, sizeof(struct pool));
-	linearbuffers_debugf("init name: %s, selements: %lu, nelements: %lu", name, selements, nelements);
+	linearbuffers_debugf("init name: %s, selements: %llu, nelements: %llu", name, selements, nelements);
 	pool->name = name;
 	pool->selements = selements;
 	pool->nelements = nelements;
@@ -87,7 +87,7 @@ static void * pool_malloc (struct pool *pool)
 		pool->felements = pool->felements->next;
 		return ((uint8_t *) element) + sizeof(struct pool_element);
 	}
-	linearbuffers_debugf("uelements: %ld, nelements: %ld", pool->uelements, pool->nelements);
+	linearbuffers_debugf("uelements: %lld, nelements: %lld", pool->uelements, pool->nelements);
 	if (pool->uelements + 1 > pool->nelements ||
 	    pool->cblock == NULL) {
 		struct pool_block *block;

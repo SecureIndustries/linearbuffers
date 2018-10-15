@@ -48,7 +48,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "can not get linearized buffer\n");
 		goto bail;
 	}
-	fprintf(stderr, "linearized: %p, length: %ld\n", linearized_buffer, linearized_length);
+	fprintf(stderr, "linearized: %p, length: %lld\n", linearized_buffer, linearized_length);
 
 	linearbuffers_output_jsonify(linearized_buffer, linearized_length, LINEARBUFFERS_JSONIFY_FLAG_DEFAULT, (int (*) (void *context, const char *fmt, ...)) fprintf, stderr);
 
