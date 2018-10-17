@@ -18,6 +18,7 @@ define test-defaults
         ../dist/include
 
     $1_cflags-y = \
+    	-D_GNU_SOURCE \
     	-include $1-encoder.h \
     	-include $1-decoder.h \
     	-include $1-jsonify.h 
@@ -55,6 +56,7 @@ define test-memcpy-defaults
         ../dist/include
 
     $1_cflags-y = \
+    	-D_GNU_SOURCE \
     	-include $1-encoder.h \
     	-include $1-decoder.h \
     	-include $1-jsonify.h 
