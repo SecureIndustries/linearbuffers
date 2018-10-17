@@ -67,7 +67,7 @@ static void linearbuffers_pool_uninit (struct linearbuffers_pool *pool)
 static int linearbuffers_pool_init (struct linearbuffers_pool *pool, const char *name, uint64_t selements, uint64_t nelements)
 {
         memset(pool, 0, sizeof(struct linearbuffers_pool));
-        linearbuffers_debugf("init name: %s, selements: %llu, nelements: %llu", name, selements, nelements);
+        linearbuffers_debugf("init name: %s, selements: %" PRIu64 ", nelements: %" PRIu64 "", name, selements, nelements);
         pool->name = name;
         pool->selements = selements;
         pool->nelements = nelements;
@@ -87,7 +87,7 @@ static void * linearbuffers_pool_malloc (struct linearbuffers_pool *pool)
                 pool->felements = pool->felements->next;
                 return ((uint8_t *) element) + sizeof(struct linearbuffers_pool_element);
         }
-        linearbuffers_debugf("uelements: %" PRId64 ", nelements: %" PRId64 "", pool->uelements, pool->nelements);
+        linearbuffers_debugf("uelements: %" PRIu64 ", nelements: %" PRIu64 "", pool->uelements, pool->nelements);
         if (pool->uelements + 1 > pool->nelements ||
             pool->cblock == NULL) {
                 struct linearbuffers_pool_block *block;
