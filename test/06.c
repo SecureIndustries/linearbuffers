@@ -14,7 +14,7 @@ static int emitter_function (void *context, uint64_t offset, const void *buffer,
 	} else {
 		emitter_param->length = (emitter_param->length > offset + length) ? emitter_param->length : offset + length;
 	}
-	fprintf(stderr, "offset: 0x%08llx, length: %08" PRIu64 ", buffer: %p\n", offset, length, buffer);
+	fprintf(stderr, "offset: 0x%08" PRIx64 ", length: %08" PRIu64 ", buffer: %p\n", offset, length, buffer);
 	return 0;
 }
 
