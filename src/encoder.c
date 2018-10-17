@@ -201,7 +201,6 @@ struct linearbuffers_entry {
 };
 
 struct linearbuffers_encoder {
-        struct linearbuffers_entry *root;
         struct linearbuffers_entries stack;
         struct {
                 int (*function) (void *context, uint64_t offset, const void *buffer, int64_t length);
@@ -507,7 +506,7 @@ __attribute__ ((__visibility__("default"))) void linearbuffers_encoder_destroy (
         }
         TAILQ_FOREACH_REVERSE_SAFE(entry, &encoder->stack, linearbuffers_entries, stack, nentry) {
                 TAILQ_REMOVE(&encoder->stack, entry, stack);
-                linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, encoder->root);
+                linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
         }
         if (encoder->output.buffer != NULL) {
                 free(encoder->output.buffer);
@@ -528,7 +527,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (str
         }
         TAILQ_FOREACH_REVERSE_SAFE(entry, &encoder->stack, linearbuffers_entries, stack, nentry) {
                 TAILQ_REMOVE(&encoder->stack, entry, stack);
-                linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, encoder->root);
+                linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
         }
         encoder->emitter.offset = 0;
         encoder->emitter.function = linearbuffers_encoder_default_emitter;
