@@ -49,7 +49,7 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 
-	fprintf(stderr, "linearized length: %lld\n", emitter_param.length);
+	fprintf(stderr, "linearized length: %" PRIu64 "\n", emitter_param.length);
 
 	linearbuffers_encoder_destroy(encoder);
 
