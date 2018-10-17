@@ -87,7 +87,7 @@ static void * linearbuffers_pool_malloc (struct linearbuffers_pool *pool)
                 pool->felements = pool->felements->next;
                 return ((uint8_t *) element) + sizeof(struct linearbuffers_pool_element);
         }
-        linearbuffers_debugf("uelements: %lld, nelements: %lld", pool->uelements, pool->nelements);
+        linearbuffers_debugf("uelements: %" PRId64 ", nelements: %" PRId64 "", pool->uelements, pool->nelements);
         if (pool->uelements + 1 > pool->nelements ||
             pool->cblock == NULL) {
                 struct linearbuffers_pool_block *block;
