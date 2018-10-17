@@ -1,10 +1,6 @@
 
 #include <stdio.h>
 
-#include "03-encoder.h"
-#include "03-decoder.h"
-#include "03-jsonify.h"
-
 int main (int argc, char *argv[])
 {
 	int rc;

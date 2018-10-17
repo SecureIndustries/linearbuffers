@@ -9,23 +9,23 @@ struct schema_table;
 struct schema;
 
 enum {
-	schema_count_type_default,
-	schema_count_type_uint8,
-	schema_count_type_uint16,
-	schema_count_type_uint32,
-	schema_count_type_uint64
+        schema_count_type_default,
+        schema_count_type_uint8,
+        schema_count_type_uint16,
+        schema_count_type_uint32,
+        schema_count_type_uint64
 };
 
 enum {
-	schema_offset_type_default,
-	schema_offset_type_uint8,
-	schema_offset_type_uint16,
-	schema_offset_type_uint32,
-	schema_offset_type_uint64
+        schema_offset_type_default,
+        schema_offset_type_uint8,
+        schema_offset_type_uint16,
+        schema_offset_type_uint32,
+        schema_offset_type_uint64
 };
 
 enum {
-	schema_container_type_none,
+        schema_container_type_none,
         schema_container_type_vector,
         schema_container_type_struct
 };

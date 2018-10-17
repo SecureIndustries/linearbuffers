@@ -3,10 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "05-encoder.h"
-#include "05-decoder.h"
-#include "05-jsonify.h"
-
 int main (int argc, char *argv[])
 {
 	int rc;

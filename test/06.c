@@ -2,10 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "06-encoder.h"
-#include "06-decoder.h"
-#include "06-jsonify.h"
-
 struct emitter_param {
 	uint64_t length;
 };

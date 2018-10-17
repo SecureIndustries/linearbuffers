@@ -5,10 +5,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "09-encoder.h"
-#include "09-decoder.h"
-#include "09-jsonify.h"
-
 #define ARRAY_COUNT	4
 
 int main (int argc, char *argv[])
