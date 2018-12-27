@@ -981,6 +981,20 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
                                 fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "    return rc;\n");
                                 fprintf(fp, "}\n");
+                                fprintf(fp, "%s int %s_%s_%s_createf (struct linearbuffers_encoder *encoder, const char *value_%s, ...)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->name);
+                                fprintf(fp, "{\n");
+                                fprintf(fp, "    int rc;\n");
+                                fprintf(fp, "    va_list ap;\n");
+                                fprintf(fp, "    uint64_t offset;\n");
+                                fprintf(fp, "    va_start(ap, value_%s);\n", table_field->name);
+                                fprintf(fp, "    rc = linearbuffers_encoder_string_createv(encoder, &offset, value_%s, ap);\n", table_field->name);
+                                fprintf(fp, "    va_end(ap);\n");
+                                fprintf(fp, "    if (rc != 0) { \n");
+                                fprintf(fp, "        return rc;\n");
+                                fprintf(fp, "    }\n");
+                                fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
+                                fprintf(fp, "    return rc;\n");
+                                fprintf(fp, "}\n");
                                 fprintf(fp, "%s int %s_%s_%s_ncreate (struct linearbuffers_encoder *encoder, uint64_t n, const char *value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->name);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    int rc;\n");
@@ -1072,6 +1086,7 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int encoder_incl
         fprintf(fp, "\n");
         fprintf(fp, "#include <stddef.h>\n");
         fprintf(fp, "#include <stdint.h>\n");
+        fprintf(fp, "#include <stdarg.h>\n");
 
         if (encoder_include_library == 0) {
                 fprintf(fp, "#include <linearbuffers/encoder.h>\n");
@@ -1096,6 +1111,16 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int encoder_incl
         fprintf(fp, "\n");
         fprintf(fp, "struct %s_string;\n", schema->namespace);
         fprintf(fp, "\n");
+        fprintf(fp, "__attribute__((unused, warn_unused_result)) static inline const struct %s_string * %s_string_createv (struct linearbuffers_encoder *encoder, const char *value, va_list va)\n", schema->namespace, schema->namespace);
+        fprintf(fp, "{\n");
+        fprintf(fp, "    int rc;\n");
+        fprintf(fp, "    uint64_t offset;\n");
+        fprintf(fp, "    rc = linearbuffers_encoder_string_createv(encoder, &offset, value, va);\n");
+        fprintf(fp, "    if (rc != 0) {\n");
+        fprintf(fp, "        return NULL;\n");
+        fprintf(fp, "    }\n");
+        fprintf(fp, "    return (const struct %s_string *) offset;\n", schema->namespace);
+        fprintf(fp, "}\n");
         fprintf(fp, "__attribute__((unused, warn_unused_result)) static inline const struct %s_string * %s_string_create (struct linearbuffers_encoder *encoder, const char *value)\n", schema->namespace, schema->namespace);
         fprintf(fp, "{\n");
         fprintf(fp, "    int rc;\n");
@@ -1972,9 +1997,9 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
                 fprintf(fp, "    }\n");
                 fprintf(fp, "    if (rc >= param->len - param->off) {\n");
                 fprintf(fp, "        char *tmp;\n");
-                fprintf(fp, "        tmp = realloc(param->beg, param->off + rc + 1);\n");
+                fprintf(fp, "        tmp = (char *) realloc(param->beg, param->off + rc + 1);\n");
                 fprintf(fp, "        if (tmp == NULL) {\n");
-                fprintf(fp, "            tmp = malloc(param->off + rc + 1);\n");
+                fprintf(fp, "            tmp = (char *) malloc(param->off + rc + 1);\n");
                 fprintf(fp, "            if (tmp == NULL) {\n");
                 fprintf(fp, "                goto bail;\n");
                 fprintf(fp, "            }\n");

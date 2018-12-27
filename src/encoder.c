@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <inttypes.h>
 
 #define LINEARBUFFERS_DEBUG_NAME "encoder"
@@ -801,6 +802,62 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_cre
         encoder->emitter.offset += length;
         return 0;
 bail:   return -1;
+}
+
+__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_createv (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value, va_list va)
+{
+        int rc;
+        va_list vs;
+        char *buffer;
+        int length;
+        buffer = NULL;
+        if (encoder == NULL) {
+                linearbuffers_errorf("encoder is invalid");
+                goto bail;
+        }
+        if (offset == NULL) {
+                linearbuffers_errorf("offset is invalid");
+                goto bail;
+        }
+        if (value == NULL) {
+                linearbuffers_errorf("value is invalid");
+                goto bail;
+        }
+        if (TAILQ_EMPTY(&encoder->stack)) {
+                linearbuffers_errorf("logic error: stack is empty");
+                goto bail;
+        }
+        *offset = encoder->emitter.offset;
+        va_copy(vs, va);
+        length = vsnprintf(NULL, 0, value, vs);
+        va_end(vs);
+        if (length < 0) {
+                goto bail;
+        }
+        buffer = malloc(length + 1);
+        if (buffer == NULL) {
+                linearbuffers_errorf("can not allocate memory");
+                goto bail;
+        }
+        va_copy(vs, va);
+        length = vsnprintf(buffer, length + 1, value, vs);
+        va_end(vs);
+        if (length < 0) {
+                linearbuffers_errorf("can not print string");
+                goto bail;
+        }
+        rc = encoder->emitter.function(encoder->emitter.context, encoder->emitter.offset, buffer, length + 1);
+        if (rc != 0) {
+                linearbuffers_errorf("can not emit element");
+                goto bail;
+        }
+        encoder->emitter.offset += length + 1;
+        free(buffer);
+        return 0;
+bail:   if (buffer != NULL) {
+                free(buffer);
+        }
+        return -1;
 }
 
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_ncreate (struct linearbuffers_encoder *encoder, uint64_t *offset, uint64_t n, const char *value)
