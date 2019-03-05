@@ -1,6 +1,10 @@
 
+LINEARBUFFERS_BUILD_TEST ?= n
+
 subdir-y = \
-	src \
+	src
+
+subdir-${LINEARBUFFERS_BUILD_TEST} += \
 	test
 
 test_depends-y = \
