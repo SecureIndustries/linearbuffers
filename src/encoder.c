@@ -553,10 +553,6 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
                 linearbuffers_errorf("encoder is invalid");
                 goto bail;
         }
-        if (elements == 0) {
-                linearbuffers_errorf("elements is invalid");
-                goto bail;
-        }
         entry = linearbuffers_pool_malloc(&encoder->pool.entry);
         if (entry == NULL) {
                 linearbuffers_errorf("can not allocate memory");
