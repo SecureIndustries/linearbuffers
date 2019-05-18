@@ -1658,11 +1658,9 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
         prefix[prefix_count * 4] = '\0';
 
         if (TAILQ_EMPTY(&element->entries)) {
-                fprintf(fp, "__attribute__((unused)) static inline int %s_jsonify (const void *buffer, uint64_t length, unsigned int flags, int (*emitter) (void *context, const char *format, ...), void *context)\n", namespace_linearized(namespace));
+                fprintf(fp, "__attribute__((unused)) static inline int %s_jsonify (const struct %s *%s, unsigned int flags, int (*emitter) (void *context, const char *format, ...), void *context)\n", namespace_linearized(namespace), namespace_linearized(namespace), namespace_linearized(namespace));
                 fprintf(fp, "{\n");
                 fprintf(fp, "    int rc;\n");
-                fprintf(fp, "    const struct %s *%s;\n", namespace_linearized(namespace), namespace_linearized(namespace));
-                fprintf(fp, "    %s = %s_decode(buffer, length);\n", namespace_linearized(namespace), namespace_linearized(namespace));
                 fprintf(fp, "    if (%s == NULL) {\n", namespace_linearized(namespace));
                 fprintf(fp, "        goto bail;\n");
                 fprintf(fp, "    }\n");
@@ -1719,12 +1717,12 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
 
                         fprintf(fp, "%s    for (at_%" PRIu64 " = 0; at_%" PRIu64 " < count; at_%" PRIu64 "++) {\n", prefix, element->nentries, element->nentries, element->nentries);
 
-                        fprintf(fp, "%s    if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
-                        fprintf(fp, "%s        rc = emitter(context, \"%s    \");\n", prefix, prefix);
-                        fprintf(fp, "%s        if (rc < 0) {\n", prefix);
-                        fprintf(fp, "%s            goto bail;\n", prefix);
+                        fprintf(fp, "%s        if (flags & LINEARBUFFERS_JSONIFY_FLAG_PRETTY_SPACE) {\n", prefix);
+                        fprintf(fp, "%s            rc = emitter(context, \"%s    \");\n", prefix, prefix);
+                        fprintf(fp, "%s            if (rc < 0) {\n", prefix);
+                        fprintf(fp, "%s                goto bail;\n", prefix);
+                        fprintf(fp, "%s            }\n", prefix);
                         fprintf(fp, "%s        }\n", prefix);
-                        fprintf(fp, "%s    }\n", prefix);
 
                         if (schema_type_is_scalar(table_field->type)) {
                                 fprintf(fp, "%s        %s_t value;\n", prefix, table_field->type);
@@ -2023,12 +2021,12 @@ static int schema_generate_jsonify_table (struct schema *schema, struct schema_t
                 fprintf(fp, "    return -1;\n");
                 fprintf(fp, "}\n");
                 fprintf(fp, "\n");
-                fprintf(fp, "__attribute__((unused)) static inline char * %s_jsonify_string (const void *buffer, uint64_t length, unsigned int flags)\n", namespace_linearized(namespace));
+                fprintf(fp, "__attribute__((unused)) static inline char * %s_jsonify_string (const struct %s *%s, unsigned int flags)\n", namespace_linearized(namespace), namespace_linearized(namespace), namespace_linearized(namespace));
                 fprintf(fp, "{\n");
                 fprintf(fp, "    int rc;\n");
                 fprintf(fp, "    struct %s_jsonify_string_emitter_param param;\n", namespace_linearized(namespace));
                 fprintf(fp, "    memset(&param, 0, sizeof(param));\n");
-                fprintf(fp, "    rc = %s_jsonify(buffer, length, flags, (int (*) (void *context, const char *format, ...)) %s_jsonify_string_emitter, &param);\n", namespace_linearized(namespace), namespace_linearized(namespace));
+                fprintf(fp, "    rc = %s_jsonify(%s, flags, (int (*) (void *context, const char *format, ...)) %s_jsonify_string_emitter, &param);\n", namespace_linearized(namespace), namespace_linearized(namespace), namespace_linearized(namespace));
                 fprintf(fp, "    if (rc != 0) {\n");
                 fprintf(fp, "        goto bail;\n");
                 fprintf(fp, "    }\n");
