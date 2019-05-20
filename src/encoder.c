@@ -722,7 +722,6 @@ linearbuffers_encoder_table_set_scalar_type(double, double);
         __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_set_ ## __type__ (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, uint64_t value) \
         { \
                 int rc; \
-                uint64_t eoffset; \
                 struct linearbuffers_entry *parent; \
                 if (encoder == NULL) { \
                         linearbuffers_errorf("encoder is invalid"); \
@@ -749,8 +748,7 @@ linearbuffers_encoder_table_set_scalar_type(double, double);
                         linearbuffers_errorf("logic error: element is invalid"); \
                         goto bail; \
                 } \
-                eoffset = value - parent->offset; \
-                rc = parent->offset_emitter(encoder->emitter.function, encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, eoffset); \
+                rc = parent->offset_emitter(encoder->emitter.function, encoder->emitter.context, parent->offset + parent->count_size + parent->u.table.present.bytes + offset, value - parent->offset); \
                 if (rc != 0) { \
                         linearbuffers_errorf("can not emit table element offset"); \
                         goto bail; \
