@@ -117,6 +117,9 @@ tests: all
 	done
 
 clean:
+	${Q}${RM} ??-encoder.js
+	${Q}${RM} ??-decoder.js
+	${Q}${RM} ??-jsonify.js
 	${Q}${RM} ??-encoder.h
 	${Q}${RM} ??-decoder.h
 	${Q}${RM} ??-jsonify.h
