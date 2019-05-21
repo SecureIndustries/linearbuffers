@@ -10,6 +10,7 @@
 #include "schema.h"
 #include "schema-private.h"
 
+
 int schema_generate_js_encoder (struct schema *schema, FILE *fp, int encoder_include_library)
 {
         (void) schema;

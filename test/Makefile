@@ -30,19 +30,35 @@ define test-defaults
         ../dist/lib/liblinearbuffers-encoder.a
 
     $1_depends-y = \
+        $1-encoder.js \
+        $1-decoder.js \
+        $1-jsonify.js \
         ../dist/lib/liblinearbuffers-encoder.a
 
     $1-encoder.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-encoder.h -e 1 -l 0
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-encoder.h -l c -e 1 -i 0
 
     $1-decoder.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-decoder.h -d 1 -m 0
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-decoder.h -l c -d 1 -m 0
 
     $1-jsonify.h: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-jsonify.h -j 1 -m 0
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-jsonify.h -l c -j 1 -m 0
+
+    $1-encoder.js: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
+	${Q}@echo "  LBS        ${CURDIR}/$$@"
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-encoder.js -l js -e 1 -i 0
+
+    $1-decoder.js: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
+	${Q}@echo "  LBS        ${CURDIR}/$$@"
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-decoder.js -l js -d 1 -m 0
+
+    $1-jsonify.js: $1.lbs ../dist/bin/linearbuffers-compiler Makefile
+	${Q}@echo "  LBS        ${CURDIR}/$$@"
+	${Q}@../dist/bin/linearbuffers-compiler -s $1.lbs -o $1-jsonify.js -l js -j 1 -m 0
+
 endef
 
 define test-memcpy-defaults
@@ -72,15 +88,15 @@ define test-memcpy-defaults
 
     $1-encoder.h: $(subst -memcpy,,$1).lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $(subst -memcpy,,$1).lbs -o $1-encoder.h -e 1 -l 0
+	${Q}@../dist/bin/linearbuffers-compiler -s $(subst -memcpy,,$1).lbs -o $1-encoder.h -l c -e 1 -i 0
 
     $1-decoder.h: $(subst -memcpy,,$1).lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $(subst -memcpy,,$1).lbs -o $1-decoder.h -d 1 -m 1
+	${Q}@../dist/bin/linearbuffers-compiler -s $(subst -memcpy,,$1).lbs -o $1-decoder.h -l c -d 1 -m 1
 
     $1-jsonify.h: $(subst -memcpy,,$1).lbs ../dist/bin/linearbuffers-compiler Makefile
 	${Q}@echo "  LBS        ${CURDIR}/$$@"
-	${Q}@../dist/bin/linearbuffers-compiler -s $(subst -memcpy,,$1).lbs -o $1-jsonify.h -j 1 -m 1
+	${Q}@../dist/bin/linearbuffers-compiler -s $(subst -memcpy,,$1).lbs -o $1-jsonify.h -l c -j 1 -m 1
 endef
 
 $(eval $(foreach T,${tests},$(eval $(call test-defaults,$T))))

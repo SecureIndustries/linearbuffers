@@ -266,7 +266,7 @@ int main (int argc, char *argv[])
         }
         if (generator == NULL ||
             *generator == NULL) {
-                fprintf(stderr, "language is invalid\n");
+                fprintf(stderr, "language: %s is invalid\n", option_language);
                 goto bail;
         }
 
