@@ -798,6 +798,16 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_cre
 bail:   return -1;
 }
 
+__attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_createf (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value, ...)
+{
+        int rc;
+        va_list ap;
+        va_start(ap, value);
+        rc = linearbuffers_encoder_string_createv(encoder, offset, value, ap);
+        va_end(ap);
+        return rc;
+}
+
 __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_createv (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value, va_list va)
 {
         int rc;

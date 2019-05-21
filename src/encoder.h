@@ -63,6 +63,7 @@ int linearbuffers_encoder_table_set_table (struct linearbuffers_encoder *encoder
 int linearbuffers_encoder_table_set_vector (struct linearbuffers_encoder *encoder, uint64_t element, uint64_t offset, uint64_t value);
 
 int linearbuffers_encoder_string_create (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value);
+int linearbuffers_encoder_string_createf (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value, ...)  __attribute__((format(printf, 3, 4)));
 int linearbuffers_encoder_string_createv (struct linearbuffers_encoder *encoder, uint64_t *offset, const char *value, va_list va);
 int linearbuffers_encoder_string_ncreate (struct linearbuffers_encoder *encoder, uint64_t *offset, uint64_t n, const char *value);
 
