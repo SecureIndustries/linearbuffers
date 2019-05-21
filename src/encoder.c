@@ -154,8 +154,6 @@ struct linearbuffers_offset_table {
 
 enum linearbuffers_entry_type {
         linearbuffers_entry_type_unknown,
-        linearbuffers_entry_type_scalar,
-        linearbuffers_entry_type_enum,
         linearbuffers_entry_type_table,
         linearbuffers_entry_type_vector,
 };
@@ -188,7 +186,7 @@ struct linearbuffers_entry_vector {
 
 TAILQ_HEAD(linearbuffers_entries, linearbuffers_entry);
 struct linearbuffers_entry {
-        TAILQ_ENTRY(linearbuffers_entry) stack;
+        TAILQ_ENTRY(linearbuffers_entry) entries;
         enum linearbuffers_entry_type type;
         union {
                 struct linearbuffers_entry_table table;
@@ -202,7 +200,7 @@ struct linearbuffers_entry {
 };
 
 struct linearbuffers_encoder {
-        struct linearbuffers_entries stack;
+        struct linearbuffers_entries entries;
         struct {
                 int (*function) (void *context, uint64_t offset, const void *buffer, int64_t length);
                 void *context;
@@ -479,7 +477,7 @@ __attribute__ ((__visibility__("default"))) struct linearbuffers_encoder * linea
                 goto bail;
         }
         memset(encoder, 0, sizeof(struct linearbuffers_encoder));
-        TAILQ_INIT(&encoder->stack);
+        TAILQ_INIT(&encoder->entries);
         linearbuffers_pool_init(&encoder->pool.entry, "entry", sizeof(struct linearbuffers_entry), 8);
         linearbuffers_pool_init(&encoder->pool.present, "present", sizeof(struct linearbuffers_present_buffer), 8);
         linearbuffers_pool_init(&encoder->pool.offset, "offset", sizeof(struct linearbuffers_offset_buffer), 8);
@@ -505,8 +503,8 @@ __attribute__ ((__visibility__("default"))) void linearbuffers_encoder_destroy (
         if (encoder == NULL) {
                 return;
         }
-        TAILQ_FOREACH_REVERSE_SAFE(entry, &encoder->stack, linearbuffers_entries, stack, nentry) {
-                TAILQ_REMOVE(&encoder->stack, entry, stack);
+        TAILQ_FOREACH_REVERSE_SAFE(entry, &encoder->entries, linearbuffers_entries, entries, nentry) {
+                TAILQ_REMOVE(&encoder->entries, entry, entries);
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
         }
         if (encoder->output.buffer != NULL) {
@@ -526,8 +524,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_reset (str
                 linearbuffers_errorf("encoder is invalid");
                 goto bail;
         }
-        TAILQ_FOREACH_REVERSE_SAFE(entry, &encoder->stack, linearbuffers_entries, stack, nentry) {
-                TAILQ_REMOVE(&encoder->stack, entry, stack);
+        TAILQ_FOREACH_REVERSE_SAFE(entry, &encoder->entries, linearbuffers_entries, entries, nentry) {
+                TAILQ_REMOVE(&encoder->entries, entry, entries);
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
         }
         encoder->emitter.offset = 0;
@@ -577,7 +575,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
                 goto bail;
         }
         encoder->emitter.offset += entry->count_size + entry->u.table.present.bytes + size;
-        TAILQ_INSERT_TAIL(&encoder->stack, entry, stack);
+        TAILQ_INSERT_TAIL(&encoder->entries, entry, entries);
         return 0;
 bail:   if (entry != NULL) {
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
@@ -596,11 +594,11 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end 
                 linearbuffers_errorf("encoder is invalid");
                 goto bail;
         }
-        if (TAILQ_EMPTY(&encoder->stack)) {
-                linearbuffers_errorf("logic error: stack is empty");
+        if (TAILQ_EMPTY(&encoder->entries)) {
+                linearbuffers_errorf("logic error: entries is empty");
                 goto bail;
         }
-        entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries);
+        entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries);
         if (entry == NULL) {
                 linearbuffers_errorf("logic error: entry is invalid");
                 goto bail;
@@ -626,7 +624,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_end 
                         goto bail;
                 }
         }
-        TAILQ_REMOVE(&encoder->stack, entry, stack);
+        TAILQ_REMOVE(&encoder->entries, entry, entries);
         linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
         return 0;
 bail:   return -1;
@@ -640,11 +638,11 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_canc
                 linearbuffers_errorf("encoder is invalid");
                 goto bail;
         }
-        if (TAILQ_EMPTY(&encoder->stack)) {
-                linearbuffers_errorf("logic error: stack is empty");
+        if (TAILQ_EMPTY(&encoder->entries)) {
+                linearbuffers_errorf("logic error: entries is empty");
                 goto bail;
         }
-        entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries);
+        entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries);
         if (entry == NULL) {
                 linearbuffers_errorf("logic error: entry is invalid");
                 goto bail;
@@ -659,7 +657,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_canc
                 goto bail;
         }
         encoder->emitter.offset = entry->offset;
-        TAILQ_REMOVE(&encoder->stack, entry, stack);
+        TAILQ_REMOVE(&encoder->entries, entry, entries);
         linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry);
         return 0;
 bail:   return -1;
@@ -674,11 +672,11 @@ bail:   return -1;
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                parent = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                parent = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (parent == NULL) { \
                         linearbuffers_errorf("logic error: parent is invalid"); \
                         goto bail; \
@@ -731,11 +729,11 @@ linearbuffers_encoder_table_set_scalar_type(double, double);
                         linearbuffers_errorf("value is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                parent = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                parent = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (parent == NULL) { \
                         linearbuffers_errorf("logic error: parent is invalid"); \
                         goto bail; \
@@ -782,8 +780,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_cre
                 linearbuffers_errorf("value is invalid");
                 goto bail;
         }
-        if (TAILQ_EMPTY(&encoder->stack)) {
-                linearbuffers_errorf("logic error: stack is empty");
+        if (TAILQ_EMPTY(&encoder->entries)) {
+                linearbuffers_errorf("logic error: entries is empty");
                 goto bail;
         }
         *offset = encoder->emitter.offset;
@@ -827,8 +825,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_cre
                 linearbuffers_errorf("value is invalid");
                 goto bail;
         }
-        if (TAILQ_EMPTY(&encoder->stack)) {
-                linearbuffers_errorf("logic error: stack is empty");
+        if (TAILQ_EMPTY(&encoder->entries)) {
+                linearbuffers_errorf("logic error: entries is empty");
                 goto bail;
         }
         *offset = encoder->emitter.offset;
@@ -880,8 +878,8 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_string_ncr
                 linearbuffers_errorf("value is invalid");
                 goto bail;
         }
-        if (TAILQ_EMPTY(&encoder->stack)) {
-                linearbuffers_errorf("logic error: stack is empty");
+        if (TAILQ_EMPTY(&encoder->entries)) {
+                linearbuffers_errorf("logic error: entries is empty");
                 goto bail;
         }
         *offset = encoder->emitter.offset;
@@ -913,8 +911,8 @@ bail:   return -1;
                         linearbuffers_errorf("offset is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
                 *offset = encoder->emitter.offset; \
@@ -943,8 +941,8 @@ bail:   return -1;
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
                 entry = linearbuffers_pool_malloc(&encoder->pool.entry); \
@@ -972,7 +970,7 @@ bail:   return -1;
                         goto bail; \
                 } \
                 encoder->emitter.offset += entry->count_size; \
-                TAILQ_INSERT_TAIL(&encoder->stack, entry, stack); \
+                TAILQ_INSERT_TAIL(&encoder->entries, entry, entries); \
                 return 0; \
         bail:   if (entry != NULL) { \
                         linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
@@ -992,11 +990,11 @@ bail:   return -1;
                         linearbuffers_errorf("offset is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (entry == NULL) { \
                         linearbuffers_errorf("logic error: entry is invalid"); \
                         goto bail; \
@@ -1015,7 +1013,7 @@ bail:   return -1;
                         linearbuffers_errorf("can not emit vector count"); \
                         goto bail; \
                 } \
-                TAILQ_REMOVE(&encoder->stack, entry, stack); \
+                TAILQ_REMOVE(&encoder->entries, entry, entries); \
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
                 return 0; \
         bail:   return -1; \
@@ -1029,11 +1027,11 @@ bail:   return -1;
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (entry == NULL) { \
                         linearbuffers_errorf("logic error: entry is invalid"); \
                         goto bail; \
@@ -1052,7 +1050,7 @@ bail:   return -1;
                         goto bail; \
                 } \
                 encoder->emitter.offset = entry->offset; \
-                TAILQ_REMOVE(&encoder->stack, entry, stack); \
+                TAILQ_REMOVE(&encoder->entries, entry, entries); \
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
                 return 0; \
         bail:   return -1; \
@@ -1066,11 +1064,11 @@ bail:   return -1;
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (entry == NULL) { \
                         linearbuffers_errorf("logic error: entry is invalid"); \
                         goto bail; \
@@ -1117,8 +1115,8 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
                 entry = linearbuffers_pool_malloc(&encoder->pool.entry); \
@@ -1146,7 +1144,7 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         goto bail; \
                 } \
                 encoder->emitter.offset += entry->count_size + entry->offset_size; \
-                TAILQ_INSERT_TAIL(&encoder->stack, entry, stack); \
+                TAILQ_INSERT_TAIL(&encoder->entries, entry, entries); \
                 return 0; \
         bail:   if (entry != NULL) { \
                         linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
@@ -1167,11 +1165,11 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         linearbuffers_errorf("offset is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (entry == NULL) { \
                         linearbuffers_errorf("logic error: entry is invalid"); \
                         goto bail; \
@@ -1201,7 +1199,7 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         linearbuffers_errorf("can not emit offset table"); \
                         goto bail; \
                 } \
-                TAILQ_REMOVE(&encoder->stack, entry, stack); \
+                TAILQ_REMOVE(&encoder->entries, entry, entries); \
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
                 return 0; \
         bail:   return -1; \
@@ -1215,11 +1213,11 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (entry == NULL) { \
                         linearbuffers_errorf("logic error: entry is invalid"); \
                         goto bail; \
@@ -1238,7 +1236,7 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         goto bail; \
                 } \
                 encoder->emitter.offset = entry->offset; \
-                TAILQ_REMOVE(&encoder->stack, entry, stack); \
+                TAILQ_REMOVE(&encoder->entries, entry, entries); \
                 linearbuffers_entry_destroy(&encoder->pool.entry, &encoder->pool.present, &encoder->pool.offset, entry); \
                 return 0; \
         bail:   return -1; \
@@ -1252,11 +1250,11 @@ linearbuffers_encoder_vector_start_scalar_type(double, double);
                         linearbuffers_errorf("encoder is invalid"); \
                         goto bail; \
                 } \
-                if (TAILQ_EMPTY(&encoder->stack)) { \
-                        linearbuffers_errorf("logic error: stack is empty"); \
+                if (TAILQ_EMPTY(&encoder->entries)) { \
+                        linearbuffers_errorf("logic error: entries is empty"); \
                         goto bail; \
                 } \
-                entry = TAILQ_LAST(&encoder->stack, linearbuffers_entries); \
+                entry = TAILQ_LAST(&encoder->entries, linearbuffers_entries); \
                 if (entry == NULL) { \
                         linearbuffers_errorf("logic error: entry is invalid"); \
                         goto bail; \
