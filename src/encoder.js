@@ -10,7 +10,7 @@ var LinearBufferEncoderOffsetType = Object.freeze({
         Uint8 : 0,
         Uint16: 1,
         Uint32: 2,
-        Uint64: 3  
+        Uint64: 3
 })
 
 function LineaBuffersEncoderCreateOptions () {
