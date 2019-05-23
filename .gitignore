@@ -2,3 +2,16 @@
 .project
 .settings
 .pydevproject
+dist
+src/parser.lex.c
+src/parser.lex.h
+src/parser.tab.c
+src/parser.tab.h
+src/.liblinearbuffers-encoder.a
+src/.liblinearbuffers-encoder.o
+src/.liblinearbuffers-encoder.so
+src/.linearbuffers-compiler
+src/liblinearbuffers-encoder.a
+src/liblinearbuffers-encoder.o
+src/liblinearbuffers-encoder.so
+src/linearbuffers-compiler
