@@ -3,18 +3,26 @@ var LinearBufferEncoderCountType = Object.freeze({
         Uint8  : 0,
         Uint16 : 1,
         Uint32 : 2,
-        Uint64 : 3
+        Uint64 : 3,
+        uint8  : 0,
+        uint16 : 1,
+        uint32 : 2,
+        uint64 : 3
 })
 
 function LinearBufferEncoderCountTypeSize (countType)
 {
-        if (countType == LinearBufferEncoderCountType.Uint8) {
+        if (countType == LinearBufferEncoderCountType.Uint8 ||
+            countType == LinearBufferEncoderCountType.uint8) {
                return 1;
-        } else if (countType == LinearBufferEncoderCountType.Uint16) {
+        } else if (countType == LinearBufferEncoderCountType.Uint16 ||
+                   countType == LinearBufferEncoderCountType.uint16) {
                return 2;
-        } else if (countType == LinearBufferEncoderCountType.Uint32) {
+        } else if (countType == LinearBufferEncoderCountType.Uint32 ||
+                   countType == LinearBufferEncoderCountType.uint32) {
                return 4;
-        } else if (countType == LinearBufferEncoderCountType.Uint64) {
+        } else if (countType == LinearBufferEncoderCountType.Uint64 ||
+                   countType == LinearBufferEncoderCountType.uint64) {
                return 8;
         } else {
                return 0;
@@ -25,18 +33,26 @@ var LinearBufferEncoderOffsetType = Object.freeze({
         Uint8  : 0,
         Uint16 : 1,
         Uint32 : 2,
-        Uint64 : 3
+        Uint64 : 3,
+        uint8  : 0,
+        uint16 : 1,
+        uint32 : 2,
+        uint64 : 3
 })
 
 function LinearBufferEncoderCountOffsetSize (offsetType)
 {
-        if (offsetType == LinearBufferEncoderOffsetType.Uint8) {
+        if (offsetType == LinearBufferEncoderOffsetType.Uint8 ||
+            offsetType == LinearBufferEncoderOffsetType.uint8) {
                return 1;
-        } else if (offsetType == LinearBufferEncoderOffsetType.Uint16) {
+        } else if (offsetType == LinearBufferEncoderOffsetType.Uint16 ||
+                   offsetType == LinearBufferEncoderOffsetType.uint16) {
                return 2;
-        } else if (offsetType == LinearBufferEncoderOffsetType.Uint32) {
+        } else if (offsetType == LinearBufferEncoderOffsetType.Uint32 ||
+                   offsetType == LinearBufferEncoderOffsetType.uint32) {
                return 4;
-        } else if (offsetType == LinearBufferEncoderOffsetType.Uint64) {
+        } else if (offsetType == LinearBufferEncoderOffsetType.Uint64 ||
+                   offsetType == LinearBufferEncoderOffsetType.uint64) {
                return 8;
         } else {
                return 0;
