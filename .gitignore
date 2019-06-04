@@ -2,6 +2,7 @@
 .project
 .settings
 .pydevproject
+.vscode
 dist
 src/parser.lex.c
 src/parser.lex.h
