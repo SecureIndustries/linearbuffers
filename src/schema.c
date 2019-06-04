@@ -525,6 +525,9 @@ void schema_enum_destroy (struct schema_enum *anum)
         if (anum->type != NULL) {
                 free(anum->type);
         }
+        if (anum->Type != NULL) {
+                free(anum->Type);
+        }
         if (anum->TYPE != NULL) {
                 free(anum->TYPE);
         }
@@ -654,6 +657,9 @@ void schema_table_field_destroy (struct schema_table_field *field)
         }
         if (field->type != NULL) {
                 free(field->type);
+        }
+        if (field->Type != NULL) {
+                free(field->Type);
         }
         if (field->value != NULL) {
                 free(field->value);
@@ -1022,6 +1028,9 @@ static int schema_build (struct schema *schema)
         struct schema_enum *anum;
         struct schema_enum_field *anum_field;
 
+        struct schema_table *table;
+        struct schema_table_field *table_field;
+
         if (schema == NULL) {
                 linearbuffers_errorf("schema is invalid");
                 goto bail;
@@ -1122,6 +1131,12 @@ static int schema_build (struct schema *schema)
                         linearbuffers_errorf("schema anum type is invalid");
                         goto bail;
                 }
+                anum->Type = strdup(anum->type);
+                if (anum->Type == NULL) {
+                        linearbuffers_errorf("schema anum type is invalid");
+                        goto bail;
+                }
+                anum->Type[0] = toupper(anum->Type[0]);
                 anum->TYPE = strdup(anum->type);
                 if (anum->TYPE == NULL) {
                         linearbuffers_errorf("schema anum type is invalid");
@@ -1137,7 +1152,7 @@ static int schema_build (struct schema *schema)
                 pvalue = 0;
                 TAILQ_FOREACH(anum_field, &anum->fields, list) {
                         if (anum_field->value == NULL) {
-                                rc = asprintf(&anum_field->value, "%s_C(%" PRIi64 ")", anum->TYPE, pvalue);
+                                rc = asprintf(&anum_field->value, "%" PRIi64 "", pvalue);
                                 if (rc < 0) {
                                         linearbuffers_errorf("can not set schema enum field value");
                                         goto bail;
@@ -1146,6 +1161,21 @@ static int schema_build (struct schema *schema)
                                 pvalue = strtoll(anum_field->value, NULL, 0);
                         }
                         pvalue += 1;
+                }
+        }
+
+        TAILQ_FOREACH(table, &schema->tables, list) {
+                TAILQ_FOREACH(table_field, &table->fields, list) {
+                        if (table_field->type == NULL) {
+                                linearbuffers_errorf("table field type is invalid");
+                                goto bail;
+                        }
+                        table_field->Type = strdup(table_field->type);
+                        if (table_field->Type == NULL) {
+                                linearbuffers_errorf("can not allocate memory");
+                                goto bail;
+                        }
+                        table_field->Type[0] = toupper(table_field->Type[0]);
                 }
         }
 

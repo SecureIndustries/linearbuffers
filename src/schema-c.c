@@ -76,14 +76,19 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
                 goto bail;
         }
 
+        fprintf(fp, "\n");
+        fprintf(fp, "#if !defined(%s_%s_ENUM_API)\n", schema->NAMESPACE, anum->name);
+        fprintf(fp, "#define %s_%s_ENUM_API\n", schema->NAMESPACE, anum->name);
+        fprintf(fp, "\n");
+
         fprintf(fp, "typedef %s_t %s_%s_t;\n", anum->type, schema->namespace, anum->name);
 
         TAILQ_FOREACH(anum_field, &anum->fields, list) {
-                if (anum_field->value != NULL) {
-                        fprintf(fp, "#define %s_%s_%s ((%s_%s_t) %s_C(%s))\n", schema->namespace, anum->name, anum_field->name, schema->namespace, anum->name, anum->TYPE, anum_field->value);
-                } else {
-                        fprintf(fp, "#define %s_%s_%s\n", schema->namespace, anum->name, anum_field->name);
+                if (anum_field->value == NULL) {
+                        linearbuffers_errorf("enum field value is invalid");
+                        goto bail;
                 }
+                fprintf(fp, "#define %s_%s_%s ((%s_%s_t) %s_C(%s))\n", schema->namespace, anum->name, anum_field->name, schema->namespace, anum->name, anum->TYPE, anum_field->value);
         }
 
         fprintf(fp, "\n");
@@ -106,6 +111,9 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
         fprintf(fp, "    return 0;\n");
         fprintf(fp, "}\n");
 
+        fprintf(fp, "\n");
+        fprintf(fp, "#endif\n");
+
         return 0;
 bail:   return -1;
 }
@@ -120,6 +128,11 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
                 linearbuffers_errorf("fp is invalid");
                 goto bail;
         }
+
+        fprintf(fp, "\n");
+        fprintf(fp, "#if !defined(%s_%s_VECTOR_DECODER_API)\n", schema->NAMESPACE, type);
+        fprintf(fp, "#define %s_%s_VECTOR_DECODER_API\n", schema->NAMESPACE, type);
+
         if (schema_type_is_scalar(type)) {
                 fprintf(fp, "\n");
                 fprintf(fp, "struct %s_%s_vector;\n", schema->namespace, type);
@@ -276,6 +289,10 @@ static int schema_generate_vector_decoder (struct schema *schema, const char *ty
                         fprintf(fp, "    return (const struct %s_%s *) (((const uint8_t *) decoder) + offset);\n", schema->namespace, type);
                 fprintf(fp, "}\n");
         }
+
+        fprintf(fp, "\n");
+        fprintf(fp, "#endif\n");
+
         return 0;
 bail:   return -1;
 }
@@ -791,6 +808,14 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
                 goto bail;
         }
 
+        fprintf(fp, "\n");
+        fprintf(fp, "#if !defined(%s_%s_ENCODER_API)\n", schema->NAMESPACE, table->name);
+        fprintf(fp, "#define %s_%s_ENCODER_API\n", schema->NAMESPACE, table->name);
+
+        fprintf(fp, "\n");
+        fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
+        fprintf(fp, "\n");
+
         table_field_s = 0;
         TAILQ_FOREACH(table_field, &table->fields, list) {
                 if (table_field->container == schema_container_type_vector) {
@@ -1009,65 +1034,62 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
                         }
                 } else {
                         if (schema_type_is_scalar(table_field->type)) {
-                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_t value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->type, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_t value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->type);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_float(table_field->type)) {
-                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->type, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->type);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_string(table_field->type)) {
-                                fprintf(fp, "%s int %s_%s_%s_create (struct linearbuffers_encoder *encoder, const char *value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_create (struct linearbuffers_encoder *encoder, const char *value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    int rc;\n");
                                 fprintf(fp, "    uint64_t offset;\n");
-                                fprintf(fp, "    rc = linearbuffers_encoder_string_create(encoder, &offset, value_%s);\n", table_field->name);
+                                fprintf(fp, "    rc = linearbuffers_encoder_string_create(encoder, &offset, value);\n");
                                 fprintf(fp, "    if (rc != 0) { \n");
                                 fprintf(fp, "        return rc;\n");
                                 fprintf(fp, "    }\n");
-                                fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
-                                fprintf(fp, "    return rc;\n");
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                fprintf(fp, "%s int %s_%s_%s_createf (struct linearbuffers_encoder *encoder, const char *value_%s, ...)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_createf (struct linearbuffers_encoder *encoder, const char *value, ...)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    int rc;\n");
                                 fprintf(fp, "    va_list ap;\n");
                                 fprintf(fp, "    uint64_t offset;\n");
-                                fprintf(fp, "    va_start(ap, value_%s);\n", table_field->name);
-                                fprintf(fp, "    rc = linearbuffers_encoder_string_createv(encoder, &offset, value_%s, ap);\n", table_field->name);
+                                fprintf(fp, "    va_start(ap, value);\n");
+                                fprintf(fp, "    rc = linearbuffers_encoder_string_createv(encoder, &offset, value, ap);\n");
                                 fprintf(fp, "    va_end(ap);\n");
                                 fprintf(fp, "    if (rc != 0) { \n");
                                 fprintf(fp, "        return rc;\n");
                                 fprintf(fp, "    }\n");
-                                fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
-                                fprintf(fp, "    return rc;\n");
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                fprintf(fp, "%s int %s_%s_%s_ncreate (struct linearbuffers_encoder *encoder, uint64_t n, const char *value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_ncreate (struct linearbuffers_encoder *encoder, uint64_t n, const char *value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    int rc;\n");
                                 fprintf(fp, "    uint64_t offset;\n");
-                                fprintf(fp, "    rc = linearbuffers_encoder_string_ncreate(encoder, &offset, n, value_%s);\n", table_field->name);
+                                fprintf(fp, "    rc = linearbuffers_encoder_string_ncreate(encoder, &offset, n, value);\n");
                                 fprintf(fp, "    if (rc != 0) { \n");
                                 fprintf(fp, "        return rc;\n");
                                 fprintf(fp, "    }\n");
-                                fprintf(fp, "    rc = linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
-                                fprintf(fp, "    return rc;\n");
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), offset);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const struct %s_string *value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const struct %s_string *value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), (uint64_t) (ptrdiff_t) value_%s);\n", table_field->type, table_field_i, table_field_s, table_field->name);
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), (uint64_t) (ptrdiff_t) value);\n", table_field->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_enum(schema, table_field->type)) {
-                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_%s_t value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, %s_%s_t value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace, table_field->type);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value_%s);\n", schema_type_get_enum(schema, table_field->type)->type, table_field_i, table_field_s, table_field->name);
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_%s(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), value);\n", schema_type_get_enum(schema, table_field->type)->type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_table(schema, table_field->type)) {
-                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const struct %s_%s *value_%s)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace, table_field->type, table_field->name);
+                                fprintf(fp, "%s int %s_%s_%s_set (struct linearbuffers_encoder *encoder, const struct %s_%s *value)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace, table_field->type);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return linearbuffers_encoder_table_set_table(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), (uint64_t) (ptrdiff_t) value_%s);\n", table_field_i, table_field_s, table_field->name);
+                                fprintf(fp, "    return linearbuffers_encoder_table_set_table(encoder, UINT64_C(%" PRIu64 "), UINT64_C(%" PRIu64 "), (uint64_t) (ptrdiff_t) value);\n", table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else {
                                 linearbuffers_errorf("type is invalid: %s", table_field->type);
@@ -1112,6 +1134,9 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
         fprintf(fp, "    return linearbuffers_encoder_table_end(encoder, NULL);\n");
         fprintf(fp, "}\n");
 
+        fprintf(fp, "\n");
+        fprintf(fp, "#endif\n");
+
         return 0;
 bail:   return -1;
 }
@@ -1142,15 +1167,11 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int encoder_incl
         }
 
         TAILQ_FOREACH(anum, &schema->enums, list) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_%s_ENUM_API)\n", schema->NAMESPACE, anum->name);
-                fprintf(fp, "#define %s_%s_ENUM_API\n", schema->NAMESPACE, anum->name);
-                fprintf(fp, "\n");
-
-                schema_generate_enum(schema, anum, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
+                rc = schema_generate_enum(schema, anum, fp);
+                if (rc != 0) {
+                        linearbuffers_errorf("can not generate enum");
+                        goto bail;
+                }
         }
 
         if (schema_has_string(schema)) {
@@ -1338,22 +1359,11 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int encoder_incl
         }
 
         TAILQ_FOREACH(table, &schema->tables, list) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_%s_ENCODER_API)\n", schema->NAMESPACE, table->name);
-                fprintf(fp, "#define %s_%s_ENCODER_API\n", schema->NAMESPACE, table->name);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
-                fprintf(fp, "\n");
-
                 rc = schema_generate_encoder_table(schema, table, fp);
                 if (rc != 0) {
                         linearbuffers_errorf("can not generate decoder for table: %s", table->name);
                         goto bail;
                 }
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
 
         return 0;
@@ -1380,6 +1390,10 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
         }
 
         fprintf(fp, "\n");
+        fprintf(fp, "#if !defined(%s_%s_DECODER_API)\n", schema->NAMESPACE, table->name);
+        fprintf(fp, "#define %s_%s_DECODER_API\n", schema->NAMESPACE, table->name);
+
+        fprintf(fp, "\n");
         fprintf(fp, "struct %s_%s;\n", schema->namespace, table->name);
         fprintf(fp, "\n");
 
@@ -1395,7 +1409,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                 struct schema_attribute *attribute;
                 struct namespace *attribute_string;
                 attribute_string = namespace_create();
-                namespace_push(attribute_string, "__attribute__ (( unused");
+                namespace_push(attribute_string, "__attribute__ ((unused");
                 TAILQ_FOREACH(attribute, &table_field->attributes, list) {
                         if (strcmp(attribute->name, "deprecated") == 0) {
                                 if (attribute->value == NULL ||
@@ -1405,7 +1419,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                 }
                         }
                 }
-                namespace_push(attribute_string, " )) static inline");
+                namespace_push(attribute_string, ")) static inline");
 
                 fprintf(fp, "%s int %s_%s_%s_present (const struct %s_%s *decoder)\n", namespace_linearized(attribute_string), schema->namespace, table->name, table_field->name, schema->namespace, table->name);
                 fprintf(fp, "{\n");
@@ -1652,6 +1666,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                 namespace_destroy(attribute_string);
         }
 
+        fprintf(fp, "\n");
+        fprintf(fp, "#endif\n");
+
         return 0;
 bail:   return -1;
 }
@@ -1679,15 +1696,11 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
 
         if (!TAILQ_EMPTY(&schema->enums)) {
                 TAILQ_FOREACH(anum, &schema->enums, list) {
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#if !defined(%s_%s_ENUM_API)\n", schema->NAMESPACE, anum->name);
-                        fprintf(fp, "#define %s_%s_ENUM_API\n", schema->NAMESPACE, anum->name);
-                        fprintf(fp, "\n");
-
-                        schema_generate_enum(schema, anum, fp);
-
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#endif\n");
+                        rc = schema_generate_enum(schema, anum, fp);
+                        if (rc != 0) {
+                                linearbuffers_errorf("can not generate enum");
+                                goto bail;
+                        }
                 }
         }
 
@@ -1710,138 +1723,47 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
 
         rc = 0;
         if (schema_has_vector(schema, "int8")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int8_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int8_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "int8", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "int16")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int16_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int16_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "int16", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "int32")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int32_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int32_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "int32", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "int64")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int64_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int64_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "int64", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint8")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint8_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint8_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "uint8", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint16")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint16_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint16_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "uint16", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint32")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint32_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint32_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "uint32", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint64")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint64_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint64_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "uint64", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "float")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_float_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_float_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "float", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "double")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_double_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_double_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "double", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "string")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_string_VECTOR_DECODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_string_VECTOR_DECODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_decoder(schema, "string", decoder_use_memcpy, fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
 
         TAILQ_FOREACH(anum, &schema->enums, list) {
                 if (schema_has_vector(schema, anum->name)) {
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#if !defined(%s_%s_VECTOR_DECODER_API)\n", schema->NAMESPACE, anum->name);
-                        fprintf(fp, "#define %s_%s_VECTOR_DECODER_API\n", schema->NAMESPACE, anum->name);
-
                         rc |= schema_generate_vector_decoder(schema, anum->name, decoder_use_memcpy, fp);
-
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#endif\n");
                 }
         }
         TAILQ_FOREACH(table, &schema->tables, list) {
                 if (schema_has_vector(schema, table->name)) {
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#if !defined(%s_%s_VECTOR_DECODER_API)\n", schema->NAMESPACE, table->name);
-                        fprintf(fp, "#define %s_%s_VECTOR_DECODER_API\n", schema->NAMESPACE, table->name);
-
                         rc |= schema_generate_vector_decoder(schema, table->name, decoder_use_memcpy, fp);
-
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#endif\n");
                 }
         }
         if (rc != 0) {
@@ -1850,18 +1772,11 @@ int schema_generate_c_decoder (struct schema *schema, FILE *fp, int decoder_use_
         }
 
         TAILQ_FOREACH(table, &schema->tables, list) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_%s_DECODER_API)\n", schema->NAMESPACE, table->name);
-                fprintf(fp, "#define %s_%s_DECODER_API\n", schema->NAMESPACE, table->name);
-
                 rc = schema_generate_decoder_table(schema, table, decoder_use_memcpy, fp);
                 if (rc != 0) {
                         linearbuffers_errorf("can not generate decoder for table: %s", table->name);
                         goto bail;
                 }
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
 
         return 0;

@@ -1,10 +1,12 @@
 
-$(eval tests = $(sort $(subst .c,,$(wildcard ??.c))))
+$(eval tests        = $(sort $(subst .c,,$(wildcard ??.c))))
 $(eval tests-memcpy = $(addsuffix -memcpy,${tests}))
+$(eval tests-js     = $(sort $(wildcard ??.js)))
 
 target-y = \
 	${tests} \
 	${tests-memcpy}
+
 all:
 
 define test-defaults
@@ -109,6 +111,15 @@ tests: all
 	${Q}for T in ${tests} ${tests-memcpy}; do \
 		printf "  $${T} ... "; \
 		./$${T} 2>/dev/null 1>/dev/null; \
+		if [ $$? != 0 ]; then \
+			echo "fail"; \
+		else \
+			echo "success"; \
+		fi \
+	done
+	${Q}for T in ${tests-js}; do \
+		printf "  $${T} ... "; \
+		node ./$${T} 2>/dev/null 1>/dev/null; \
 		if [ $$? != 0 ]; then \
 			echo "fail"; \
 		else \

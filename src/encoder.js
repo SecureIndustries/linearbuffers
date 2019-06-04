@@ -171,7 +171,7 @@ LinearBuffersEncoder.prototype.tableSSetTable = function (element, offset, value
 LinearBuffersEncoder.prototype.tableSSetVector = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableStringCreate = function (element, offset, value) {
+LinearBuffersEncoder.prototype.stringCreate = function (element, value) {
 }
 
 LinearBuffersEncoder.prototype.vectorStartInt8 = function (countType, offsetType) {
