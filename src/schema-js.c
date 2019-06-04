@@ -83,7 +83,7 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
                         linearbuffers_errorf("enum field value is invalid");
                         goto bail;
                 }
-                fprintf(fp, "    %s_%s = %s,\n", anum->name, anum_field->name, anum_field->value);
+                fprintf(fp, "    %s_%s : %s,\n", anum->name, anum_field->name, anum_field->value);
         }
         fprintf(fp, "})\n");
 

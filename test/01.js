@@ -1,6 +1,6 @@
 
 var LinearBuffers = require('../src/encoder.js');
-var Output        = require('01-encoder.js');
+var Output        = require('../test/01-encoder.js');
 
 var encoder;
 
