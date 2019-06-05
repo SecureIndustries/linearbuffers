@@ -122,7 +122,7 @@ LinearBuffersEncoder.prototype.tableStart = function (countType, offsetType, ele
         entry.__table          = new LinearBuffersEncoderEntryTable();
         entry.__table.elements = elements;
         entry.__table.size     = size;
-        this.__emitterFunction(this.__emitterContext, entry.__offset, NULL, entry.__countSize + 0 + size);
+        this.__emitterFunction(this.__emitterContext, entry.__offset, null, entry.__countSize + 0 + size);
         this.__entries.push(entry);
 }
 
@@ -344,6 +344,10 @@ LinearBuffersEncoder.prototype.vectorPushTable = function (value) {
 
 LinearBuffersEncoder.prototype.vectorCreateTable = function (countType, offsetType, value) {
 }
+
+LinearBuffersEncoder.prototype.LinearBufferEncoderCountType = LinearBufferEncoderCountType;
+
+LinearBuffersEncoder.prototype.LinearBufferEncoderOffsetType = LinearBufferEncoderOffsetType;
 
 module.exports = {
         LinearBufferEncoderCountType : LinearBufferEncoderCountType,
