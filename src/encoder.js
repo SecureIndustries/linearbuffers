@@ -147,28 +147,28 @@ LinearBuffersEncoder.prototype.tableSetInt64 = function (element, offset, value)
 LinearBuffersEncoder.prototype.tableSetUint8 = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetUin16 = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetUint16 = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetUin32 = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetUint32 = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetUin64 = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetUint64 = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetFloat = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetFloat = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetDouble = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetDouble = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetString = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetString = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetTable = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetTable = function (element, offset, value) {
 }
 
-LinearBuffersEncoder.prototype.tableSSetVector = function (element, offset, value) {
+LinearBuffersEncoder.prototype.tableSetVector = function (element, offset, value) {
 }
 
 LinearBuffersEncoder.prototype.stringCreate = function (element, value) {

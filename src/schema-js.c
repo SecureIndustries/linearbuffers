@@ -59,6 +59,27 @@ static int schema_has_string (struct schema *schema)
         return 0;
 }
 
+static int schema_generate_enum_exports (struct schema *schema, struct schema_enum *anum, FILE *fp)
+{
+        if (schema == NULL) {
+                linearbuffers_errorf("schema is invalid");
+                goto bail;
+        }
+        if (anum == NULL) {
+                linearbuffers_errorf("enum is invalid");
+                goto bail;
+        }
+        if (fp == NULL) {
+                linearbuffers_errorf("fp is invalid");
+                goto bail;
+        }
+        fprintf(fp, "    %s_%s : %s_%s,\n", schema->namespace, anum->name, schema->namespace, anum->name);
+        fprintf(fp, "    %s_%s_string : %s_%s_string,\n", schema->namespace, anum->name, schema->namespace, anum->name);
+        fprintf(fp, "    %s_%s_is_valid : %s_%s_is_valid,\n", schema->namespace, anum->name, schema->namespace, anum->name);
+        return 0;
+bail:   return -1;
+}
+
 static int schema_generate_enum (struct schema *schema, struct schema_enum *anum, FILE *fp)
 {
         struct schema_enum_field *anum_field;
@@ -106,7 +127,6 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
         fprintf(fp, "    }\n");
         fprintf(fp, "    return 0;\n");
         fprintf(fp, "}\n");
-
         return 0;
 bail:   return -1;
 }
@@ -773,7 +793,94 @@ bail:   if (namespace != NULL) {
         return NULL;
 }
 
-static int schema_generate_encoder_table (struct schema *schema, struct namespace *exports, struct schema_table *table, FILE *fp)
+static int schema_generate_encoder_table_exports (struct schema *schema, struct schema_table *table, FILE *fp)
+{
+        struct schema_table_field *table_field;
+
+        if (schema == NULL) {
+                linearbuffers_errorf("schema is invalid");
+                goto bail;
+        }
+        if (table == NULL) {
+                linearbuffers_errorf("table is invalid");
+                goto bail;
+        }
+        if (fp == NULL) {
+                linearbuffers_errorf("fp is invalid");
+                goto bail;
+        }
+
+        fprintf(fp, "    %s_%s_start : %s_%s_start,\n", schema->namespace, table->name, schema->namespace, table->name);
+
+        TAILQ_FOREACH(table_field, &table->fields, list) {
+                if (table_field->container == schema_container_type_vector) {
+                        if (schema_type_is_scalar(table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_float(table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_enum(schema, table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_string(table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_table(schema, table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else {
+                                linearbuffers_errorf("type is invalid: %s", table_field->type);
+                                goto bail;
+                        }
+                } else {
+                        if (schema_type_is_scalar(table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_float(table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_string(table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_enum(schema, table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else if (schema_type_is_table(schema, table_field->type)) {
+                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set.\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                        } else {
+                                linearbuffers_errorf("type is invalid: %s", table_field->type);
+                                goto bail;
+                        }
+                }
+        }
+
+        fprintf(fp, "    %s_%s_end : %s_%s_end,\n", schema->namespace, table->name, schema->namespace, table->name);
+        fprintf(fp, "    %s_%s_cancel : %s_%s_cancel,\n", schema->namespace, table->name, schema->namespace, table->name);
+        fprintf(fp, "    %s_%s_finish : %s_%s_finish,\n", schema->namespace, table->name, schema->namespace, table->name);
+
+        return 0;
+bail:   return -1;
+}
+
+static int schema_generate_encoder_table (struct schema *schema, struct schema_table *table, FILE *fp)
 {
         uint64_t table_field_i;
         uint64_t table_field_s;
@@ -818,7 +925,6 @@ static int schema_generate_encoder_table (struct schema *schema, struct namespac
         fprintf(fp, "{\n");
         fprintf(fp, "    return encoder.tableStart(encoder.LinearBufferEncoderCountType.%s, encoder.LinearBufferEncoderOffsetType.%s, %" PRIu64 ", %" PRIu64 ");\n", schema_count_type_name(schema->count_type), schema_offset_type_name(schema->offset_type), table->nfields, table_field_s);
         fprintf(fp, "}\n");
-        namespace_push(exports, "%s_%s_start", schema->namespace, table->name);
 
         table_field_i = 0;
         table_field_s = 0;
@@ -1016,13 +1122,11 @@ static int schema_generate_encoder_table (struct schema *schema, struct namespac
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                namespace_push(exports, "%s_%s_%s_set", schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_float(table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                namespace_push(exports, "%s_%s_%s_set", schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_string(table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_create (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
@@ -1037,20 +1141,16 @@ static int schema_generate_encoder_table (struct schema *schema, struct namespac
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                namespace_push(exports, "%s_%s_%s_create", schema->namespace, table->name, table_field->name);
-                                namespace_push(exports, "%s_%s_%s_set", schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_enum(schema, table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", schema_type_get_enum(schema, table_field->type)->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                namespace_push(exports, "%s_%s_%s_set", schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_table(schema, table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, const struct %s_%s *value)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->Type);
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    return encoder.tableSetTable(encoder, %" PRIu64 ", %" PRIu64 ", (uint64_t) (ptrdiff_t) value);\n", table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
-                                namespace_push(exports, "%s_%s_%s_set", schema->namespace, table->name, table_field->name);
                         } else {
                                 linearbuffers_errorf("type is invalid: %s", table_field->type);
                                 goto bail;
@@ -1098,10 +1198,6 @@ static int schema_generate_encoder_table (struct schema *schema, struct namespac
         fprintf(fp, "    return 0;\n");
         fprintf(fp, "}\n");
 
-        namespace_push(exports, "%s_%s_end", schema->namespace, table->name);
-        namespace_push(exports, "%s_%s_cancel", schema->namespace, table->name);
-        namespace_push(exports, "%s_%s_finish", schema->namespace, table->name);
-
         return 0;
 bail:   return -1;
 }
@@ -1113,23 +1209,12 @@ int schema_generate_js_encoder (struct schema *schema, FILE *fp, int encoder_inc
         struct schema_enum *anum;
         struct schema_table *table;
 
-        struct namespace *exports;
-        struct namespace_entry *exports_entry;
-
-        exports = NULL;
-
         if (schema == NULL) {
                 linearbuffers_errorf("schema is invalid");
                 goto bail;
         }
         if (fp == NULL) {
                 linearbuffers_errorf("fp is invalid");
-                goto bail;
-        }
-
-        exports = namespace_create();
-        if (exports == NULL) {
-                linearbuffers_errorf("can not create exports");
                 goto bail;
         }
 
@@ -1299,7 +1384,7 @@ int schema_generate_js_encoder (struct schema *schema, FILE *fp, int encoder_inc
         }
 
         TAILQ_FOREACH(table, &schema->tables, list) {
-                rc = schema_generate_encoder_table(schema, exports, table, fp);
+                rc = schema_generate_encoder_table(schema, table, fp);
                 if (rc != 0) {
                         linearbuffers_errorf("can not generate decoder for table: %s", table->name);
                         goto bail;
@@ -1308,17 +1393,25 @@ int schema_generate_js_encoder (struct schema *schema, FILE *fp, int encoder_inc
 
         fprintf(fp, "\n");
         fprintf(fp, "module.exports = {\n");
-        TAILQ_FOREACH(exports_entry, &exports->entries, list) {
-                fprintf(fp, "    %s : %s,\n", exports_entry->string, exports_entry->string);
+        TAILQ_FOREACH(anum, &schema->enums, list) {
+                rc = schema_generate_enum_exports(schema, anum, fp);
+                if (rc != 0) {
+                        linearbuffers_errorf("can not generate enum");
+                        goto bail;
+                }
         }
+        TAILQ_FOREACH(table, &schema->tables, list) {
+                rc = schema_generate_encoder_table_exports(schema, table, fp);
+                if (rc != 0) {
+                        linearbuffers_errorf("can not generate decoder for table: %s", table->name);
+                        goto bail;
+                }
+        }
+
         fprintf(fp, "}\n");
 
-        namespace_destroy(exports);
         return 0;
-bail:   if (exports != NULL) {
-                namespace_destroy(exports);
-        }
-        return -1;
+bail:   return -1;
 }
 
 static int schema_generate_decoder_table (struct schema *schema, struct schema_table *table, int decoder_use_memcpy, FILE *fp)
