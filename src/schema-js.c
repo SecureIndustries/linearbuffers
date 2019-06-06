@@ -61,6 +61,8 @@ static int schema_has_string (struct schema *schema)
 
 static int schema_generate_enum_exports (struct schema *schema, struct schema_enum *anum, FILE *fp)
 {
+        struct schema_enum_field *anum_field;
+
         if (schema == NULL) {
                 linearbuffers_errorf("schema is invalid");
                 goto bail;
@@ -73,7 +75,14 @@ static int schema_generate_enum_exports (struct schema *schema, struct schema_en
                 linearbuffers_errorf("fp is invalid");
                 goto bail;
         }
-        fprintf(fp, "    %s_%s : %s_%s,\n", schema->namespace, anum->name, schema->namespace, anum->name);
+
+        TAILQ_FOREACH(anum_field, &anum->fields, list) {
+                if (anum_field->value == NULL) {
+                        linearbuffers_errorf("enum field value is invalid");
+                        goto bail;
+                }
+                fprintf(fp, "    %s_%s_%s : %s_%s_%s,\n", schema->namespace, anum->name, anum_field->name, schema->namespace, anum->name, anum_field->name);
+        }
         fprintf(fp, "    %s_%s_string : %s_%s_string,\n", schema->namespace, anum->name, schema->namespace, anum->name);
         fprintf(fp, "    %s_%s_is_valid : %s_%s_is_valid,\n", schema->namespace, anum->name, schema->namespace, anum->name);
         return 0;
@@ -98,22 +107,20 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
         }
         
         fprintf(fp, "\n");
-        fprintf(fp, "var %s_%s = Object.freeze({\n", schema->namespace, anum->name);
         TAILQ_FOREACH(anum_field, &anum->fields, list) {
                 if (anum_field->value == NULL) {
                         linearbuffers_errorf("enum field value is invalid");
                         goto bail;
                 }
-                fprintf(fp, "    %s_%s : %s,\n", anum->name, anum_field->name, anum_field->value);
+                fprintf(fp, "const %s_%s_%s = %s;\n", schema->namespace, anum->name, anum_field->name, anum_field->value);
         }
-        fprintf(fp, "})\n");
 
         fprintf(fp, "\n");
         fprintf(fp, "function %s_%s_string (value)\n", schema->namespace, anum->name);
         fprintf(fp, "{\n");
         fprintf(fp, "    switch (value) {\n");
         TAILQ_FOREACH(anum_field, &anum->fields, list) {
-                fprintf(fp, "        case %s_%s.%s_%s: return \"%s\";\n", schema->namespace, anum->name, anum->name, anum_field->name, anum_field->name);
+                fprintf(fp, "        case %s_%s_%s: return \"%s\";\n", schema->namespace, anum->name, anum_field->name, anum_field->name);
         }
         fprintf(fp, "    }\n");
         fprintf(fp, "    return \"%s\";\n", "");
@@ -122,7 +129,7 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
         fprintf(fp, "{\n");
         fprintf(fp, "    switch (value) {\n");
         TAILQ_FOREACH(anum_field, &anum->fields, list) {
-                fprintf(fp, "        case %s_%s.%s_%s: return 1;\n", schema->namespace, anum->name, anum->name, anum_field->name);
+                fprintf(fp, "        case %s_%s_%s: return 1;\n", schema->namespace, anum->name, anum_field->name);
         }
         fprintf(fp, "    }\n");
         fprintf(fp, "    return 0;\n");
