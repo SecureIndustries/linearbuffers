@@ -823,39 +823,39 @@ static int schema_generate_encoder_table_exports (struct schema *schema, struct 
                 if (table_field->container == schema_container_type_vector) {
                         if (schema_type_is_scalar(table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_push : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_float(table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_push : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_enum(schema, table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_push : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_string(table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_push : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_push_create : %s_%s_%s_push_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_table(schema, table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_start : %s_%s_%s_start,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_end : %s_%s_%s_end,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_cancel : %s_%s_%s_cancel,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    %s_%s_%s_finish : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_push : %s_%s_%s_push,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else {
                                 linearbuffers_errorf("type is invalid: %s", table_field->type);
                                 goto bail;
@@ -866,7 +866,7 @@ static int schema_generate_encoder_table_exports (struct schema *schema, struct 
                         } else if (schema_type_is_float(table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_string(table_field->type)) {
-                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
+                                fprintf(fp, "    %s_%s_%s_create : %s_%s_%s_create,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
                         } else if (schema_type_is_enum(schema, table_field->type)) {
                                 fprintf(fp, "    %s_%s_%s_set : %s_%s_%s_set,\n", schema->namespace, table->name, table_field->name, schema->namespace, table->name, table_field->name);
