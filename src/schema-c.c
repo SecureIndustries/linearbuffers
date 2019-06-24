@@ -1616,8 +1616,6 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                 fprintf(fp, "    %s_t offset;\n", schema_offset_type_name(schema->offset_type));
                                 if (decoder_use_memcpy) {
                                         fprintf(fp, "    %s_t toffset;\n", schema_offset_type_name(schema->offset_type));
-                                }
-                                if (decoder_use_memcpy) {
                                         fprintf(fp, "    offset = *(%s_t *) memcpy(&toffset, ((const uint8_t *) decoder) + UINT64_C(%" PRIu64 ") + ((count + 7) / 8) + UINT64_C(%" PRIu64 "), sizeof(offset));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type), table_field_s);
                                 } else {
                                         fprintf(fp, "    offset = *(%s_t *) (((const uint8_t *) decoder) + UINT64_C(%" PRIu64 ") + ((count + 7) / 8) + UINT64_C(%" PRIu64 "));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type), table_field_s);
@@ -1627,8 +1625,6 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                 fprintf(fp, "    %s_t offset;\n", schema_offset_type_name(schema->offset_type));
                                 if (decoder_use_memcpy) {
                                         fprintf(fp, "    %s_t toffset;\n", schema_offset_type_name(schema->offset_type));
-                                }
-                                if (decoder_use_memcpy) {
                                         fprintf(fp, "    offset = *(%s_t *) memcpy(&toffset, ((const uint8_t *) decoder) + UINT64_C(%" PRIu64 ") + ((count + 7) / 8) + UINT64_C(%" PRIu64 "), sizeof(offset));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type), table_field_s);
                                 } else {
                                         fprintf(fp, "    offset = *(%s_t *) (((const uint8_t *) decoder) + UINT64_C(%" PRIu64 ") + ((count + 7) / 8) + UINT64_C(%" PRIu64 "));\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type), table_field_s);

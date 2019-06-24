@@ -345,6 +345,10 @@ LinearBuffersEncoder.prototype.vectorPushTable = function (value) {
 LinearBuffersEncoder.prototype.vectorCreateTable = function (countType, offsetType, value) {
 }
 
+LinearBuffersEncoder.prototype.linearized = function () {
+        return this.__outputBuffer;
+}
+
 LinearBuffersEncoder.prototype.LinearBufferEncoderCountType = LinearBufferEncoderCountType;
 
 LinearBuffersEncoder.prototype.LinearBufferEncoderOffsetType = LinearBufferEncoderOffsetType;
