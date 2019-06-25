@@ -307,6 +307,11 @@ static int schema_generate_vector_encoder (struct schema *schema, const char *ty
                 linearbuffers_errorf("fp is invalid");
                 goto bail;
         }
+
+        fprintf(fp, "\n");
+        fprintf(fp, "#if !defined(%s_%s_VECTOR_ENCODER_API)\n", schema->NAMESPACE, type);
+        fprintf(fp, "#define %s_%s_VECTOR_ENCODER_API\n", schema->NAMESPACE, type);
+
         if (schema_type_is_scalar(type)) {
                 fprintf(fp, "\n");
                 fprintf(fp, "struct %s_%s_vector;\n", schema->namespace, type);
@@ -487,6 +492,10 @@ static int schema_generate_vector_encoder (struct schema *schema, const char *ty
                 fprintf(fp, "    return linearbuffers_encoder_vector_push_table(encoder, (uint64_t) (ptrdiff_t) value);\n");
                 fprintf(fp, "}\n");
         }
+
+        fprintf(fp, "\n");
+        fprintf(fp, "#endif\n");
+
         return 0;
 bail:   return -1;
 }
@@ -1219,138 +1228,47 @@ int schema_generate_c_encoder (struct schema *schema, FILE *fp, int encoder_incl
 
         rc = 0;
         if (schema_has_vector(schema, "int8")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int8_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int8_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "int8", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "int16")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int16_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int16_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "int16", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "int32")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int32_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int32_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "int32", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "int64")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_int64_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_int64_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "int64", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint8")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint8_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint8_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "uint8", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint16")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint16_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint16_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "uint16", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint32")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint32_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint32_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "uint32", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "uint64")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_uint64_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_uint64_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "uint64", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "float")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_float_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_float_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "float", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "double")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_double_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_double_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "double", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
         if (schema_has_vector(schema, "string")) {
-                fprintf(fp, "\n");
-                fprintf(fp, "#if !defined(%s_string_VECTOR_ENCODER_API)\n", schema->NAMESPACE);
-                fprintf(fp, "#define %s_string_VECTOR_ENCODER_API\n", schema->NAMESPACE);
-
                 rc |= schema_generate_vector_encoder(schema, "string", fp);
-
-                fprintf(fp, "\n");
-                fprintf(fp, "#endif\n");
         }
 
         TAILQ_FOREACH(anum, &schema->enums, list) {
                 if (schema_has_vector(schema, anum->name)) {
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#if !defined(%s_%s_VECTOR_ENCODER_API)\n", schema->NAMESPACE, anum->name);
-                        fprintf(fp, "#define %s_%s_VECTOR_ENCODER_API\n", schema->NAMESPACE, anum->name);
-
                         rc |= schema_generate_vector_encoder(schema, anum->name, fp);
-
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#endif\n");
                 }
         }
         TAILQ_FOREACH(table, &schema->tables, list) {
                 if (schema_has_vector(schema, table->name)) {
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#if !defined(%s_%s_VECTOR_ENCODER_API)\n", schema->NAMESPACE, table->name);
-                        fprintf(fp, "#define %s_%s_VECTOR_ENCODER_API\n", schema->NAMESPACE, table->name);
-
                         rc |= schema_generate_vector_encoder(schema, table->name, fp);
-
-                        fprintf(fp, "\n");
-                        fprintf(fp, "#endif\n");
                 }
         }
         if (rc != 0) {
