@@ -1136,12 +1136,12 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
                         if (schema_type_is_scalar(table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
+                                fprintf(fp, "    return encoder.tableSet%s(%" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_float(table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
+                                fprintf(fp, "    return encoder.tableSet%s(%" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_string(table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_create (encoder, value)\n", schema->namespace, table->name, table_field->name);
@@ -1155,17 +1155,17 @@ static int schema_generate_encoder_table (struct schema *schema, struct schema_t
                                 fprintf(fp, "}\n");
                                 fprintf(fp, "function %s_%s_%s_set (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
+                                fprintf(fp, "    return encoder.tableSet%s(%" PRIu64 ", %" PRIu64 ", value);\n", table_field->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_enum(schema, table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, value)\n", schema->namespace, table->name, table_field->name);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return encoder.tableSet%s(encoder, %" PRIu64 ", %" PRIu64 ", value);\n", schema_type_get_enum(schema, table_field->type)->Type, table_field_i, table_field_s);
+                                fprintf(fp, "    return encoder.tableSet%s(%" PRIu64 ", %" PRIu64 ", value);\n", schema_type_get_enum(schema, table_field->type)->Type, table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else if (schema_type_is_table(schema, table_field->type)) {
                                 fprintf(fp, "function %s_%s_%s_set (encoder, const struct %s_%s *value)\n", schema->namespace, table->name, table_field->name, schema->namespace, table_field->Type);
                                 fprintf(fp, "{\n");
-                                fprintf(fp, "    return encoder.tableSetTable(encoder, %" PRIu64 ", %" PRIu64 ", (uint64_t) (ptrdiff_t) value);\n", table_field_i, table_field_s);
+                                fprintf(fp, "    return encoder.tableSetTable(%" PRIu64 ", %" PRIu64 ", (uint64_t) (ptrdiff_t) value);\n", table_field_i, table_field_s);
                                 fprintf(fp, "}\n");
                         } else {
                                 linearbuffers_errorf("type is invalid: %s", table_field->type);

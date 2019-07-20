@@ -43,5 +43,11 @@ if (output == null) {
 if (Decoder.linearbuffers_output_int8_get(output) != 0) {
         throw "decoder failed: linearbuffers_output_int8_get";
 }
+if (Decoder.linearbuffers_output_int16_get(output) != 1) {
+        throw "decoder failed: linearbuffers_output_int16_get";
+}
+if (Decoder.linearbuffers_output_int32_get(output) != 2) {
+        throw "decoder failed: linearbuffers_output_int32_get";
+}
 
 delete encoder;
