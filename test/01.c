@@ -104,6 +104,10 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_string_get\n");
 		goto bail;
 	}
+        if (linearbuffers_output_anum_get(output) != linearbuffers_a_enum_1) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_anum_get\n");
+                goto bail;
+        }
 
 	linearbuffers_encoder_destroy(encoder);
 

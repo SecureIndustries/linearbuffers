@@ -512,24 +512,32 @@ LinearBuffersEncoder.prototype.tableSetVector = function (element, offset, value
 }
 
 LinearBuffersEncoder.prototype.stringCreate = function (element, value) {
-        var offset;
+        var i;
+        var p;
         var valueArray;
+        p = 0;
         valueArray = new Array();
-        for (var i = 0; i < value.length; i++) {
-                var charcode = value.charCodeAt(i);
-                if (charcode < 0x80) {
-                        valueArray.push(charcode);
-                } else if (charcode < 0x800) {
-                        valueArray.push(0xc0 | (charcode >> 6), 0x80 | (charcode & 0x3f));
-                } else if (charcode < 0xd800 || charcode >= 0xe000) {
-                        valueArray.push(0xe0 | (charcode >> 12), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+        for (i = 0; i < value.length; i++) {
+                var c = value.charCodeAt(i);
+                if (c < 128) {
+                        valueArray[p++] = c;
+                } else if (c < 2048) {
+                        valueArray[p++] = (c >> 6) | 192;
+                        valueArray[p++] = (c & 63) | 128;
+                } else if (((c & 0xFC00) == 0xD800) && (i + 1) < value.length &&
+                           ((value.charCodeAt(i + 1) & 0xFC00) == 0xDC00)) {
+                        c = 0x10000 + ((c & 0x03FF) << 10) + (value.charCodeAt(++i) & 0x03FF);
+                        valueArray[p++] = (c >> 18) | 240;
+                        valueArray[p++] = ((c >> 12) & 63) | 128;
+                        valueArray[p++] = ((c >> 6) & 63) | 128;
+                        valueArray[p++] = (c & 63) | 128;
                 } else {
-                        i++;
-                        charcode = (((charcode & 0x3ff) << 10) | (value.charCodeAt(i) & 0x3ff)) + 0x010000;
-                        valueArray.push(0xf0 | (charcode >> 18), 0x80 | ((charcode >> 12) & 0x3f), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+                        valueArray[p++] = (c >> 12) | 224;
+                        valueArray[p++] = ((c >> 6) & 63) | 128;
+                        valueArray[p++] = (c & 63) | 128;
                 }
         }
-        valueArray.push(0);
+        valueArray[p++] = 0;
         offset = this.__emitterOffset;
         rc = this.__emitterFunction(this.__emitterContext, this.__emitterOffset, valueArray, valueArray.length);
         if (rc != 0) {

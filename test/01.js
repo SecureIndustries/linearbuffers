@@ -72,5 +72,11 @@ if (Decoder.linearbuffers_output_float_get(output).toFixed(1) != 0.8) {
 if (Decoder.linearbuffers_output_double_get(output).toFixed(1) != 0.9) {
         throw "decoder failed: linearbuffers_output_double_get";
 }
+if (Decoder.linearbuffers_output_string_get_value(output) != "1234567890") {
+        throw "decoder failed: linearbuffers_output_string_get_value";
+}
+if (Decoder.linearbuffers_output_anum_get(output) != Encoder.linearbuffers_a_enum_1) {
+        throw "decoder failed: linearbuffers_output_anum_get";
+}
 
 delete encoder;

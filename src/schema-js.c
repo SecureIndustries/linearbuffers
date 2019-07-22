@@ -1535,10 +1535,10 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                 if (table_field->value != NULL) {
                                         fprintf(fp, "        return (const struct %s_%s *) \"%s\";\n", schema->namespace, table_field->type, table_field->value);
                                 } else {
-                                        fprintf(fp, "        return NULL;\n");
+                                        fprintf(fp, "        return null;\n");
                                 }
                         } else {
-                                fprintf(fp, "        return NULL;\n");
+                                fprintf(fp, "        return null;\n");
                         }
                         fprintf(fp, "    }\n");
                         fprintf(fp, "    present = decoder[%" PRIu64 "];\n", schema_count_type_size(schema->count_type) + sizeof(uint8_t) * (table_field_i / 8));
@@ -1553,7 +1553,7 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                         fprintf(fp, "        return 0;\n");
                                 }
                         } else {
-                                fprintf(fp, "        return NULL;\n");
+                                fprintf(fp, "        return null;\n");
                         }
                         fprintf(fp, "    }\n");
                         if (schema_type_is_scalar(table_field->type)) {
@@ -1597,9 +1597,9 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                         linearbuffers_errorf("type: %s is invalid", schema_type_get_enum(schema, table_field->type)->type);
                                         goto bail;
                                 }
-                                fprintf(fp, "    return new %s(decoder.buffer.slice(%" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 ", %" PRIu64 "))[0];\n", type, schema_count_type_size(schema->count_type), table_field_s, size);
+                                fprintf(fp, "    return new %s(decoder.buffer.slice(%" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 ", %" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 " + %" PRIu64 "))[0];\n", type, schema_count_type_size(schema->count_type), table_field_s, schema_count_type_size(schema->count_type), table_field_s, size);
                         } else if (schema_type_is_string(table_field->type)) {
-                                fprintf(fp, "    return new Uint%" PRIu64 "Array(decoder.buffer.slice(%" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 ", %" PRIu64 "))[0];\n", schema_offset_type_size(schema->count_type) * 8, schema_count_type_size(schema->count_type), table_field_s, schema_count_type_size(schema->offset_type));
+                                fprintf(fp, "    return new Uint%" PRIu64 "Array(decoder.buffer.slice(%" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 ", %" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 " + %" PRIu64 "))[0];\n", schema_offset_type_size(schema->count_type) * 8, schema_count_type_size(schema->count_type), table_field_s, schema_count_type_size(schema->count_type), table_field_s, schema_count_type_size(schema->offset_type));
                         } else if (schema_type_is_table(schema, table_field->type)) {
                                 fprintf(fp, "    %s_t offset;\n", schema_offset_type_name(schema->offset_type));
                                 fprintf(fp, "    offset = *(%s_t *) (((const uint8_t *) decoder) + %" PRIu64 " + Math.floor((count + 7) / 8) + %" PRIu64 ");\n", schema_offset_type_name(schema->offset_type), schema_count_type_size(schema->count_type), table_field_s);
@@ -1612,10 +1612,10 @@ static int schema_generate_decoder_table (struct schema *schema, struct schema_t
                                 fprintf(fp, "{\n");
                                 fprintf(fp, "    var string;\n");
                                 fprintf(fp, "    string = %s_%s_%s_get(decoder);\n", schema->namespace, table->name, table_field->name);
-                                fprintf(fp, "    if (string == NULL) {\n");
-                                fprintf(fp, "        return NULL;\n");
+                                fprintf(fp, "    if (string == 0) {\n");
+                                fprintf(fp, "        return null;\n");
                                 fprintf(fp, "    }\n");
-                                fprintf(fp, "    return %s_%s_value(string);\n", schema->namespace, table_field->type);
+                                fprintf(fp, "    return %s_%s_value(decoder, string);\n", schema->namespace, table_field->type);
                                 fprintf(fp, "}\n");
                         }
                 }
@@ -1667,9 +1667,35 @@ int schema_generate_js_decoder (struct schema *schema, FILE *fp, int decoder_use
 
         if (schema_has_string(schema)) {
                 fprintf(fp, "\n");
-                fprintf(fp, "function %s_string_value (string)\n", schema->namespace);
+                fprintf(fp, "function %s_string_value (decoder, string)\n", schema->namespace);
                 fprintf(fp, "{\n");
-                fprintf(fp, "    return string;\n");
+                fprintf(fp, "    var c = 0;\n");
+                fprintf(fp, "    var out = [];\n");
+                fprintf(fp, "    var pos = string;\n");
+                fprintf(fp, "    while (pos < decoder.length) {\n");
+                fprintf(fp, "        var c1 = decoder[pos++];\n");
+                fprintf(fp, "        if (c1 == 0) {\n");
+                fprintf(fp, "            break;\n");
+                fprintf(fp, "        } else if (c1 < 128) {\n");
+                fprintf(fp, "            out[c++] = String.fromCharCode(c1);\n");
+                fprintf(fp, "        } else if (c1 > 191 && c1 < 224) {\n");
+                fprintf(fp, "            var c2 = bytes[pos++];\n");
+                fprintf(fp, "            out[c++] = String.fromCharCode((c1 & 31) << 6 | c2 & 63);\n");
+                fprintf(fp, "        } else if (c1 > 239 && c1 < 365) {\n");
+                fprintf(fp, "            var c2 = bytes[pos++];\n");
+                fprintf(fp, "            var c3 = bytes[pos++];\n");
+                fprintf(fp, "            var c4 = bytes[pos++];\n");
+                fprintf(fp, "            var u = ((c1 & 7) << 18 | (c2 & 63) << 12 | (c3 & 63) << 6 | c4 & 63) - 0x10000;\n");
+                fprintf(fp, "            out[c++] = String.fromCharCode(0xD800 + (u >> 10));\n");
+                fprintf(fp, "            out[c++] = String.fromCharCode(0xDC00 + (u & 1023));\n");
+                fprintf(fp, "        } else {\n");
+                fprintf(fp, "            var c2 = bytes[pos++];\n");
+                fprintf(fp, "            var c3 = bytes[pos++];\n");
+                fprintf(fp, "            out[c++] =\n");
+                fprintf(fp, "            String.fromCharCode((c1 & 15) << 12 | (c2 & 63) << 6 | c3 & 63);\n");
+                fprintf(fp, "        }\n");
+                fprintf(fp, "    }\n");
+                fprintf(fp, "    return out.join('');\n");
                 fprintf(fp, "}\n");
         }
 
