@@ -117,8 +117,7 @@ LinearBuffersEncoder.prototype.emitterFunction = function (context, offset, buff
                         this.__outputBuffer[offset + i] = buffer[i];
                 }
         }
-        this.__outputLength = Math.max(this.__outputSize, offset + length);
-        console.log("__outputBuffer: ", this.__outputBuffer);
+        this.__outputLength = Math.max(this.__outputLength, offset + length);
         return 0;
 }
 
@@ -138,7 +137,7 @@ LinearBuffersEncoder.prototype.tableStart = function (countType, offsetType, ele
         entry.__elements      = elements;
         entry.__size          = size;
         entry.__presentBytes  = Math.floor((elements + 7) / 8);
-        entry.__presentBuffer = new Uint8Array(this.__presentBytes);
+        entry.__presentBuffer = new Uint8Array(entry.__presentBytes);
         entry.__presentBuffer.fill(0);
         this.__emitterFunction(this.__emitterContext, entry.__offset, null, entry.__countSize + entry.__presentBytes + size);
         this.__emitterOffset += entry.__countSize + entry.__presentBytes + size;
@@ -146,7 +145,45 @@ LinearBuffersEncoder.prototype.tableStart = function (countType, offsetType, ele
 }
 
 LinearBuffersEncoder.prototype.tableEnd = function () {
-        throw("not implemented yet");
+        var entry;
+        var offset;
+        var countArray;
+        if (this.__entries.length <= 0) {
+                throw("logic error: entries is empty");
+        }
+        entry = this.__entries[this.__entries.length - 1];
+        if (entry == undefined) {
+                throw("logic error: entry is invalid");
+        }
+        if (entry.__type != LinearBufferEncoderEntryType.Table) {
+                throw("logic error: entry is invalid")
+        }
+        offset = entry.__offset;
+        if (entry.__countType == LinearBufferEncoderCountType.Uint8) {
+                countArray = new Uint8Array(1);
+                countArray[0] = entry.__elements;
+        }
+        if (entry.__countType == LinearBufferEncoderCountType.Uint16) {
+                countArray = new Uint16Array(1);
+                countArray[0] = entry.__elements;
+        }
+        if (entry.__countType == LinearBufferEncoderCountType.Uint32) {
+                countArray = new Uint32Array(1);
+                countArray[0] = entry.__elements;
+        }
+        if (entry.__countType == LinearBufferEncoderCountType.Uint64) {
+                countArray = new BigUint64Array(1);
+                countArray[0] = BigInt(entry.__elements);
+        }
+        rc = this.__emitterFunction(this.__emitterContext, entry.__offset, new Uint8Array(countArray.buffer), countArray.BYTES_PER_ELEMENT);
+        if (rc != 0) {
+                throw("can not emit table count")
+        }
+        rc = this.__emitterFunction(this.__emitterContext, entry.__offset + entry.__countSize, entry.__presentBuffer, entry.__presentBytes);
+        if (rc != 0) {
+                throw("can not emit table present")
+        }
+        return offset;
 }
 
 LinearBuffersEncoder.prototype.tableCancel = function () {
@@ -176,7 +213,7 @@ LinearBuffersEncoder.prototype.tableSetInt8 = function (element, offset, value) 
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -203,7 +240,7 @@ LinearBuffersEncoder.prototype.tableSetInt16 = function (element, offset, value)
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -230,7 +267,7 @@ LinearBuffersEncoder.prototype.tableSetInt32 = function (element, offset, value)
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -257,7 +294,7 @@ LinearBuffersEncoder.prototype.tableSetInt64 = function (element, offset, value)
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -284,7 +321,7 @@ LinearBuffersEncoder.prototype.tableSetUint8 = function (element, offset, value)
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -311,7 +348,7 @@ LinearBuffersEncoder.prototype.tableSetUint16 = function (element, offset, value
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -338,7 +375,7 @@ LinearBuffersEncoder.prototype.tableSetUint32 = function (element, offset, value
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -365,7 +402,7 @@ LinearBuffersEncoder.prototype.tableSetUint64 = function (element, offset, value
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -392,7 +429,7 @@ LinearBuffersEncoder.prototype.tableSetFloat = function (element, offset, value)
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
@@ -419,12 +456,51 @@ LinearBuffersEncoder.prototype.tableSetDouble = function (element, offset, value
         if (rc != 0) {
                 throw("can not emit table element")
         }
-        parent.__presentBuffer[element / 8] |= 1 << (element % 8);
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
         return 0;
 }
 
 LinearBuffersEncoder.prototype.tableSetString = function (element, offset, value) {
-        throw("not implemented yet");
+        var parent;
+        var valueArray;
+        if (this.__entries.length <= 0) {
+                throw("logic error: entries is empty");
+        }
+        if (value <= 0) {
+                throw("value is invalid");
+        }
+        parent = this.__entries[this.__entries.length - 1];
+        if (parent == undefined) {
+                throw("logic error: parent is invalid");
+        }
+        if (parent.__type != LinearBufferEncoderEntryType.Table) {
+                throw("logic error: parent is invalid")
+        }
+        if (element >= parent.__elements) {
+                throw("logic error: element is invalid")
+        }
+        if (parent.__offsetType == LinearBufferEncoderOffsetType.Uint8) {
+                valueArray = new Uint8Array(1);
+                valueArray[0] = value - parent.__offset;
+        }
+        if (parent.__offsetType == LinearBufferEncoderOffsetType.Uint16) {
+                valueArray = new Uint16Array(1);
+                valueArray[0] = value - parent.__offset;
+        }
+        if (parent.__offsetType == LinearBufferEncoderOffsetType.Uint32) {
+                valueArray = new Uint32Array(1);
+                valueArray[0] = value - parent.__offset;
+        }
+        if (parent.__offsetType == LinearBufferEncoderOffsetType.Uint64) {
+                valueArray = new BigUint64Array(1);
+                valueArray[0] = BigInt(value - parent.__offset);
+        }
+        rc = this.__emitterFunction(this.__emitterContext, parent.__offset + parent.__countSize + parent.__presentBytes + offset, new Uint8Array(valueArray.buffer), valueArray.BYTES_PER_ELEMENT);
+        if (rc != 0) {
+                throw("can not emit table element")
+        }
+        parent.__presentBuffer[Math.floor(element / 8)] |= 1 << (element % 8);
+        return 0;
 }
 
 LinearBuffersEncoder.prototype.tableSetTable = function (element, offset, value) {
@@ -436,7 +512,31 @@ LinearBuffersEncoder.prototype.tableSetVector = function (element, offset, value
 }
 
 LinearBuffersEncoder.prototype.stringCreate = function (element, value) {
-        throw("not implemented yet");
+        var offset;
+        var valueArray;
+        valueArray = new Array();
+        for (var i = 0; i < value.length; i++) {
+                var charcode = value.charCodeAt(i);
+                if (charcode < 0x80) {
+                        valueArray.push(charcode);
+                } else if (charcode < 0x800) {
+                        valueArray.push(0xc0 | (charcode >> 6), 0x80 | (charcode & 0x3f));
+                } else if (charcode < 0xd800 || charcode >= 0xe000) {
+                        valueArray.push(0xe0 | (charcode >> 12), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+                } else {
+                        i++;
+                        charcode = (((charcode & 0x3ff) << 10) | (value.charCodeAt(i) & 0x3ff)) + 0x010000;
+                        valueArray.push(0xf0 | (charcode >> 18), 0x80 | ((charcode >> 12) & 0x3f), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+                }
+        }
+        valueArray.push(0);
+        offset = this.__emitterOffset;
+        rc = this.__emitterFunction(this.__emitterContext, this.__emitterOffset, valueArray, valueArray.length);
+        if (rc != 0) {
+                throw("can not emit table element")
+        }
+        this.__emitterOffset += this.__emitterOffset;
+        return offset;
 }
 
 LinearBuffersEncoder.prototype.vectorStartInt8 = function (countType, offsetType) {
@@ -668,7 +768,7 @@ LinearBuffersEncoder.prototype.vectorCreateTable = function (countType, offsetTy
 }
 
 LinearBuffersEncoder.prototype.linearized = function () {
-        return this.__outputBuffer;
+        return new Uint8Array(this.__outputBuffer.buffer, 0, this.__outputLength);
 }
 
 LinearBuffersEncoder.prototype.LinearBufferEncoderCountType = LinearBufferEncoderCountType;

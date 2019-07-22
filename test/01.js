@@ -36,6 +36,8 @@ if (linearized == null) {
         throw "can not get linearized buffer";
 }
 
+console.log(linearized);
+
 output = Decoder.linearbuffers_output_decode(linearized);
 if (output == null) {
         throw "decoder failed: linearbuffers_output_decode";
@@ -48,6 +50,27 @@ if (Decoder.linearbuffers_output_int16_get(output) != 1) {
 }
 if (Decoder.linearbuffers_output_int32_get(output) != 2) {
         throw "decoder failed: linearbuffers_output_int32_get";
+}
+if (Decoder.linearbuffers_output_int64_get(output) != 3) {
+        throw "decoder failed: linearbuffers_output_int64_get";
+}
+if (Decoder.linearbuffers_output_uint8_get(output) != 4) {
+        throw "decoder failed: linearbuffers_output_uint8_get";
+}
+if (Decoder.linearbuffers_output_uint16_get(output) != 5) {
+        throw "decoder failed: linearbuffers_output_uint16_get";
+}
+if (Decoder.linearbuffers_output_uint32_get(output) != 6) {
+        throw "decoder failed: linearbuffers_output_uint32_get";
+}
+if (Decoder.linearbuffers_output_uint64_get(output) != 7) {
+        throw "decoder failed: linearbuffers_output_uint64_get";
+}
+if (Decoder.linearbuffers_output_float_get(output).toFixed(1) != 0.8) {
+        throw "decoder failed: linearbuffers_output_float_get";
+}
+if (Decoder.linearbuffers_output_double_get(output).toFixed(1) != 0.9) {
+        throw "decoder failed: linearbuffers_output_double_get";
 }
 
 delete encoder;

@@ -45,6 +45,16 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 	fprintf(stderr, "linearized: %p, length: %" PRIu64 "\n", linearized_buffer, linearized_length);
+	{
+	        unsigned int i;
+	        for (i = 0; i < linearized_length; i++) {
+                        if ((i > 0) && (i % 6) == 0) {
+                                fprintf(stderr, "\n");
+                        }
+	                fprintf(stderr, "%3d, ", linearized_buffer[i]);
+	        }
+	        fprintf(stderr, "\n");
+	}
 
         output = linearbuffers_output_decode(linearized_buffer, linearized_length);
         if (output == NULL) {
