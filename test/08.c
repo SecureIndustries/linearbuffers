@@ -62,7 +62,7 @@ int main (int argc, char *argv[])
 	}
 
 	for (i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
-		asprintf(&strings[i], "string-%ld", i);
+		asprintf(&strings[i], "string-%zd", i);
 	}
 
 	for (i = 0; i < sizeof(enums) / sizeof(enums[0]); i++) {

@@ -41,4 +41,3 @@ uninstall:
 	rm -f ${DESTDIR}/usr/local/lib/liblinearbuffers-encoder.a
 	
 	rm -f ${DESTDIR}/usr/local/lib/pkgconfig/liblinearbuffers-encoder.pc
-	

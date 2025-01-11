@@ -45,6 +45,16 @@ int main (int argc, char *argv[])
 		goto bail;
 	}
 	fprintf(stderr, "linearized: %p, length: %" PRIu64 "\n", linearized_buffer, linearized_length);
+	{
+	        unsigned int i;
+	        for (i = 0; i < linearized_length; i++) {
+                        if ((i > 0) && (i % 6) == 0) {
+                                fprintf(stderr, "\n");
+                        }
+	                fprintf(stderr, "%3d, ", linearized_buffer[i]);
+	        }
+	        fprintf(stderr, "\n");
+	}
 
         output = linearbuffers_output_decode(linearized_buffer, linearized_length);
         if (output == NULL) {
@@ -94,6 +104,10 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "decoder failed: linearbuffers_output_string_get\n");
 		goto bail;
 	}
+        if (linearbuffers_output_anum_get(output) != linearbuffers_a_enum_1) {
+                fprintf(stderr, "decoder failed: linearbuffers_output_anum_get\n");
+                goto bail;
+        }
 
 	linearbuffers_encoder_destroy(encoder);
 

@@ -22,6 +22,7 @@ struct schema_enum {
         TAILQ_ENTRY(schema_enum) list;
         char *name;
         char *type;
+        char *Type;
         char *TYPE;
         struct schema_enum_fields fields;
         struct schema_attributes attributes;
@@ -32,6 +33,7 @@ struct schema_table_field {
         TAILQ_ENTRY(schema_table_field) list;
         char *name;
         char *type;
+        char *Type;
         char *value;
         uint32_t container;
         struct schema_attributes attributes;

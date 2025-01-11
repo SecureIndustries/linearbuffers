@@ -1,13 +1,13 @@
 
 table output_a {
-	foo: int8;
+        foo: int8;
 }
 
 table output_b {
-	bar: int8;
+        bar: int8;
 }
 
 table output {
-	1: output_a; /* c comment */
-	2: output_b; // cpp comment
+        1: output_a; /* c comment */
+        2: output_b; // cpp comment
 }

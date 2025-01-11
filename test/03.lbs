@@ -1,13 +1,13 @@
 
 table a {
-	foo: int8;
+        foo: int8;
 }
 
 table b {
-	s: int8;
-	t: a;
+        s: int8;
+        t: a;
 }
 
 table output {
-	1: b;
+        1: b;
 }

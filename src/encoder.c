@@ -569,6 +569,7 @@ __attribute__ ((__visibility__("default"))) int linearbuffers_encoder_table_star
                 linearbuffers_errorf("can not init table present");
                 goto bail;
         }
+        linearbuffers_debugf("creating table, size: (count_size: %" PRIi64 " + present_bytes: %" PRIi64 " + size:  %" PRIi64 ") = %" PRIi64 "", entry->count_size, entry->u.table.present.bytes, size, entry->count_size + entry->u.table.present.bytes + size);
         rc = encoder->emitter.function(encoder->emitter.context, entry->offset, NULL, entry->count_size + entry->u.table.present.bytes + size);
         if (rc != 0) {
                 linearbuffers_errorf("can not emit table space");

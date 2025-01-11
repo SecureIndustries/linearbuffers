@@ -74,12 +74,12 @@ int main (int argc, char *argv[])
                 fprintf(stderr, "decoder failed: linearbuffers_output_length_get\n");
                 goto bail;
         }
-        if ((uint8_t *) linearbuffers_output_data_get(output) != data) {
+        if ((uint8_t *) (uintptr_t) linearbuffers_output_data_get(output) != data) {
                 fprintf(stderr, "decoder linearbuffers_output_data_get: linearbuffers_output_length_get\n");
                 goto bail;
         }
         for (i = 0; i < linearbuffers_output_length_get(output); i++) {
-                if (data[i] != ((uint8_t *) linearbuffers_output_data_get(output))[i]) {
+                if (data[i] != ((uint8_t *) (uintptr_t) linearbuffers_output_data_get(output))[i]) {
                         fprintf(stderr, "decoder failed: linearbuffers_uint8_vector_get_at\n");
                         goto bail;
                 }

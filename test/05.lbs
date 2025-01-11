@@ -1,20 +1,20 @@
 
 enum type {
-	unknown,
-	type_3  = 3,
-	type_4,
-	type_5,
-	type_10 = 10
+        unknown,
+        type_3  = 3,
+        type_4,
+        type_5,
+        type_10 = 10
 }
 
 table timeval {
-	seconds: uint64;
-	useconds: uint64;
+        seconds: uint64;
+        useconds: uint64;
 }
 
 table output {
-	type   : type;
-	length : uint64;
-	timeval: timeval;
-	data   : [ uint8 ];
+        type   : type;
+        length : uint64;
+        timeval: timeval;
+        data   : [ uint8 ];
 }

@@ -1,21 +1,21 @@
 
 enum a_enum {
-	0,
-	1,
-	2
+        0,
+        1,
+        2
 }
 
 table output {
-	int8: int8;
-	int16: int16;
-	int32: int32;
-	int64: int64;
-	uint8: uint8;
-	uint16: uint16;
-	uint32: uint32;
-	uint64: uint64;
-	float: float;
-	double: double;
-	string: string;
-	anum: a_enum;
+        int8: int8;
+        int16: int16;
+        int32: int32;
+        int64: int64;
+        uint8: uint8;
+        uint16: uint16;
+        uint32: uint32;
+        uint64: uint64;
+        float: float;
+        double: double;
+        string: string;
+        anum: a_enum;
 }

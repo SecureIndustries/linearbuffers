@@ -20,6 +20,7 @@ linearbuffers-compiler_files-y = \
 	schema.c \
 	schema-pretty.c \
 	schema-c.c \
+	schema-js.c \
 	main.c
 
 linearbuffers-compiler_parser.lex.c_cflags-y = \

@@ -1,26 +1,26 @@
 
 enum anum {
-	a,
-	b
+        a,
+        b
 }
 
 table output_old {
-	8   : int8  = -8; 
-	16  : int16 = -16;
-	32  : int32 = -32;
-	64  : int64 = -64;
-	anum: anum  = a;
+        8   : int8  = -8; 
+        16  : int16 = -16;
+        32  : int32 = -32;
+        64  : int64 = -64;
+        anum: anum  = a;
 }
 
 table output_new {
-	int8  : int8   = -80; 
-	int16 : int16  = -160;
-	int32 : int32  = -320;
-	int64 : int64  = -640;
-	anum  : anum   = a;
-	uint8 : uint8  = 8;
-	uint16: uint16 = 16;
-	uint32: uint32 = 32;
-	uint64: uint64 = 64;
-	string: string = "string string";
+        int8  : int8   = -80; 
+        int16 : int16  = -160;
+        int32 : int32  = -320;
+        int64 : int64  = -640;
+        anum  : anum   = a;
+        uint8 : uint8  = 8;
+        uint16: uint16 = 16;
+        uint32: uint32 = 32;
+        uint64: uint64 = 64;
+        string: string = "string string";
 }
