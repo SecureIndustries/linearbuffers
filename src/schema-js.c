@@ -399,7 +399,7 @@ bail:   if (entry != NULL) {
         return -1;
 }
 
-static const char * namespace_linearized (struct namespace *namespace)
+static const char * __namespace_linearized (struct namespace *namespace)
 {
         size_t slinearized;
         struct namespace_entry *entry;
@@ -432,8 +432,9 @@ static const char * namespace_linearized (struct namespace *namespace)
         }
         namespace->dirty = 0;
 out:    return namespace->linearized;
-bail:   return "(null)";
+bail:   return NULL;
 }
+#define namespace_linearized(ns) (__namespace_linearized(ns) ? __namespace_linearized(ns) : "(error)")
 
 static void namespace_destroy (struct namespace *namespace)
 {
