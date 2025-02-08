@@ -105,7 +105,7 @@ static int schema_generate_enum (struct schema *schema, struct schema_enum *anum
                 linearbuffers_errorf("fp is invalid");
                 goto bail;
         }
-        
+
         fprintf(fp, "\n");
         TAILQ_FOREACH(anum_field, &anum->fields, list) {
                 if (anum_field->value == NULL) {
@@ -404,10 +404,10 @@ static const char * namespace_linearized (struct namespace *namespace)
         size_t slinearized;
         struct namespace_entry *entry;
         if (namespace == NULL) {
-                return NULL;
+                goto bail;
         }
         if (namespace->dirty == 0) {
-                return namespace->linearized;
+                goto out;
         }
         slinearized = 0;
         TAILQ_FOREACH(entry, &namespace->entries, list) {
@@ -431,8 +431,8 @@ static const char * namespace_linearized (struct namespace *namespace)
                 slinearized += sprintf(namespace->linearized + slinearized, "%s", entry->string);
         }
         namespace->dirty = 0;
-        return namespace->linearized;
-bail:   return NULL;
+out:    return namespace->linearized;
+bail:   return "(null)";
 }
 
 static void namespace_destroy (struct namespace *namespace)
